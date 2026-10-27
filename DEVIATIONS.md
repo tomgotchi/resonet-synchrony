@@ -1,0 +1,15 @@
+# DEVIATIONS
+
+Every departure from TASK_PITCH1.md, or a judgement call the spec leaves open, with the reason.
+PREREG.md does not exist yet. Per Tom, it is written together before Phase 3; entries logged before then
+are design decisions, not post-hoc changes.
+
+| # | date | where | decision | reason |
+|---|---|---|---|---|
+| 1 | 2026-10-27 | banks.py, bandwidth init | `bw` initialised from the published `mu ~ U(-1,-0.4)` converted to Hz at the model's fs (`bw = -mu*h*fs/2pi`, about 0.16-0.40 Hz at 250 Hz) | S2 says "keep everything else identical". This keeps per-sample damping at init exactly as published, so only the frequency axis changes. |
+| 2 | 2026-10-27 | banks.py, nl integrator | Default is the published one-RK4-step-per-sample scheme. An opt-in `--rk4-substeps k` is added. | With Hz-correct f0, one RK4 step per sample over-damps fast oscillators: bandwidth is 1.24x at 30 Hz and 2.3x at 40 Hz (fs = 250). Above about 60 Hz the oscillator decays to zero. The linear bank uses the exact exponential, so for the top two HGD oscillators lin and nl differ in effective bandwidth, not only in nonlinearity/coupling. k = 2 fixes 1-40 Hz (at most 1.04x). Recommendation: run HGD Phase 1 with k = 1 (primary, faithful) and k = 2 as a sensitivity check. **The hippocampal 2-150 Hz band needs k >= 4 at 250 Hz** (Phase 3 decision, to go into PREREG). |
+| 3 | 2026-10-27 | banks.py, f0 range | f0 clamped to [0.5 Hz, 0.45 fs] | The spec asks for 2-150 Hz in hippocampus with 250 Hz decimation. 150 Hz is above Nyquist (125 Hz). Options for PREREG: cap at 112 Hz, or decimate to 500 Hz instead. |
+| 4 | 2026-10-27 | readouts.py, trial_shuffle | The partner is a different trial of the same class from the same split, and this also applies at test time, which uses the test label to pick the partner | The spec defines the arm by same-class pairing. That is impossible at test time without labels, so the arm is a shift-predictor-style analysis control (an upper bound for evoked phase information), not a deployable decoder. **Needs Tom's sign-off.** The alternative is class-template pairing against train-set mean trajectories, which changes capacity. |
+| 5 | 2026-10-27 | banks.py, nl_uncoupled_wide | The extra parameters form a second complex encoder layer `I = ctanh(M ctanh(W_enc x + b) + b2)`, with M (N x N complex) initialised to identity + 0.05 noise. Extra real params are 2N^2 + 2N, against 2N^2 for W. | A merely reparameterised linear layer would match the count but add no capacity. This adds real capacity in the encoder, which is what the control has to rule out. |
+| 6 | 2026-10-27 | banks.py, RNG order | All four banks draw bw, W, W_enc and M from one generator in the same order, so they share an identical encoder init for a given seed. | The published lin and nl banks drew different streams, so their encoders started differently. Sharing the stream makes the bank contrasts cleaner. |
+| 7 | 2026-10-27 | metric | Primary score is test **balanced** accuracy, with plain accuracy also stored | S4 asks for balanced accuracy. HGD test sets are balanced (40/class), so the two coincide there. |

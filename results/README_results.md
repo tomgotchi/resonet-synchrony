@@ -1,0 +1,52 @@
+# resonet-synchrony: results
+
+## Phase 0: setup (2026-10-27)
+
+- Repo scaffolded following TASK.md S0 conventions: `vendor/` holds the unmodified published code with hash checks,
+  data is gitignored, paths go in `config.yaml`, and `config.example.yaml` is committed.
+- Reused from phasetrack: the sanitization helpers and their tests, and the causality-test pattern (now applied to
+  the banks) plus paired statistics with Holm correction.
+- **66 tests pass**, covering:
+  - Hz parameterization: init f0 is log-spaced and the measured free rotation matches f0 within 2%.
+  - Causality of all four banks.
+  - Equivalence with the published forward pass: with equivalent parameters, `nl_coupled` reproduces vendored
+    `ResonanceNetwork` and `lin` reproduces `FastResonanceNetwork`, and the sync/surrogate features match. This is
+    the S2 requirement to keep everything else identical.
+  - S7 smoke tests for all 20 bank x readout arms: gradients reach every parameter group and the loss decreases.
+  - Controls: the surrogate changes features but preserves each oscillator's spectrum, `trial_shuffle` reduces to
+    `sync` when the partner is the trial itself, and `nl_uncoupled_wide` matches `nl_coupled`'s extra parameter
+    count within 2N.
+  - An end-to-end smoke run.
+
+### Findings worth knowing before Phase 1
+1. **HGD cache question answered:** `subj_cache/` is low-passed (~48 Hz), and `subj_cache_hg/` is the full-band 4-125 Hz
+   rebuild (`build_hg_cache.py`). Phase 1 uses `subj_cache_hg` at decim 2 (250 Hz), which is the published
+   high-gamma configuration (`results_hg/surrogate_summary.json`: decim 2, N 16, cap 80, 80 epochs).
+   `data_hgd.band_check` verifies the band before any run.
+2. **The published integrator can't carry Hz-correct high frequencies.** It takes one RK4 step per sample, which
+   adds frequency-dependent damping: bandwidth is 1.02x at 20 Hz, 1.24x at 30 Hz and 2.3x at 40 Hz at fs = 250.
+   Above about 60 Hz the oscillator decays to zero. The linear bank uses the exact exponential and is unaffected,
+   so with correct frequencies `nl` vs `lin` also differ in effective bandwidth for the top oscillators (31 and
+   40 Hz of the 16). `--rk4-substeps 2` brings 1-40 Hz within 1.04x. For hippocampus (2-150 Hz) the spec as written
+   is not feasible at 250 Hz: 150 Hz exceeds Nyquist, and RK4 needs k >= 4. See DEVIATIONS #2-3.
+3. **`trial_shuffle` needs the label at test time** to choose a same-class partner. It is therefore an analysis
+   control, an upper bound on evoked phase information, not a decoder (DEVIATIONS #4; needs Tom's sign-off).
+4. Published numbers for reference (read from `results_hg/surrogate_results.json`, full band, n = 14):
+   sync - surrogate = **+0.163 (nl, 14/14)** and **+0.150 (lin, 12/14)**. TASK_PITCH1 quotes +0.098 / +0.147, which
+   appear to be the low-passed-cache values. The Phase 1 comparison uses the full-band ones.
+
+## Phase 1: recalibrated replication on HGD. NOT RUN.
+
+Blocked on data and compute, not on code:
+- The full-band cache (`subj_cache_hg`, about 1 GB/subject) is on Tom's machine/Drive and not reachable from the
+  cloud container. The raw HGD host (gin.g-node.org) is blocked by the container's network policy.
+- Compute: measured on the 4-core CPU container, the nonlinear bank needs about 7.2 s per training batch (B = 128,
+  T = 1125, N = 16) and the linear bank about 0.9 s. All 22 arms x 14 subjects is roughly 3-5 days of CPU. On
+  the RTX 3070 the published 6 arms took 45-90 min/subject, so all 22 arms is about 4-5 h/subject, or 2.5-3 days for
+  14 subjects. `--arms core` (the 6 published arms) first answers the urgent question, whether sync > surrogate
+  survives Hz initialisation, in about the published time.
+
+`run.py --phase 1` writes `results/phase1/subj_XX.json` incrementally. Each file holds the config, seed, git
+hash, data sha256, band check and chance threshold. `summary.json` holds paired Wilcoxon, bootstrap CIs, dz and
+Holm within each family (H2 sync-surrogate per bank; coupling contrasts; sync+power vs power; sync vs
+trial_shuffle). It also has a by-subject comparison with the published `results_hg` numbers.

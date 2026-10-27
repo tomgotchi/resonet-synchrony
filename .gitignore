@@ -16,6 +16,6 @@ config.yaml
 # environment / caches
 __pycache__/
 *.pyc
-.venv/
+.venv
 .pytest_cache/
 results/phase*/raw/
