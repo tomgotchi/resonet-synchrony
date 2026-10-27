@@ -35,21 +35,14 @@
    sync - surrogate = **+0.163 (nl, 14/14)** and **+0.150 (lin, 12/14)**. TASK_PITCH1 quotes +0.098 / +0.147, which
    appear to be the low-passed-cache values. The Phase 1 comparison uses the full-band ones.
 
-## Phase 1: recalibrated replication on HGD. NOT RUN.
+## Phase 1: recalibrated replication on HGD. Runs on Tom's GPU (decided 2026-10-27).
 
-Blocked on data and compute, not on code:
-- The full-band cache (`subj_cache_hg`, about 1 GB/subject) is on Tom's machine/Drive and not reachable from the
-  cloud container. The raw HGD host (gin.g-node.org) is blocked by the container's network policy.
-- Compute: measured on the 4-core CPU container, the nonlinear bank needs about 7.2 s per training batch (B = 128,
-  T = 1125, N = 16) and the linear bank about 0.9 s. All 22 arms x 14 subjects is roughly 3-5 days of CPU. On
-  the RTX 3070 the published 6 arms took 45-90 min/subject, so all 22 arms is about 4-5 h/subject, or 2.5-3 days for
-  14 subjects. `--arms core` (the 6 published arms) first answers the urgent question, whether sync > surrogate
-  survives Hz initialisation, in about the published time.
-
-`run.py --phase 1` writes `results/phase1/subj_XX.json` incrementally. Each file holds the config, seed, git
-hash, data sha256, band check and chance threshold. `summary.json` holds paired Wilcoxon, bootstrap CIs, dz and
-Holm within each family (H2 sync-surrogate per bank; coupling contrasts; sync+power vs power; sync vs
-trial_shuffle). It also has a by-subject comparison with the published `results_hg` numbers.
+The code is complete and every arm is smoke-tested on tiny synthetic data. Tom runs it locally, where the
+full-band cache exists, following `RUN_PHASE1_LOCAL.md`. The cache is not rebuilt here.
+`--arms core` (the 6 published arms) answers the urgent question first: does sync > surrogate survive Hz
+initialisation? Per-subject JSONs store the config, seed, git hash, data sha256, band check and chance threshold.
+The evoked/induced decomposition (DEVIATIONS 4) is computed for every `bank:sync` model and summarised
+separately from the decoder table.
 
 ## Phase 2 plan: synthetic validation of the nl-vs-lin contrast (H0). Frozen 2026-10-27, before any evaluation seed was run.
 
