@@ -16,5 +16,13 @@ def test_partners_same_class_different_trial_same_split():
 def test_smoke_end_to_end():
     import torch
     from resonet_sync.run import P1, smoke
-    res = smoke(["lin:sync", "nl_coupled:trial_shuffle", "eegnet"], dict(P1), torch.device("cpu"))
-    assert set(res) == {"lin:sync", "nl_coupled:trial_shuffle", "eegnet"}
+    res = smoke(["lin:sync", "nl_coupled:sync", "eegnet"], dict(P1), torch.device("cpu"))
+    assert set(res) == {"lin:sync", "nl_coupled:sync", "eegnet"}
+    ei = res["nl_coupled:sync"]["evoked_induced"]
+    assert {"train", "test_descriptive"} <= set(ei) and "cv_bal_acc_induced" in ei["train"]
+    assert "evoked_induced" not in res["eegnet"]
+
+
+def test_no_trial_shuffle_decoder_arm():
+    from resonet_sync.run import ALL
+    assert not any("trial_shuffle" in a for a in ALL)

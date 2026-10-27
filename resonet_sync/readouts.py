@@ -11,7 +11,8 @@ New:
                   (shift-predictor logic: keeps class-locked/evoked phase structure, destroys
                   trial-specific coupling). Partner selection needs the label, including at test
                   time, so this arm is an analysis control, not a deployable decoder: its accuracy
-                  bounds what evoked (class-locked) phase alone can give. Logged in DEVIATIONS.md.
+                  bounds what evoked (class-locked) phase alone can give. Per Tom (2026-10-27) it is
+                  NOT trained as a decoder arm; see decomposition.py for the evoked-vs-induced analysis.
 Head (published): BatchNorm1d -> Dropout (0.2 for power, 0.5 otherwise) -> Linear.
 """
 from __future__ import annotations

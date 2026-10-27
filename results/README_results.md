@@ -50,3 +50,23 @@ Blocked on data and compute, not on code:
 hash, data sha256, band check and chance threshold. `summary.json` holds paired Wilcoxon, bootstrap CIs, dz and
 Holm within each family (H2 sync-surrogate per bank; coupling contrasts; sync+power vs power; sync vs
 trial_shuffle). It also has a by-subject comparison with the published `results_hg` numbers.
+
+## Phase 2 plan: synthetic validation of the nl-vs-lin contrast (H0). Frozen 2026-10-27, before any evaluation seed was run.
+
+- **Data:** `synth.py`, with two generators (DRIVEN: uncoupled units, class = phase pattern of a common
+  input; EMERGENT: noise-driven Stuart-Landau network, class = coupling graph, class-free input).
+  8 channels, 1 s @ 250 Hz, z-scored per channel and trial. 100 train and 40 test trials per class, with the
+  published 15% stratified validation carve from train used for early stopping.
+  **Evaluation seeds 0-9**, with the seed as the unit; seed 999 was used only for calibration (DEVIATIONS 9).
+- **Arms:** lin, nl_uncoupled, nl_coupled and nl_uncoupled_wide with the `sync` readout, plus `power` and `surrogate`
+  for lin and nl_coupled. The published training loop is used unchanged (<= 80 epochs, patience 15), with N = 16
+  and band 2-40 Hz.
+- **Primary metric:** test balanced accuracy, compared with the Combrisson-Jerbi chance threshold for n_test = 160.
+- **H0, emergent:** the contrast *detects* coupling-dependent information if nl_coupled:sync - lin:sync > 0
+  with Holm p < 0.05 within the 4-contrast coupling family.
+- **H0, driven:** the contrast correctly *does not detect* if the 95% bootstrap CI of nl_coupled - lin lies
+  inside +/-0.03 (equivalence). If the CI crosses the margin without significance, the result is inconclusive.
+- **Secondary:** the interaction (d_emergent - d_driven) > 0, the capacity control nl_coupled - nl_uncoupled_wide
+  on emergent, H2 sync - surrogate per bank, and the evoked-vs-induced decomposition (reported separately).
+- **Stop rule (TASK_PITCH1 S5):** if the emergent criterion fails, H3 is underpowered and any real-data null is
+  uninterpretable. In that case the result is reported and Phase 3 does not start.
