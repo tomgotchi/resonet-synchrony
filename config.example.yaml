@@ -1,0 +1,12 @@
+# Copy to config.yaml (gitignored) and fill in local paths.
+paths:
+  # FULL-BAND HGD cache (4-125 Hz, built by reso-net/build_hg_cache.py). Pitch 1 uses this one.
+  hgd_cache_hg: /path/to/subj_cache_hg
+  # Low-passed (~48 Hz) cache; only for reference / comparison with the published low-pass runs.
+  hgd_cache_lowpass: /path/to/subj_cache
+  # Published per-subject results for the comparison in the Phase 1 report (reso-net/results_hg).
+  published_results_hg: /path/to/reso-net/results_hg
+  # CRCNS downloads (ask Tom first): hc-5 sessions and hc-2 sessions with LFP.
+  hc5_dir: /path/to/hc5
+  hc2_dir: /path/to/hc2
+  work_dir: data/

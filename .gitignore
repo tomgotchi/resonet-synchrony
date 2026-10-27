@@ -1,0 +1,21 @@
+# data (never commit)
+*.npz
+*.dat
+*.tar.gz
+*.res.*
+*.clu.*
+*.whl
+*.eeg
+*.edf
+data/
+results/raw/
+# model checkpoints
+*.pt
+# local config (points at data on this machine)
+config.yaml
+# environment / caches
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+results/phase*/raw/
