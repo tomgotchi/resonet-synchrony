@@ -63,3 +63,8 @@ per channel per trial. The first and last 0.1 s are discarded. All statistics po
   screen of 4 candidates, and every candidate is reported. Any statistic that passes must be re-validated on fresh
   seeds, and at other difficulty and N settings, before it is used in a redesigned H3.
 - This screen makes no claim about real data.
+- *Calibration outcome (2026-10-28, seed 999 only):* EMERGENT PLV 0.685. DRIVEN_COMMON PLV for rho 0.3 / 0.5 / 0.7 / 0.85
+  was 0.485 / 0.504 / 0.566 / 0.672. **rho = 0.85** was selected by the frozen rule (closest to EMERGENT). The statistic
+  implementations were validated on toy systems with known answers (`tests/test_mechanism.py`) before any
+  evaluation seed: S_couple is monotone in K but attenuated by the 6-10 Hz filter; TE recovers the direction of a
+  unidirectional coupling; S_resid falls to the 1-s PLV noise floor (~0.45) for a common-input system.

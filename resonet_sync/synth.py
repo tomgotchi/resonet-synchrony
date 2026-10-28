@@ -16,6 +16,11 @@ EMERGENT (input carries no class information; class lives only in the coupling m
   A^(k): class-specific random symmetric 0/1 graph (density 0.35, connected), fixed per seed.
   Inputs are independent white noise, identical in distribution across classes.
 
+DRIVEN_COMMON (DEVIATIONS 11; no coupling, no oscillatory drive):
+    dz_j = (lam + i w_j - |z_j|^2) z_j dt + sigma*sqrt(1-rho^2) dW_j + sigma*rho*exp(i psi_{k,j}) dW_c
+  EMERGENT's units with the coupling replaced by an UNOBSERVED shared white-noise source W_c, entering each
+  unit with a class-specific phase psi_{k,j}; total noise variance per unit equals EMERGENT's.
+
 Natural frequencies w_j ~ 8 Hz +/- 1 Hz (fixed per seed, shared by all classes).
 """
 from __future__ import annotations
@@ -27,7 +32,11 @@ FS_SIM, FS_OUT, M = 1000.0, 250.0, 8
 DEFAULTS = dict(
     driven=dict(g=2 * np.pi * 1.0, kappa=6.5, sigma=6.0, input_bw_hz=2.0, input_f_hz=8.0),
     emergent=dict(lam=-2 * np.pi * 1.0, K=40.0, sigma=6.0, density=0.35),
+    # DEVIATIONS 11: emergent's units with coupling replaced by an unobserved shared white-noise source.
+    # rho = shared-noise amplitude fraction; calibrated on pilot seed 999 (see DEVIATIONS 11).
+    driven_common=dict(lam=-2 * np.pi * 1.0, sigma=6.0, rho=0.85),
 )
+KINDS = ("emergent", "driven", "driven_common")
 
 
 def _graph(rng, density):
@@ -44,6 +53,8 @@ def templates(seed, kind, p):
     w = 2 * np.pi * (8.0 + rng.uniform(-1, 1, M))
     if kind == "driven":
         return dict(w=w, phi=rng.uniform(0, 2 * np.pi, (4, M)))
+    if kind == "driven_common":
+        return dict(w=w, psi=rng.uniform(0, 2 * np.pi, (4, M)))
     return dict(w=w, A=np.stack([_graph(rng, p["density"]) for _ in range(4)]))
 
 
@@ -63,6 +74,14 @@ def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=1.0):
         for t in range(n):
             z = z + ((-p["g"] + 1j * w) * z + p["kappa"] * s[t] * drive) * dt + p["sigma"] * dW[t]
             out[t] = z
+    elif kind == "driven_common":
+        rho = p["rho"]
+        load = rho * np.exp(1j * tpl["psi"][k])                          # class-specific loading
+        dWc = (rng.standard_normal(n) + 1j * rng.standard_normal(n)) * sq / np.sqrt(2)   # unobserved
+        sp = p["sigma"] * np.sqrt(1 - rho ** 2)                           # total noise var = sigma^2
+        for t in range(n):
+            z = z + ((p["lam"] + 1j * w - np.abs(z) ** 2) * z) * dt + sp * dW[t] + p["sigma"] * load * dWc[t]
+            out[t] = z
     else:
         A = tpl["A"][k]
         deg = max(A.sum(1).mean(), 1.0)
@@ -79,7 +98,7 @@ def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=1.0):
 def make_dataset(seed, kind, n_train_per_class=100, n_test_per_class=40, params=None):
     p = dict(DEFAULTS[kind], **(params or {}))
     tpl = templates(seed, kind, p)
-    rng = np.random.default_rng([seed, 11, 0 if kind == "driven" else 1])
+    rng = np.random.default_rng([seed, 11, {"driven": 0, "emergent": 1, "driven_common": 2}[kind]])
 
     def block(n):
         X, y = [], []
