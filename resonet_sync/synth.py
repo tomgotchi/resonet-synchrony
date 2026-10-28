@@ -39,9 +39,9 @@ DEFAULTS = dict(
 KINDS = ("emergent", "driven", "driven_common")
 
 
-def _graph(rng, density):
+def _graph(rng, density, m=M):
     while True:
-        A = (rng.random((M, M)) < density).astype(float)
+        A = (rng.random((m, m)) < density).astype(float)
         A = np.triu(A, 1); A = A + A.T
         L = np.diag(A.sum(1)) - A
         if np.sort(np.linalg.eigvalsh(L))[1] > 1e-6:      # connected
@@ -49,16 +49,19 @@ def _graph(rng, density):
 
 
 def templates(seed, kind, p):
+    m = p.get("M", M)                                   # DEVIATIONS 12 variants; default M = 8 (unchanged)
     rng = np.random.default_rng([seed, 7])
-    w = 2 * np.pi * (8.0 + rng.uniform(-1, 1, M))
+    w = 2 * np.pi * (8.0 + rng.uniform(-1, 1, m))
     if kind == "driven":
-        return dict(w=w, phi=rng.uniform(0, 2 * np.pi, (4, M)))
+        return dict(w=w, phi=rng.uniform(0, 2 * np.pi, (4, m)))
     if kind == "driven_common":
-        return dict(w=w, psi=rng.uniform(0, 2 * np.pi, (4, M)))
-    return dict(w=w, A=np.stack([_graph(rng, p["density"]) for _ in range(4)]))
+        return dict(w=w, psi=rng.uniform(0, 2 * np.pi, (4, m)))
+    return dict(w=w, A=np.stack([_graph(rng, p["density"], m) for _ in range(4)]))
 
 
-def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=1.0):
+def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=None):
+    win_s = p.get("win_s", 1.0) if win_s is None else win_s
+    M = len(tpl["w"])
     dt = 1 / FS_SIM
     n = int((burn_s + win_s) * FS_SIM)
     z = 0.1 * (rng.standard_normal(M) + 1j * rng.standard_normal(M))
@@ -91,6 +94,9 @@ def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=1.0):
             out[t] = z
     x = out[int(burn_s * FS_SIM):].real.T                                    # (M, T_sim) observed
     x = signal.decimate(x, int(FS_SIM / FS_OUT), ftype="fir", zero_phase=True, axis=1)
+    if p.get("obs_snr_db") is not None:                 # DEVIATIONS 12: white observation noise (drawn only if set)
+        nv = x.var(1, keepdims=True) / 10 ** (p["obs_snr_db"] / 10)
+        x = x + np.sqrt(nv) * rng.standard_normal(x.shape)
     x = (x - x.mean(1, keepdims=True)) / (x.std(1, keepdims=True) + 1e-12)   # power-matched
     return x.astype(np.float32)
 
@@ -111,4 +117,4 @@ def make_dataset(seed, kind, n_train_per_class=100, n_test_per_class=40, params=
 
     Xtr, ytr = block(n_train_per_class)
     Xte, yte = block(n_test_per_class)
-    return Xtr, ytr, Xte, yte, dict(seed=seed, kind=kind, params=p, fs=FS_OUT, M=M)
+    return Xtr, ytr, Xte, yte, dict(seed=seed, kind=kind, params=p, fs=FS_OUT, M=p.get("M", M))

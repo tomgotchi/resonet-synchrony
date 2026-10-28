@@ -72,6 +72,30 @@ def te_matrix(a, bins=TE_BINS, delay=TE_DELAY):
     return TE
 
 
+def te_matrix_cross_trial(a, bins=TE_BINS, delay=TE_DELAY, seed=0):
+    """As te_matrix, but the source unit j comes from a DIFFERENT trial (fixed random derangement): the
+    bias / own-phase-predictability floor of the plug-in TE (DEVIATIONS 12, secondary)."""
+    n = a.shape[0]
+    rng = np.random.default_rng(seed)
+    perm = rng.permutation(n)
+    while np.any(perm == np.arange(n)):
+        perm = rng.permutation(n)
+    phi = np.angle(a)
+    q = np.clip(((phi + np.pi) / (2 * np.pi) * bins).astype(np.int64), 0, bins - 1)
+    past, fut = q[..., :-delay], q[..., delay:]
+    M = q.shape[1]
+    TE = np.zeros((M, M))
+    for i in range(M):
+        xf, xp = fut[:, i].ravel(), past[:, i].ravel()
+        h_fp, h_p = _H(xf, xp, bins=bins), _H(xp, bins=bins)
+        for j in range(M):
+            if j == i:
+                continue
+            yp = past[perm, j].ravel()
+            TE[j, i] = h_fp + _H(xp, yp, bins=bins) - h_p - _H(xf, xp, yp, bins=bins)
+    return TE
+
+
 def s_te(TE):
     M = TE.shape[0]
     return float(TE[~np.eye(M, dtype=bool)].mean())
