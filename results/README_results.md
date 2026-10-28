@@ -113,3 +113,38 @@ pre-registered threshold. A real-data null in Phase 3 would therefore be uninter
    as a benchmark, without the dissociation claim.
 3. Increase sensitivity, with more seeds and pre-registered power analysis, *only* if the target effect is the
    interaction. The current interaction estimate (+0.007) suggests the required n would be large.
+
+## Exploratory mechanism-statistic screen (DEVIATIONS 11; synthetic only; `results/screen/screen_results.json`)
+
+The screen used three generators: EMERGENT; DRIVEN (narrowband common input); and DRIVEN_COMMON (EMERGENT's units with
+coupling replaced by an unobserved shared white-noise source, rho = 0.85, calibrated on seed 999 so that plain PLV
+matches EMERGENT). Seeds 0-9, 400 train trials per dataset, offline 6-10 Hz phases. The criterion was frozen before
+the run: >= 9/10 seeds and a 95% CI excluding 0 for both E-D and E-DC, with the same sign.
+
+| statistic | E / D / DC mean | E - D [95% CI] (seeds) | E - DC [95% CI] (seeds) | passes |
+|---|---|---|---|---|
+| S_couple (Kuramoto-fit coupling, rad/s) | 0.522 / 0.282 / 0.786 | +0.240 [+0.211, +0.272] (10/10) | **-0.264** [-0.344, -0.200] (10/10) | no (opposite signs) |
+| **S_TE (mean directed phase TE, bits)** | **0.0240** / 0.0069 / 0.0131 | +0.0172 [+0.0165, +0.0178] (10/10) | +0.0109 [+0.0101, +0.0116] (10/10) | **YES** |
+| S_asym (TE asymmetry) | 0.068 / 0.056 / 0.089 | +0.012 [+0.006, +0.019] (9/10) | -0.022 [-0.028, -0.015] (10/10) | no (opposite signs) |
+| S_resid (PLV after removing first complex PC) | 0.577 / 0.582 / 0.560 | -0.006 [-0.011, -0.001] (6/10) | +0.016 [+0.014, +0.019] (10/10) | no |
+| S_plv (reference, not a candidate) | 0.673 / 0.527 / 0.685 | +0.145 (10/10) | -0.013 (8/10) | no, as designed |
+
+**Reading:**
+- **Only directed phase transfer entropy passes.** Emergent data carry more phase-predictive information between
+  units than either driven generator. This includes the hardest comparison, DRIVEN_COMMON, which has the same units,
+  the same total noise and matched PLV.
+- **The coupling-function fit is fooled by unobserved common noise**: it reports *more* coupling for DRIVEN_COMMON
+  than for EMERGENT. This is the textbook common-input confound of coupling inference, and it disqualifies this
+  statistic.
+- **Removing a single common mode does not help.** With 8 units at slightly different frequencies, the common input
+  is not rank-1 after each unit's own filtering, and EMERGENT's coherence is not cleanly "beyond rank-1" either.
+
+**Caveats; the result is not yet usable for H3:**
+- One parameter setting, seed-level n = 10, plug-in TE (biased; the bias depends on the effective sample count, which
+  differs little here because all three use the same windows and band). TE differences could partly reflect
+  differences in phase predictability (spectral shape) rather than inter-unit influence. EMERGENT vs DRIVEN_COMMON is
+  the cleanest comparison because the units are identical.
+- Per the frozen criterion, a passing statistic must be **re-validated on fresh seeds and at other difficulty and N
+  settings** (coupling K, rho, number of units, window length, SNR) before being used. Its class-specific use, i.e.
+  whether TE carries *class* information beyond coherence, has not been tested.
+- Synthetic only. No claim about real data.
