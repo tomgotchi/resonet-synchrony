@@ -148,3 +148,44 @@ the run: >= 9/10 seeds and a 95% CI excluding 0 for both E-D and E-DC, with the 
   settings** (coupling K, rho, number of units, window length, SNR) before being used. Its class-specific use, i.e.
   whether TE carries *class* information beyond coherence, has not been tested.
 - Synthetic only. No claim about real data.
+
+## TE re-validation (DEVIATIONS 12; fresh seeds 10-19; `results/screen2/screen2_results.json`)
+
+| condition | rho (DC) | S_TE E / D / DC | E - D (seeds) | E - DC [95% CI] (seeds) | pass |
+|---|---|---|---|---|---|
+| base | 0.85 | 0.0240 / 0.0069 / 0.0134 | +0.0171 (10/10) | +0.0106 [+0.0099, +0.0113] (10/10) | yes |
+| K25 | 0.70* | 0.0164 / 0.0069 / 0.0088 | +0.0095 (10/10) | +0.0076 (10/10) | yes |
+| K60 | 0.95* | 0.0327 / 0.0069 / 0.0244 | +0.0258 (10/10) | +0.0083 (10/10) | yes |
+| rho70 | 0.70 | 0.0240 / 0.0069 / 0.0088 | +0.0171 (10/10) | +0.0152 (10/10) | yes |
+| **rho95** | **0.95** | 0.0240 / 0.0069 / **0.0244** | +0.0171 (10/10) | **-0.0004 [-0.0016, +0.0007] (4/10)** | **no** |
+| M4 | 0.95* | 0.0391 / 0.0069 / 0.0228 | +0.0322 (10/10) | +0.0163 (10/10) | yes |
+| M16 | 0.70* | 0.0186 / 0.0069 / 0.0087 | +0.0117 (10/10) | +0.0099 (10/10) | yes |
+| win05 | 0.85* | 0.0273 / 0.0115 / 0.0181 | +0.0158 (10/10) | +0.0092 (10/10) | yes |
+| win2 | 0.85* | 0.0211 / 0.0034 / 0.0100 | +0.0177 (10/10) | +0.0111 (10/10) | yes |
+| snr10 | 0.85* | 0.0239 / 0.0069 / 0.0134 | +0.0170 (10/10) | +0.0105 (10/10) | yes |
+| snr0 | 0.85* | 0.0221 / 0.0068 / 0.0127 | +0.0153 (10/10) | +0.0094 (10/10) | yes |
+
+\* rho recalibrated on seed 999 by the frozen PLV-matching rule.
+
+**Verdict (frozen rule):** the base condition passes on fresh seeds, and 9 of 10 variants pass, so TE is **robust**.
+The only failure is **rho95**.
+
+**What the failure means; it matters more than the count:**
+- At rho = 0.95, unobserved common noise produces **as much TE as K = 40 coupling** (0.0244 vs 0.0240).
+- TE therefore does *not* separate coupling from common input in principle. It separates them only when the
+  coupling-generated TE exceeds what the common input generates. The variants that kept passing at rho = 0.95 (K60,
+  M4) did so because their emergent TE was larger, not because common noise stopped producing TE.
+- The cross-trial control locates the effect.
+  - **Driven (narrowband shared input):** TE is almost entirely estimator bias / own-phase predictability (excess
+    about 0.0004).
+  - **Common white noise:** it creates *genuine* lagged inter-unit predictability (excess 0.002-0.018, growing with
+    rho). Units with different natural frequencies respond to the same noise kicks at different phases.
+- So TE measures **inter-unit phase predictability**, not coupling as such.
+
+**Consequence for an H3 redesign (interpretation, not a decision):**
+- TE could only serve as an *emergent-coupling* index on real data if the strength of unobserved common input can be
+  bounded independently. One example is showing that the TE pattern is not explained by a common-input model fitted
+  to the same data.
+- Without such a bound, a wheel > maze difference in TE would still be ambiguous between "more coupling" and "more
+  shared input".
+- This is a design question for Tom before any hc-5 work.
