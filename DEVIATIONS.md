@@ -68,3 +68,36 @@ per channel per trial. The first and last 0.1 s are discarded. All statistics po
   implementations were validated on toy systems with known answers (`tests/test_mechanism.py`) before any
   evaluation seed: S_couple is monotone in K but attenuated by the 6-10 Hz filter; TE recovers the direction of a
   unidirectional coupling; S_resid falls to the 1-s PLV noise floor (~0.45) for a common-input system.
+| 12 | 2026-10-28 | **TE re-validation (Tom: "go").** Exploratory and synthetic only; Phase 3 still not started. | DEVIATIONS 11 requires a passing statistic to be re-validated on fresh seeds and at other settings before any use in H3. Everything below was frozen **before** this run. |
+
+### DEVIATION 12: protocol (frozen 2026-10-28, before any re-validation run)
+**Statistic.** S_TE exactly as in DEVIATIONS 11 (8 bins, delay 8 samples, 6-10 Hz, plug-in, mean over ordered
+pairs).
+*Secondary, descriptive:* **S_TE_excess** = S_TE minus the same statistic computed with each source unit taken from a
+*different trial* (a fixed random derangement of trials). This measures how much of TE is genuinely between units
+rather than estimator bias or own-phase predictability.
+
+**Seeds.** **10-19** (fresh; the screen used 0-9). The seed is the unit. Calibration uses seed 999 only.
+
+**Conditions.** The base condition plus 10 one-at-a-time variants. Every generator in a condition uses that condition's
+setting.
+| id | change from base (M = 8 units, K = 40, rho = 0.85, 1 s windows, no observation noise) | rho for DRIVEN_COMMON |
+|---|---|---|
+| base | none | 0.85 (DEVIATIONS 11) |
+| K25 / K60 | emergent coupling K = 25 / 60 | recalibrated* |
+| rho70 / rho95 | DRIVEN_COMMON rho = 0.70 / 0.95 | fixed by definition |
+| M4 / M16 | 4 / 16 units (graph density 0.35, kept connected) | recalibrated* |
+| win05 / win2 | 0.5 s / 2 s windows | recalibrated* |
+| snr10 / snr0 | white observation noise at 10 / 0 dB (vs. the channel's signal variance), added before z-scoring | recalibrated* |
+
+\*Recalibration uses the frozen DEVIATIONS 11 rule: on seed 999, pick rho from {0.3, 0.5, 0.7, 0.85, 0.95} with mean
+pairwise PLV closest to EMERGENT's in the same condition.
+
+**Criteria.**
+- *Per condition:* the DEVIATIONS 11 criterion (>= 9/10 seeds with the same sign and a 95% bootstrap CI excluding 0,
+  for both E-D and E-DC, with the same sign in both).
+- **Primary:** TE must pass the *base* condition on fresh seeds 10-19.
+- **Robustness:** TE is called robust if it also passes in **>= 8 of the 10 variants**. Every failing variant is
+  listed with its numbers. (This threshold is Claude's proposal, fixed here before running.)
+- **Use in H3:** TE becomes a candidate for an H3 redesign only if both the primary and the robustness criteria hold.
+  Even then, it says nothing about real data until tested there.
