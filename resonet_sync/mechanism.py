@@ -172,3 +172,12 @@ def s_gc(GC):
 def s_inst(C):
     iu = np.triu_indices(C.shape[0], 1)
     return float(np.abs(C[iu]).mean())
+
+
+def inst_corr(X, p=GC_ORDER):
+    """Full-model residual correlation only (identical to gc_inst's C, without the per-source refits)."""
+    X = np.asarray(X, float)
+    X = (X - X.mean(-1, keepdims=True)) / (X.std(-1, keepdims=True) + 1e-12)
+    Y, R = _lagged_design(X, p)
+    B, *_ = np.linalg.lstsq(R, Y, rcond=None)
+    return np.corrcoef((Y - R @ B).T)
