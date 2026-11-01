@@ -122,3 +122,26 @@ and E-DC, same sign). S_GC **succeeds** only if it passes in **all three** condi
 **Known caveat (stated before running).** The generators decimate 1000 -> 250 Hz with a *zero-phase* FIR. Its
 symmetric smearing can turn instantaneous correlation into short two-sided lagged dependence, and GC is sensitive
 to that. The caveat applies equally to all generators but is reported with the result.
+| 14 | 2026-11-01 | **Confirmatory screen 4: the post-hoc conjunction rule from DEVIATIONS 13.** Synthetic only. | Screen 3 suggested, post hoc, that "high TE AND low instantaneous residual correlation" separates emergent coupling from both driven generators. A post-hoc rule needs an independent confirmatory test. Frozen before any seed 30-39 dataset was generated. |
+
+### DEVIATION 14: protocol (frozen 2026-11-01, before any run)
+**Rule.** A dataset is classified **emergent** iff S_TE > t_TE **and** S_inst < t_inst. Statistics are exactly as in
+DEVIATIONS 11 and 13.
+
+**Thresholds** are fixed now from the screen-3 *base* condition (seeds 20-29), as midpoints of generator means, and
+are never re-tuned:
+- t_TE = (mean S_TE of E + mean S_TE of D) / 2 = **0.015295**
+- t_inst = (mean S_inst of E + mean S_inst of DC) / 2 = **0.111262**
+
+**Data.** **Fresh seeds 30-39.**
+- Conditions: base, rho70, rho95, K25, K60, M16, win05, snr0.
+- rho for the recalibrated variants is taken from the DEVIATIONS 12 calibration (K25 0.70, K60 0.95, M16 0.70,
+  win05 0.85, snr0 0.85).
+
+**Success criterion (per condition).**
+- >= 9/10 EMERGENT datasets are classified emergent.
+- >= 9/10 DRIVEN datasets and >= 9/10 DRIVEN_COMMON datasets are classified not emergent.
+
+The rule is **confirmed** if it succeeds in base, rho70 and rho95 (primary: the common-input confound) **and** in at
+least 4 of the 5 other variants. Thresholds are in absolute units and are not adapted per condition, so the variants
+also test whether fixed thresholds transfer. That transfer is a precondition for any use on real data.
