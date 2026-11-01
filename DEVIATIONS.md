@@ -145,3 +145,14 @@ are never re-tuned:
 The rule is **confirmed** if it succeeds in base, rho70 and rho95 (primary: the common-input confound) **and** in at
 least 4 of the 5 other variants. Thresholds are in absolute units and are not adapted per condition, so the variants
 also test whether fixed thresholds transfer. That transfer is a precondition for any use on real data.
+| 15 | 2026-11-01 | **Boundary test 5: strong common input x low SNR** for the DEVIATIONS 14 rule. Synthetic only. | Screen 4 caveat 1: at 0 dB the instantaneous leg collapsed, and common input was rejected by TE alone, which fails at rho = 0.95. The combination was untested. Frozen before any run. |
+
+### DEVIATION 15: protocol (frozen 2026-11-01, before any run)
+- **Rule and thresholds unchanged** from DEVIATIONS 14 (t_TE = 0.015295, t_inst = 0.111262).
+- **Fresh seeds 40-49.** rho is fixed at **0.95** in every condition (no recalibration; strong common input is the
+  point). White observation noise is set at **20, 10, 5 and 0 dB** (four conditions, all three generators).
+- **Per condition:** the success criterion from DEVIATIONS 14 (>= 9/10 correct for each generator).
+- **Reported:** the lowest SNR at which the rule still succeeds. This defines its *operating range*. Real-data use
+  would require the recording's SNR in the theta band to lie inside that range, estimated on train data only.
+- **Expectation stated in advance:** failure at 0 dB is likely. A failure is the informative result here, not a
+  problem to tune away.
