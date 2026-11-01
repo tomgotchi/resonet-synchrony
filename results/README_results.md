@@ -189,3 +189,32 @@ The only failure is **rho95**.
 - Without such a bound, a wheel > maze difference in TE would still be ambiguous between "more coupling" and "more
   shared input".
 - This is a design question for Tom before any hc-5 work.
+
+## Screen 3: lagged (conditional Granger) vs instantaneous dependence (DEVIATIONS 13; fresh seeds 20-29; `results/screen3/`)
+
+| condition | statistic | E / D / DC | E - D (seeds) | E - DC [95% CI] (seeds) | pass |
+|---|---|---|---|---|---|
+| base | **S_GC** | 0.0027 / 0.0005 / **0.0048** | +0.0022 (10/10) | **-0.0021** [-0.0024, -0.0018] (10/10) | no (opposite signs) |
+| rho70 | S_GC | 0.0027 / 0.0005 / 0.0023 | +0.0022 (10/10) | +0.0004 [+0.0003, +0.0005] (10/10) | yes |
+| rho95 | S_GC | 0.0027 / 0.0005 / **0.0081** | +0.0022 (10/10) | **-0.0054** (10/10) | no |
+| base / rho70 / rho95 | S_inst | E 0.027, D 0.004, DC 0.196 / 0.132 / 0.247 | +0.023 (10/10) | -0.17 / -0.10 / -0.22 (10/10) | no (opposite signs) |
+| base / rho70 / rho95 | S_TE (reference) | as in DEVIATIONS 12 | +0.017 (10/10) | +0.011 / +0.015 / **-0.0007 (6/10)** | yes / yes / no |
+
+**Verdict (frozen rule): S_GC fails.** It does not pass all three conditions; it passes only rho70.
+
+**Reading:**
+- **The caveat stated before the run materialised.** With an unobserved common input, only the real part observed,
+  and zero-phase decimation, the shared noise produces *more* lagged Granger influence than the true coupling
+  (0.0048-0.0081 vs 0.0027). This is the known failure of GC under latent confounding and partial observation.
+- The TE results replicate on a third independent seed set: it passes base and rho70 and fails rho95, exactly as in
+  DEVIATIONS 12.
+- **Post-hoc observation (NOT a result; it would need its own frozen test):** instantaneous residual correlation is
+  about 10x higher for common noise (0.13-0.25) than for coupling (0.027), even at rho95.
+  - A *two-statistic* rule, "high TE **and** low instantaneous correlation", separates emergent from both driven
+    generators in every condition in these numbers.
+  - That rule was chosen after seeing the data, so it is a hypothesis for a new pre-registered screen on fresh
+    seeds 30-39 and further variants. It is not a finding.
+
+**Where this leaves the H3 redesign (for Tom):** none of the pre-registered single statistics separates coupling
+from strong unobserved common input. The most promising lead is the post-hoc conjunction (lagged predictability
+together with low instantaneous dependence). It needs a frozen confirmatory screen before it can be considered.
