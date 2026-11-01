@@ -218,3 +218,40 @@ The only failure is **rho95**.
 **Where this leaves the H3 redesign (for Tom):** none of the pre-registered single statistics separates coupling
 from strong unobserved common input. The most promising lead is the post-hoc conjunction (lagged predictability
 together with low instantaneous dependence). It needs a frozen confirmatory screen before it can be considered.
+
+## Screen 4: confirmatory test of the TE-and-low-instantaneous rule (DEVIATIONS 14; fresh seeds 30-39; `results/screen4/`)
+
+Rule: a dataset is **emergent** iff S_TE > 0.015295 **and** S_inst < 0.111262. Both thresholds were frozen from
+seeds 20-29.
+
+| condition | emergent called emergent | DRIVEN called not | DRIVEN_COMMON called not | success | mean S_inst E / D / DC |
+|---|---|---|---|---|---|
+| base | 10/10 | 10/10 | 10/10 | yes | 0.027 / 0.005 / 0.184 |
+| rho70 | 10/10 | 10/10 | 10/10 | yes | 0.027 / 0.005 / 0.124 |
+| **rho95** | 10/10 | 10/10 | **10/10** | **yes** | 0.027 / 0.005 / 0.231 |
+| K25 | 9/10 | 10/10 | 10/10 | yes | 0.019 / 0.005 / 0.124 |
+| K60 | 10/10 | 10/10 | 10/10 | yes | 0.038 / 0.005 / 0.231 |
+| M16 | 10/10 | 10/10 | 10/10 | yes | 0.014 / 0.004 / 0.133 |
+| win05 | 10/10 | 10/10 | 10/10 | yes | 0.028 / 0.005 / 0.182 |
+| snr0 | 10/10 | 10/10 | 10/10 | yes | 0.024 / 0.004 / **0.027** |
+
+**Verdict (frozen rule): CONFIRMED.** It succeeds in all 3 primary conditions, including rho95, the case TE alone
+failed, and in 5/5 variants.
+
+**Caveats; these limit how far this goes:**
+1. **At 0 dB observation noise, the instantaneous leg collapses.** DRIVEN_COMMON's S_inst falls from 0.18 to 0.027,
+   the same as emergent, because independent sensor noise dilutes the shared innovation. In snr0 the common-input
+   datasets were rejected by **TE alone**. A combination this screen did not test (rho95 together with low SNR) would
+   very likely fail, since TE alone cannot reject rho95.
+2. **The margins are thin in places.** K25 lost one emergent dataset (S_TE 0.0161 vs threshold 0.0153).
+3. **The absolute thresholds will not transfer to real data.** Units depend on the number of channels, window,
+   bandwidth and SNR. Real-data use needs thresholds calibrated against a fitted null model of the same recording
+   (for example, a common-input-only model fitted to it), not these numbers.
+4. Synthetic, single generator family, Stuart-Landau units, linear diffusive coupling. Confirmed **only** as a
+   mechanism-level discriminator in this setting.
+
+**Status for the H3 redesign:** this is the first candidate that passed a pre-registered confirmatory test,
+including the common-input confound. Before any hc-5 use, the remaining open items are:
+- caveat 1: a low-SNR x strong-common-input test;
+- caveat 3: a recording-specific null calibration;
+- the 102-channel region-map question.
