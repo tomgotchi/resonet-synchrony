@@ -125,3 +125,50 @@ def all_stats(X, fs=250.0):
     a = analytic(X, fs)
     TE = te_matrix(a)
     return dict(S_plv=s_plv(a), S_couple=s_couple(a, fs), S_TE=s_te(TE), S_asym=s_asym(TE), S_resid=s_resid(a))
+
+
+# ---------------------------------------------------------------- DEVIATIONS 13: lagged vs instantaneous
+GC_ORDER = 25
+
+
+def _lagged_design(X, p):
+    """X: (n_trials, M, T) -> Y (rows, M) targets and R (rows, M*p) lags [x(t-1)..x(t-p)]; no cross-trial lags."""
+    n, M, T = X.shape
+    Ys, Rs = [], []
+    for x in X:
+        Y = x[:, p:].T                                            # (T-p, M)
+        R = np.concatenate([x[:, p - k:T - k].T for k in range(1, p + 1)], axis=1)   # (T-p, M*p), lag-major
+        Ys.append(Y); Rs.append(R)
+    return np.concatenate(Ys), np.concatenate(Rs)
+
+
+def gc_inst(X, p=GC_ORDER):
+    """Conditional Granger matrix GC[j, i] (j -> i) from a pooled VAR(p), and the full-model residual
+    correlation matrix (instantaneous dependence)."""
+    X = np.asarray(X, float)
+    X = (X - X.mean(-1, keepdims=True)) / (X.std(-1, keepdims=True) + 1e-12)
+    Y, R = _lagged_design(X, p)
+    M = Y.shape[1]
+    B, *_ = np.linalg.lstsq(R, Y, rcond=None)
+    E = Y - R @ B
+    v_full = E.var(0)
+    GC = np.zeros((M, M))
+    lag_cols = np.arange(R.shape[1]).reshape(p, M)                # column index = lag*M + channel
+    for j in range(M):
+        keep = np.setdiff1d(np.arange(R.shape[1]), lag_cols[:, j])
+        Bj, *_ = np.linalg.lstsq(R[:, keep], Y, rcond=None)
+        vj = (Y - R[:, keep] @ Bj).var(0)
+        GC[j] = np.log(vj / v_full)
+    np.fill_diagonal(GC, 0.0)
+    C = np.corrcoef(E.T)
+    return GC, C
+
+
+def s_gc(GC):
+    M = GC.shape[0]
+    return float(GC[~np.eye(M, dtype=bool)].mean())
+
+
+def s_inst(C):
+    iu = np.triu_indices(C.shape[0], 1)
+    return float(np.abs(C[iu]).mean())

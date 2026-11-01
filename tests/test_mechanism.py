@@ -61,3 +61,29 @@ def test_residual_coherence_removes_a_common_mode():
     assert p1 > 0.8                       # raw coherence is high for the common-input system
     assert abs(r1 - floor) < 0.06         # ...and falls to the noise floor after removing the common mode
     assert r2 > floor + 0.05, (floor, r1, r2)   # a second independent cluster survives
+
+
+def _ar_pair(coupling, common, n_tr=40, T=300, seed=0):
+    """Two damped AR(2) oscillators (~8 Hz @250 Hz); 'coupling' feeds x0(t-1) into x1; 'common' adds a shared
+    white innovation to both."""
+    rng = np.random.default_rng(seed)
+    r, th = 0.95, 2 * np.pi * 8 / 250
+    a1, a2 = 2 * r * np.cos(th), -r * r
+    out = []
+    for _ in range(n_tr):
+        x = np.zeros((2, T + 50))
+        for t in range(2, T + 50):
+            c = rng.standard_normal()
+            e = rng.standard_normal(2) * np.sqrt(1 - common ** 2) + common * c
+            x[:, t] = a1 * x[:, t - 1] + a2 * x[:, t - 2] + e
+            x[1, t] += coupling * x[0, t - 1]
+        out.append(x[:, 50:])
+    return np.asarray(out)
+
+
+def test_gc_finds_lagged_direction_and_ignores_common_noise():
+    GCc, Cc = Mx.gc_inst(_ar_pair(0.4, 0.0), p=10)
+    assert GCc[0, 1] > 10 * GCc[1, 0] and GCc[0, 1] > 0.05      # 0 -> 1 detected, not 1 -> 0
+    GCn, Cn = Mx.gc_inst(_ar_pair(0.0, 0.9), p=10)
+    assert Mx.s_gc(GCn) < 0.01                                   # common white noise: no lagged influence
+    assert Mx.s_inst(Cn) > 0.7 and Mx.s_inst(Cc) < 0.2           # ...but strong instantaneous dependence
