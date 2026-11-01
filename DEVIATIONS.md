@@ -101,3 +101,24 @@ pairwise PLV closest to EMERGENT's in the same condition.
   listed with its numbers. (This threshold is Claude's proposal, fixed here before running.)
 - **Use in H3:** TE becomes a candidate for an H3 redesign only if both the primary and the robustness criteria hold.
   Even then, it says nothing about real data until tested there.
+| 13 | 2026-11-01 | **Exploratory screen 3: lagged vs instantaneous dependence.** Synthetic only; Phase 3 still not started. | DEVIATIONS 12 showed TE cannot separate coupling from strong unobserved common noise (rho = 0.95). Coupling predicts *lagged* influence. Common white noise mainly predicts *instantaneous* innovation correlation. This screen tests a statistic built on that difference. Frozen before any run. |
+
+### DEVIATION 13: protocol (frozen 2026-11-01, before any run)
+**Model.** For each dataset, a VAR(p) with p = 25 samples (100 ms, about one theta cycle; fixed a priori, not
+selected) is fit by OLS on the 8 observed, z-scored channels. The fit pools within-trial samples across the
+400 train trials, and lags never cross trial boundaries.
+- **S_GC** (candidate) = mean over ordered pairs (j -> i) of the conditional Granger index
+  log(var(e_i | model without j's lags) / var(e_i | full model)).
+- **S_inst** (descriptive) = mean |correlation| between full-model residuals of channel pairs (instantaneous
+  dependence).
+- **S_TE** (reference) = the DEVIATIONS 11 statistic, recomputed for comparison.
+
+**Data.** Generators as in DEVIATIONS 12. **Fresh seeds 20-29** (0-9 and 10-19 are used). Conditions: **base**
+(rho 0.85), **rho70** and **rho95** (rho95 is the case TE failed).
+
+**Criterion.** The DEVIATIONS 11 rule (>= 9/10 seeds with the same sign, 95% bootstrap CI excluding 0, for both E-D
+and E-DC, same sign). S_GC **succeeds** only if it passes in **all three** conditions, including rho95.
+
+**Known caveat (stated before running).** The generators decimate 1000 -> 250 Hz with a *zero-phase* FIR. Its
+symmetric smearing can turn instantaneous correlation into short two-sided lagged dependence, and GC is sensitive
+to that. The caveat applies equally to all generators but is reported with the result.
