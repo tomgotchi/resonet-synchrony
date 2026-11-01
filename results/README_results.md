@@ -255,3 +255,29 @@ including the common-input confound. Before any hc-5 use, the remaining open ite
 - caveat 1: a low-SNR x strong-common-input test;
 - caveat 3: a recording-specific null calibration;
 - the 102-channel region-map question.
+
+## Boundary test 5: strong common input x observation SNR (DEVIATIONS 15; fresh seeds 40-49; `results/screen5/`)
+
+rho = 0.95 throughout. Rule and thresholds unchanged from DEVIATIONS 14.
+
+| obs. SNR | emergent called emergent | DRIVEN called not | DRIVEN_COMMON called not | success | S_inst E / DC |
+|---|---|---|---|---|---|
+| 20 dB | 10/10 | 10/10 | 10/10 | yes | 0.028 / 0.206 |
+| 10 dB | 10/10 | 10/10 | **2/10** | **no** | 0.029 / 0.106 |
+| 5 dB | 10/10 | 10/10 | 0/10 | no | 0.028 / 0.068 |
+| 0 dB | 10/10 | 10/10 | 0/10 | no | 0.025 / 0.042 |
+
+**Verdict: the operating range under strong common input is observation SNR >= 20 dB only.**
+- Below that, independent sensor noise dilutes the instantaneous residual correlation that marks a shared input.
+  DRIVEN_COMMON then looks emergent, because its TE stays as high as coupling's.
+- The failure is one-sided and dangerous: **common input gets called emergent coupling, not the other way round.**
+  On real data that is the error that would produce a false positive for H3.
+
+**Implications (for Tom; no redesign is decided here):**
+- The confirmed rule (screen 4) holds across coupling strength, network size, window length and SNR *at moderate
+  common input*. Against *strong* common input it needs high observation SNR.
+- Using it on hc-5 would need a train-split estimate of the theta-band observation SNR and of the plausible
+  common-input strength. Neither is directly measurable from the recording alone.
+- **A possible fix to test next, not done here:** an SNR-invariant version of the instantaneous statistic. For
+  example, normalise the residual correlation by each channel's estimated noise-free residual variance, or use partial
+  coherence at lag 0 after a noise-floor correction. Any such fix would need its own frozen screen.
