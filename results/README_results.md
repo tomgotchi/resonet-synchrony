@@ -321,3 +321,22 @@ before these seeds existed.
 to separate emergent coupling from common input across the SNR range. A redesigned H3 could use it as a
 *regime-classification* step (wheel vs maze: is the inter-channel dependence coupling-like?) before, or instead of,
 the nl-vs-lin decoder contrast that Phase 2 showed to be uninformative.
+
+## Pilot (seed 999 only, not a screen): recording-specific null via a no-coupling LDS. NEGATIVE
+
+- *Idea:* replace the absolute thresholds by a null fitted to the recording itself. Fit an LDS with block-diagonal A
+  (no coupling), full Q (common input allowed) and diagonal R; simulate it; ask whether the observed S_TE exceeds the
+  null's 95th percentile (`lds.null_te_test`).
+- *Result:* **every** generator exceeded its null, DRIVEN and DRIVEN_COMMON included (null S_TE about 0.007-0.014 vs
+  observed 0.007-0.025), so the test is anti-conservative.
+- *Diagnosis:* even the *unconstrained* LDS, simulated back, reproduces only about 2/3 of the data's TE
+  (0.017 vs 0.025) and PLV of 0.57 vs 0.80. A linear-Gaussian model cannot regenerate the phase structure of these
+  weakly nonlinear (Stuart-Landau) networks, and DRIVEN's coloured, oscillatory shared input is outside its null
+  family entirely.
+- *Consequence:* linear-LDS *simulation* nulls are not usable. The LDS remains useful as a *denoiser* of
+  instantaneous structure (screen 6), where misspecification did not matter empirically.
+- Recording-specific calibration still needs either a nonlinear generative null (for example, fitted
+  noise-driven Stuart-Landau units with common input and no coupling) or an empirical calibration within the
+  recording (for example, contrasting epochs or channel pairs whose common-input exposure is known). Both are open
+  design choices for Tom.
+- The code is kept in `lds.py` (`em_fit(coupled=False)`, `null_te_test`) and marked as not validated.

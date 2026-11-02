@@ -25,8 +25,10 @@ def _init(M, fs, f0=8.0, r=0.98, q=0.05, rv=0.5):
     return A, Q, R, C
 
 
-def em_fit(X, fs=250.0, n_iter=60, tol=1e-5, max_trials=None, seed=0, verbose=False):
-    """X: (n_trials, M, T) z-scored observations. Returns dict(A, Q, R, C, loglik history)."""
+def em_fit(X, fs=250.0, n_iter=60, tol=1e-5, max_trials=None, seed=0, verbose=False, coupled=True):
+    """X: (n_trials, M, T) z-scored observations. Returns dict(A, Q, R, C, loglik history).
+    coupled=False constrains A to be block-diagonal (NO inter-unit coupling; common input still allowed
+    through the full Q): the recording-specific null model (DEVIATIONS 17)."""
     X = np.asarray(X, float)
     X = (X - X.mean(-1, keepdims=True)) / (X.std(-1, keepdims=True) + 1e-12)
     if max_trials and len(X) > max_trials:
@@ -75,15 +77,22 @@ def em_fit(X, fs=250.0, n_iter=60, tol=1e-5, max_trials=None, seed=0, verbose=Fa
             S11 += n * Ps[t] + ms[t].T @ ms[t]
             S10 += n * Ps[t] @ J[t - 1].T + ms[t].T @ ms[t - 1]
             S00 += n * Ps[t - 1] + ms[t - 1].T @ ms[t - 1]
-        A = S10 @ np.linalg.inv(S00)
-        Q = (S11 - A @ S10.T) / (n * (T - 1))
+        if coupled:
+            A = S10 @ np.linalg.inv(S00)
+            Q = (S11 - A @ S10.T) / (n * (T - 1))
+        else:                                   # block-diagonal A: each unit's rows use only its own state
+            A = np.zeros((D, D))
+            for u in range(M):
+                b = slice(2 * u, 2 * u + 2)
+                A[b, b] = S10[b, b] @ np.linalg.inv(S00[b, b])
+            Q = (S11 - A @ S10.T - S10 @ A.T + A @ S00 @ A.T) / (n * (T - 1))
         Q = (Q + Q.T) / 2 + 1e-8 * np.eye(D)
         r = np.zeros(M)
         for t in range(T):
             e = Y[t] - ms[t] @ C.T
             r += (e ** 2).sum(0) + n * np.einsum("ij,jk,ik->i", C, Ps[t], C)
         R = np.maximum(r / (n * T), 1e-6)
-    return dict(A=A, Q=Q, R=R, C=C, loglik=hist, n_trials=n, iterations=len(hist))
+    return dict(A=A, Q=Q, R=R, C=C, loglik=hist, n_trials=n, iterations=len(hist), coupled=coupled)
 
 
 def block_stats(fit):
@@ -130,3 +139,27 @@ def denoised_stats(fit, p=25, n=200, T=250, seed=0):
     GC, C = Mx.gc_inst(Z, p)
     return dict(S_GC_dn=Mx.s_gc(GC), S_inst_dn=Mx.s_inst(C), unstable=False,
                 GC=GC.tolist(), inst=C.tolist())
+
+
+def simulate_observed(fit, n=150, T=250, burn=100, seed=0):
+    """Full generative model INCLUDING sensor noise R: y_t = C x_t + v_t. Returns (n, M, T)."""
+    rng = np.random.default_rng(seed)
+    Z = simulate_denoised(fit, n, T, burn, seed)
+    return Z + np.sqrt(fit["R"])[None, :, None] * rng.standard_normal(Z.shape)
+
+
+def null_te_test(X, fs=250.0, n_null=20, n_iter=200, tol=1e-6, max_trials=150, seed=0):  # NOT VALIDATED: anti-conservative in pilot (README_results)
+    """Recording-specific test: is S_TE larger than a no-coupling (block-diagonal A, full Q, diagonal R) LDS fitted
+    to the SAME data can produce? Returns observed S_TE, the null distribution and the exceedance."""
+    from . import mechanism as Mx
+    fit0 = em_fit(X, fs, n_iter=n_iter, tol=tol, max_trials=max_trials, seed=seed, coupled=False)
+    obs = Mx.s_te(Mx.te_matrix(Mx.analytic(X, fs)))
+    T = X.shape[-1]
+    null = []
+    for k in range(n_null):
+        Y = simulate_observed(fit0, n=len(X), T=T, seed=seed + 1000 + k)
+        null.append(Mx.s_te(Mx.te_matrix(Mx.analytic(Y, fs))))
+    null = np.asarray(null)
+    return dict(S_TE=float(obs), null_mean=float(null.mean()), null_q95=float(np.quantile(null, 0.95)),
+                exceed=bool(obs > np.quantile(null, 0.95)), p_emp=float((1 + np.sum(null >= obs)) / (1 + len(null))),
+                null_iterations=fit0["iterations"])
