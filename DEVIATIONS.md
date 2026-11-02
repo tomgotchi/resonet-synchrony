@@ -216,3 +216,26 @@ session.
 
 **Success.** All 8 scenario x SNR cells behave as the table requires. Any wrong firing in S2 or S3 (a false
 positive) is reported as a failure of the rule, whatever happens elsewhere.
+| 18 | 2026-11-02 | **Screen 8: scale-free guard for the within-session rule.** Synthetic only. | The DEVIATIONS 17 guard margin (+0.03 absolute) has no meaning on a real recording's scale. A ratio of the same statistic does. Frozen before any run on sessions 70-79. |
+
+### DEVIATION 18: protocol (frozen 2026-11-02)
+**Rule v2.** A is "more coupling-dominated than B" iff:
+- (i) Delta S_TE > 0 in >= 9/10 sessions with 95% CI > 0 (unchanged), **and**
+- (ii) the per-session relative change r_s = (S_inst_dn(A) - S_inst_dn(B)) / S_inst_dn(B) has an upper 95%
+  bootstrap CI **< 0.25**.
+
+*Rationale, from screen 7 (sessions 60-69), stated before this run:* r was about +0.04 when coupling rose and about
++1.4 in the common-input trap. The 0.25 margin is fixed now.
+
+**Data.** **Fresh sessions 70-79**, observation SNR **0 dB** throughout (the harder case). Scale-changing variants:
+| variant | change |
+|---|---|
+| M16 | 16 units |
+| win05 | 0.5 s windows |
+
+Scenarios per variant are S1 coupling-up, S2 trap, S3 null and S5 coupling-vs-common (as in DEVIATIONS 17). In
+addition there is **S2b, a mild trap** in the base configuration: A = (K 25, rho 0.7) vs B = (K 25, rho 0.5),
+which must **not fire**.
+
+**Success.** All 9 cells behave as required. A false positive in any trap or null cell is a failure of rule v2 and
+is reported as such.
