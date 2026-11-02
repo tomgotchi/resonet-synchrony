@@ -156,3 +156,32 @@ also test whether fixed thresholds transfer. That transfer is a precondition for
   would require the recording's SNR in the theta band to lie inside that range, estimated on train data only.
 - **Expectation stated in advance:** failure at 0 dB is likely. A failure is the informative result here, not a
   problem to tune away.
+| 16 | 2026-11-02 | **Screen 6: the SNR-robust rule with LDS-denoised instantaneous dependence.** Synthetic only. | Screen 5 found the DEVIATIONS 14 rule fails under strong common input below 20 dB, because sensor noise dilutes S_inst. Frozen before calibration and before any seed 50-59 dataset. |
+
+### DEVIATION 16: protocol (frozen 2026-11-02)
+**How the design was reached, on pilot seed 999 only:**
+1. Normalising the raw residual covariance by theta-band power failed. At 0 dB emergent rose to the common-input
+   level.
+2. Raw LDS block norms are not identifiable, because they depend on the latent basis.
+3. Adopted: denoise through a fitted latent LDS, then measure. On the pilot, S_inst_dn stayed separated at
+   every SNR (common input 0.19-0.24; emergent 0.03-0.04). The denoised GC again ranked common input above
+   coupling, so it is excluded.
+
+**Statistic S_inst_dn (`resonet_sync/lds.py`):**
+- Fit: EM for the latent LDS (one 2-D oscillator per channel, full A and Q, diagonal R), z-scored channels,
+  150 trials subsampled with seed 0, at most 200 iterations, tol 1e-6.
+- Then simulate the model-implied **noise-free** process (no R): 200 trials x 250 samples, burn-in 100, seed 0.
+- S_inst_dn = mean |residual correlation| of a VAR(25) on that process (the DEVIATIONS 13 definition).
+
+**Rule.** A dataset is **emergent** iff S_TE > 0.015295 (unchanged from DEVIATIONS 14) **and** S_inst_dn < t_dn.
+
+**Calibration (fixed now, run next).** t_dn = midpoint of the mean S_inst_dn of EMERGENT and DRIVEN_COMMON in the
+screen-3 *base* condition, seeds 20-29 (rho 0.85, no observation noise). It is committed before seeds 50-59 are
+generated and never re-tuned.
+
+**Confirmation.** **Fresh seeds 50-59.**
+- **Primary:** rho 0.95 x observation SNR {20, 10, 5, 0} dB, the exact failure grid of screen 5.
+- **Generalisation:** base, rho70, K25, M16, win05.
+
+**Criterion.** Per condition, >= 9/10 correct for each generator. **Confirmed** iff all 4 primary conditions succeed
+and >= 4 of the 5 generalisation conditions succeed.
