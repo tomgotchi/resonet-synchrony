@@ -54,6 +54,8 @@ def templates(seed, kind, p):
     m = p.get("M", M)                                   # DEVIATIONS 12 variants; default M = 8 (unchanged)
     rng = np.random.default_rng([seed, 7])
     w = 2 * np.pi * (8.0 + rng.uniform(-1, 1, m))
+    if p.get("f_shift_hz"):                             # DEVIATIONS 19: nuisance frequency shift (after the draw)
+        w = w + 2 * np.pi * p["f_shift_hz"]
     if kind == "driven":
         return dict(w=w, phi=rng.uniform(0, 2 * np.pi, (4, m)))
     if kind == "driven_common":

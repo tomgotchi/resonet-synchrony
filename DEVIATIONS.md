@@ -239,3 +239,22 @@ which must **not fire**.
 
 **Success.** All 9 cells behave as required. A false positive in any trap or null cell is a failure of rule v2 and
 is reported as such.
+| 19 | 2026-11-02 | **Screen 9: nuisance-confound traps for rule v2** (theta-frequency and SNR differences between regimes). Synthetic only. | The H3 redesign draft names theta-frequency and signal-strength differences between wheel and maze as possible confounds of Delta S_TE. They are untested. Frozen before any run on sessions 80-89. |
+
+### DEVIATION 19: protocol (frozen 2026-11-02)
+**Rule v2** is unchanged from DEVIATIONS 18. Generator `mixed` with K = 25 and rho = 0.5 in **both** regimes
+(identical mechanism), except where noted. New parameter `f_shift_hz` adds a constant to all units' natural
+frequencies, applied after the seeded draw (so templates are otherwise identical).
+| cell | A | B | must |
+|---|---|---|---|
+| F1 freq up | f_shift +1 Hz, 10 dB | 0 Hz, 10 dB | not fire |
+| F2 freq down | f_shift -1 Hz, 10 dB | 0 Hz, 10 dB | not fire |
+| N1 SNR up | 10 dB | 0 dB | not fire |
+| N2 SNR down | 0 dB | 10 dB | not fire |
+| C1 control: coupling up | K 40, 10 dB | K 25, 10 dB | **fire** |
+
+**Data.** Fresh sessions 80-89, independent trial streams for A and B.
+
+**Success.** All 5 cells as required. Any firing in F1, F2, N1 or N2 is a **false positive caused by a nuisance
+variable**. It would invalidate H3' as drafted unless the corresponding nuisance is matched or adjusted in the hc-5
+design.
