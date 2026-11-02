@@ -281,3 +281,43 @@ rho = 0.95 throughout. Rule and thresholds unchanged from DEVIATIONS 14.
 - **A possible fix to test next, not done here:** an SNR-invariant version of the instantaneous statistic. For
   example, normalise the residual correlation by each channel's estimated noise-free residual variance, or use partial
   coherence at lag 0 after a noise-floor correction. Any such fix would need its own frozen screen.
+
+## Screen 6: SNR-robust rule with LDS-denoised instantaneous dependence (DEVIATIONS 16; fresh seeds 50-59; `results/screen6/`)
+
+Rule: a dataset is **emergent** iff S_TE > 0.015295 **and** S_inst_dn < 0.115964. Both thresholds were frozen
+before these seeds existed.
+
+| condition | E called emergent | D called not | DC called not | success | S_inst_dn E / D / DC |
+|---|---|---|---|---|---|
+| **rho95, 20 dB** | 10/10 | 10/10 | 10/10 | yes | 0.032 / 0.008 / 0.219 |
+| **rho95, 10 dB** | 10/10 | 10/10 | 10/10 | yes | 0.030 / 0.015 / 0.225 |
+| **rho95, 5 dB** | 10/10 | 10/10 | 10/10 | yes | 0.033 / 0.020 / 0.224 |
+| **rho95, 0 dB** | 10/10 | 10/10 | 10/10 | yes | 0.047 / 0.025 / 0.192 |
+| base | 10/10 | 10/10 | 10/10 | yes | 0.035 / 0.009 / 0.195 |
+| rho70 | 10/10 | 10/10 | 10/10 | yes | 0.035 / 0.009 / 0.132 |
+| K25 (weak coupling) | **6/10** | 10/10 | 10/10 | **no** | 0.024 / 0.009 / 0.132 |
+| M16 | 10/10 | 10/10 | 10/10 | yes | 0.020 / 0.008 / 0.130 |
+| win05 | 10/10 | 10/10 | 10/10 | yes | 0.026 / 0.010 / 0.195 |
+
+**Verdict (frozen rule): CONFIRMED.** It succeeds in all 4 primary conditions (strong common input from 20 dB down to
+0 dB) and in 4/5 generalisation conditions.
+
+**Reading:**
+- **The screen-5 failure is fixed.** Denoising through a fitted latent LDS keeps the common-input signature at every
+  SNR tested (S_inst_dn 0.19-0.23 vs 0.03-0.05 for emergent). The raw statistic had fallen to 0.04 at 0 dB.
+- **Across all 270 datasets (90 per generator), no driven or common-input dataset was ever called emergent.**
+  Within this synthetic family the rule makes no false positives, which is the error that would matter for H3.
+- **Its only failure is conservative.** With weak coupling (K25) it misses 4/10 emergent datasets, because their TE
+  falls just under the fixed TE threshold (0.0159 vs 0.0153). It under-claims coupling and never over-claims it.
+- **One trend to watch.** At 0 dB, emergent S_inst_dn creeps up (0.047), still well below the threshold (0.116).
+
+**Limits (unchanged in kind):**
+- Synthetic Stuart-Landau networks only, and the LDS is a linear approximation of them.
+- The thresholds are absolute and generator-specific. Real-data use needs recording-specific null calibration.
+- This is a mechanism-level discriminator. It is not yet evidence about hippocampus, and it says nothing about class
+  information (H3 asks about the *coupling advantage* for decoding).
+
+**Status for the H3 redesign (Tom's decision):** this is the first rule shown, with a pre-registered confirmation,
+to separate emergent coupling from common input across the SNR range. A redesigned H3 could use it as a
+*regime-classification* step (wheel vs maze: is the inter-channel dependence coupling-like?) before, or instead of,
+the nl-vs-lin decoder contrast that Phase 2 showed to be uninformative.
