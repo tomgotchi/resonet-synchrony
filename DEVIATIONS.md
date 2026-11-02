@@ -185,3 +185,5 @@ generated and never re-tuned.
 
 **Criterion.** Per condition, >= 9/10 correct for each generator. **Confirmed** iff all 4 primary conditions succeed
 and >= 4 of the 5 generalisation conditions succeed.
+- *Calibration outcome (2026-11-02, seeds 20-29 base):* mean S_inst_dn was EMERGENT 0.0352 and DRIVEN_COMMON 0.1967,
+  giving **t_dn = 0.115964**. Committed before any seed 50-59 dataset was generated.
