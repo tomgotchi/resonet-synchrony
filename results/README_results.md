@@ -380,3 +380,41 @@ decoder advantage" contrast, which Phase 2 showed cannot detect emergence, with 
 regime contrast. Wheel would count as more coupling-dominated than maze iff its TE is higher *and* its LDS-denoised
 instantaneous dependence is not, across sessions. The margin would be calibrated within each session from
 split-half nulls.
+
+## Screen 8: scale-free relative guard (DEVIATIONS 18; fresh sessions 70-79; 0 dB throughout; `results/screen8/`)
+
+Rule v2: Delta S_TE > 0 (>= 9/10 sessions, CI > 0) **and** the relative change in S_inst_dn
+(A - B) / B has an upper CI < **0.25**. No absolute threshold is used anywhere.
+
+| cell | Delta S_TE [CI] (n > 0) | relative Delta S_inst_dn [CI] | fires | should | correct |
+|---|---|---|---|---|---|
+| S1 coupling up, M16 | +0.0058 [+0.0054, +0.0062] (10) | +0.017 [-0.011, +0.042] | yes | yes | yes |
+| S1 coupling up, win05 | +0.0053 [+0.0047, +0.0059] (10) | +0.094 [-0.019, **+0.220**] | yes | yes | yes |
+| S2 trap, M16 | **+0.0056 (10)** | +1.89 | no | no | yes |
+| S2 trap, win05 | **+0.0039 (10)** | +1.91 | no | no | yes |
+| S3 null, M16 | +0.0001 (6) | -0.023 | no | no | yes |
+| S3 null, win05 | -0.0003 (4) | +0.037 | no | no | yes |
+| S5 coupling vs common, M16 | +0.0019 (10) | -0.84 | yes | yes | yes |
+| S5 coupling vs common, win05 | +0.0066 (10) | -0.74 | yes | yes | yes |
+| **S2b mild trap (rho 0.5 -> 0.7)** | **+0.0012 [+0.0005, +0.0019] (9)** | **+0.77** [+0.65, +0.90] | no | no | yes |
+
+**Verdict (frozen rule): all 9 cells correct, with no false positives and no misses.** The rule held at 0 dB in
+16-unit networks and 0.5 s windows, where absolute statistic scales differ.
+
+**Reading:**
+- **Both traps would have fooled TE alone.** Even the *mild* common-input increase (rho 0.5 -> 0.7) raised TE
+  significantly (9/10 sessions, CI > 0). The relative guard blocked it (+77% in S_inst_dn). Pure coupling increases
+  move S_inst_dn by only about 2-9%.
+- **One near-miss to note.** For S1 in short windows (win05), the guard's upper CI reached +0.22, against the
+  0.25 margin. With noisier statistics (0.5 s windows, 0 dB) the guard comes close to blocking a true coupling
+  increase. Its errors are therefore conservative (missing coupling, not inventing it), but its sensitivity drops in
+  short or noisy data.
+
+**Cumulative status of the within-session rule (screens 7 + 8):**
+- 17/17 cells correct across 20 sessions.
+- Every trap and every null was correctly rejected, at 20 dB and at 0 dB, across 8-unit and 16-unit networks and
+  1 s and 0.5 s windows.
+- It uses only within-session differences and a scale-free margin, which is the form needed for wheel vs maze in
+  hc-5.
+- Still synthetic, with one model family (noise-driven Stuart-Landau, linear diffusive coupling). Application to hc-5
+  remains Tom's decision and would need its own PREREG.
