@@ -37,6 +37,8 @@ DEFAULTS = dict(
     driven_common=dict(lam=-2 * np.pi * 1.0, sigma=6.0, rho=0.85),
 )
 KINDS = ("emergent", "driven", "driven_common")
+# DEVIATIONS 17: coupling AND unobserved common input in one network (within-session contrast tests)
+DEFAULTS["mixed"] = dict(lam=-2 * np.pi * 1.0, K=40.0, sigma=6.0, density=0.35, rho=0.5)
 
 
 def _graph(rng, density, m=M):
@@ -56,6 +58,9 @@ def templates(seed, kind, p):
         return dict(w=w, phi=rng.uniform(0, 2 * np.pi, (4, m)))
     if kind == "driven_common":
         return dict(w=w, psi=rng.uniform(0, 2 * np.pi, (4, m)))
+    if kind == "mixed":
+        return dict(w=w, A=np.stack([_graph(rng, p["density"], m) for _ in range(4)]),
+                    psi=rng.uniform(0, 2 * np.pi, (4, m)))
     return dict(w=w, A=np.stack([_graph(rng, p["density"], m) for _ in range(4)]))
 
 
@@ -85,6 +90,17 @@ def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=None):
         for t in range(n):
             z = z + ((p["lam"] + 1j * w - np.abs(z) ** 2) * z) * dt + sp * dW[t] + p["sigma"] * load * dWc[t]
             out[t] = z
+    elif kind == "mixed":
+        A = tpl["A"][k]
+        deg = max(A.sum(1).mean(), 1.0)
+        rho = p["rho"]
+        load = rho * np.exp(1j * tpl["psi"][k])
+        dWc = (rng.standard_normal(n) + 1j * rng.standard_normal(n)) * sq / np.sqrt(2)
+        sp = p["sigma"] * np.sqrt(1 - rho ** 2)
+        for t in range(n):
+            cpl = (A @ z - A.sum(1) * z) * (p["K"] / deg)
+            z = z + ((p["lam"] + 1j * w - np.abs(z) ** 2) * z + cpl) * dt + sp * dW[t] + p["sigma"] * load * dWc[t]
+            out[t] = z
     else:
         A = tpl["A"][k]
         deg = max(A.sum(1).mean(), 1.0)
@@ -104,7 +120,10 @@ def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=None):
 def make_dataset(seed, kind, n_train_per_class=100, n_test_per_class=40, params=None):
     p = dict(DEFAULTS[kind], **(params or {}))
     tpl = templates(seed, kind, p)
-    rng = np.random.default_rng([seed, 11, {"driven": 0, "emergent": 1, "driven_common": 2}[kind]])
+    key = [seed, 11, {"driven": 0, "emergent": 1, "driven_common": 2, "mixed": 3}[kind]]
+    if p.get("stream"):                      # DEVIATIONS 17: independent trial draws, same session templates
+        key.append(int(p["stream"]))
+    rng = np.random.default_rng(key)
 
     def block(n):
         X, y = [], []

@@ -187,3 +187,32 @@ generated and never re-tuned.
 and >= 4 of the 5 generalisation conditions succeed.
 - *Calibration outcome (2026-11-02, seeds 20-29 base):* mean S_inst_dn was EMERGENT 0.0352 and DRIVEN_COMMON 0.1967,
   giving **t_dn = 0.115964**. Committed before any seed 50-59 dataset was generated.
+| 17 | 2026-11-02 | **Screen 7: within-session contrast rule (no absolute thresholds).** Synthetic only; Phase 3 still not started. | H3 is a within-session contrast (wheel vs maze, same animal, electrodes and noise). Absolute thresholds do not transfer to real data, but *paired differences* between two regimes of one session might. Frozen before any run on seeds 60-69. |
+
+### DEVIATION 17: protocol (frozen 2026-11-02)
+**Generator.** The new `mixed` kind has coupling (K) **and** unobserved common input (rho) in one network. A
+"session" is a seed. Its two regimes A and B share the units, natural frequencies, graphs and loadings, and use
+independent trial draws (`stream` 0 and 1). Pilot on seed 999 only:
+- S_inst_dn tracks rho regardless of K (about 0.10 at rho 0.5 and about 0.29 at rho 0.9).
+- S_TE rises with K, but **also with rho**: at K ~ 0 and rho 0.9, S_TE equals coupling's.
+
+**Statistics.** S_TE and S_inst_dn exactly as in DEVIATIONS 14 and 16. Paired differences Delta = S(A) - S(B) per
+session.
+
+**Decision rule.** A is "more coupling-dominated than B" iff, across the 10 sessions:
+- (i) Delta S_TE > 0 in >= 9/10 sessions with a 95% bootstrap CI excluding 0, **and**
+- (ii) Delta S_inst_dn shows no increase: the upper 95% CI bound is < **+0.03**. That margin is about 15% of the
+  pilot's rho 0.5 -> 0.9 effect, fixed now.
+
+**Scenarios** (A vs B, as (K, rho)). Each runs at observation SNR 20 dB and 0 dB.
+| id | A | B | truth | the rule must |
+|---|---|---|---|---|
+| S1 coupling-up | (40, 0.5) | (25, 0.5) | more coupling in A | **fire** |
+| S2 common-up (trap) | (25, 0.9) | (25, 0.5) | only common input differs | **not fire** |
+| S3 null | (25, 0.5) | (25, 0.5) | identical mechanism | **not fire** |
+| S5 coupling vs common | (40, ~0) | (~0, 0.9) | A coupled, B common-input only | **fire** |
+
+**Data.** **Fresh seeds 60-69** (sessions). For each regime: 100 trials per class x 4 classes, 1 s, 8 channels.
+
+**Success.** All 8 scenario x SNR cells behave as the table requires. Any wrong firing in S2 or S3 (a false
+positive) is reported as a failure of the rule, whatever happens elsewhere.
