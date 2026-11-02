@@ -340,3 +340,43 @@ the nl-vs-lin decoder contrast that Phase 2 showed to be uninformative.
   recording (for example, contrasting epochs or channel pairs whose common-input exposure is known). Both are open
   design choices for Tom.
 - The code is kept in `lds.py` (`em_fit(coupled=False)`, `null_te_test`) and marked as not validated.
+
+## Screen 7: within-session contrast rule, no absolute thresholds (DEVIATIONS 17; sessions 60-69; `results/screen7/`)
+
+Rule: A is "more coupling-dominated than B" iff Delta S_TE > 0 (>= 9/10 sessions, CI > 0) **and** Delta S_inst_dn
+shows no increase (upper CI < +0.03). A and B are two regimes of the same session: same units, graphs and loadings,
+independent trials.
+
+| scenario @ SNR | Delta S_TE [CI] (sessions > 0) | Delta S_inst_dn [CI] | fires | should | correct |
+|---|---|---|---|---|---|
+| S1 coupling up @20 dB | +0.0077 [+0.0069, +0.0086] (10) | +0.004 [+0.003, +0.005] | yes | yes | yes |
+| S1 coupling up @0 dB | +0.0068 [+0.0059, +0.0077] (10) | +0.007 [+0.003, +0.012] | yes | yes | yes |
+| **S2 common-input up (trap) @20 dB** | **+0.0066 [+0.0044, +0.0090] (9)** | **+0.147** [+0.132, +0.162] | no | no | yes |
+| **S2 trap @0 dB** | **+0.0048 [+0.0028, +0.0068] (9)** | **+0.140** [+0.121, +0.159] | no | no | yes |
+| S3 null @20 dB | +0.0001 [-0.0003, +0.0006] (4) | +0.000 | no | no | yes |
+| S3 null @0 dB | +0.0001 [-0.0003, +0.0006] (4) | +0.003 | no | no | yes |
+| S5 coupling vs common @20 dB | +0.0074 (10) | -0.169 | yes | yes | yes |
+| S5 coupling vs common @0 dB | +0.0069 (10) | -0.147 | yes | yes | yes |
+
+**Verdict (frozen rule): all 8 cells correct, with no false positives and no misses.**
+
+**Reading:**
+- **The trap shows why the guard is needed.** When only common input increased (S2), TE rose significantly in 9/10
+  sessions. TE alone would have reported "more coupling", a false positive. The rise in S_inst_dn (+0.14) blocked it,
+  at both 20 dB and 0 dB.
+- **The null session is clean.** Delta was about 0 for both statistics, and the rule did not fire.
+- **No absolute threshold is involved.** Only the *direction* of within-session differences plus one pre-fixed
+  margin on S_inst_dn is used. This is the form H3 needs: wheel vs maze within the same session.
+
+**Limits:**
+- Synthetic Stuart-Landau networks with linear diffusive coupling.
+- The S_inst_dn margin (+0.03) was set from the pilot's effect size. Real recordings may have different scales, and
+  the margin may need re-expressing relative to a within-session null (for example, split-half differences of the
+  *same* regime).
+- 10 sessions here, against 7 hc-5 sessions available in reality.
+
+**Proposal for the H3 redesign (Tom's decision; nothing is frozen for real data):** replace the "nl_coupled - lin
+decoder advantage" contrast, which Phase 2 showed cannot detect emergence, with this two-statistic within-session
+regime contrast. Wheel would count as more coupling-dominated than maze iff its TE is higher *and* its LDS-denoised
+instantaneous dependence is not, across sessions. The margin would be calibrated within each session from
+split-half nulls.
