@@ -99,9 +99,33 @@ def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=None):
         load = rho * np.exp(1j * tpl["psi"][k])
         dWc = (rng.standard_normal(n) + 1j * rng.standard_normal(n)) * sq / np.sqrt(2)
         sp = p["sigma"] * np.sqrt(1 - rho ** 2)
+        # Screen 11 options (review board), all off by default so earlier datasets are byte-identical:
+        #   kappa_nb > 0          : additional RHYTHMIC common input s(t) (AR(1) complex, nb_f_hz, nb_bw_hz, unit var)
+        #   extra_self_damp_K > 0 : self-damping of a diffusive coupling of that strength, WITHOUT cross terms
+        #   integrator == "exact" : exponential (Lawson) step for the linear part + exact OU noise variance, so a
+        #                           uniform frequency shift is an exact symmetry of the discrete-time simulator
+        kap = p.get("kappa_nb", 0.0)
+        if kap:
+            a_nb = np.exp((-2 * np.pi * p.get("nb_bw_hz", 2.0) + 1j * 2 * np.pi * p.get("nb_f_hz", 8.0)) * dt)
+            e_nb = rng.standard_normal(n) + 1j * rng.standard_normal(n)
+            s_nb = signal.lfilter([np.sqrt(1 - abs(a_nb) ** 2)], [1, -a_nb], e_nb) * np.sqrt(0.5)
+            drive_nb = kap * np.exp(1j * tpl["psi"][k])
+        xs = p.get("extra_self_damp_K", 0.0)
+        self_d = -(xs / deg) * A.sum(1) if xs else 0.0
+        exact = p.get("integrator") == "exact"
+        if exact:
+            E = np.exp((p["lam"] + 1j * w) * dt)
+            g = np.sqrt((1 - np.exp(2 * p["lam"] * dt)) / (-2 * p["lam"])) / sq     # exact OU noise scaling
         for t in range(n):
             cpl = (A @ z - A.sum(1) * z) * (p["K"] / deg)
-            z = z + ((p["lam"] + 1j * w - np.abs(z) ** 2) * z + cpl) * dt + sp * dW[t] + p["sigma"] * load * dWc[t]
+            if kap:
+                cpl = cpl + drive_nb * s_nb[t]
+            if xs:
+                cpl = cpl + self_d * z
+            if exact:
+                z = E * (z + (-np.abs(z) ** 2 * z + cpl) * dt) + g * (sp * dW[t] + p["sigma"] * load * dWc[t])
+            else:
+                z = z + ((p["lam"] + 1j * w - np.abs(z) ** 2) * z + cpl) * dt + sp * dW[t] + p["sigma"] * load * dWc[t]
             out[t] = z
     else:
         A = tpl["A"][k]
@@ -114,7 +138,13 @@ def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=None):
     x = signal.decimate(x, int(FS_SIM / FS_OUT), ftype="fir", zero_phase=True, axis=1)
     if p.get("obs_snr_db") is not None:                 # DEVIATIONS 12: white observation noise (drawn only if set)
         nv = x.var(1, keepdims=True) / 10 ** (p["obs_snr_db"] / 10)
-        x = x + np.sqrt(nv) * rng.standard_normal(x.shape)
+        if p.get("obs_noise_exp"):                      # screen 11: coloured (1/f^chi) observation noise, same variance
+            Nf = np.fft.rfft(rng.standard_normal(x.shape), axis=1)
+            f = np.fft.rfftfreq(x.shape[1], 1 / FS_OUT); f[0] = f[1]
+            nz = np.fft.irfft(Nf * f ** (-p["obs_noise_exp"] / 2), n=x.shape[1], axis=1)
+            x = x + np.sqrt(nv) * nz / nz.std(1, keepdims=True)
+        else:
+            x = x + np.sqrt(nv) * rng.standard_normal(x.shape)
     x = (x - x.mean(1, keepdims=True)) / (x.std(1, keepdims=True) + 1e-12)   # power-matched
     return x.astype(np.float32)
 

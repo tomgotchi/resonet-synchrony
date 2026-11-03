@@ -68,3 +68,19 @@ def test_simulate_observed_noise_independent_of_state_stream():
     Y = lds.simulate_observed(fit, n=1, T=5, burn=0, seed=3)
     Z = lds.simulate_denoised(fit, n=1, T=5, burn=0, seed=3)
     assert not np.allclose(Y - Z, np.random.default_rng(3).standard_normal(Z.shape))
+
+
+def test_screen11_generator_options_run_and_differ():
+    base = dict(K=25.0, rho=0.5, obs_snr_db=10.0)
+    X0 = synth.make_dataset(7, "mixed", 2, 1, base)[0]
+    for extra in (dict(kappa_nb=4.0), dict(extra_self_damp_K=15.0), dict(integrator="exact"), dict(obs_noise_exp=1.5)):
+        X = synth.make_dataset(7, "mixed", 2, 1, dict(base, **extra))[0]
+        assert X.shape == X0.shape and np.all(np.isfinite(X)) and not np.allclose(X, X0)
+
+
+def test_exact_integrator_damping_is_frequency_independent():
+    import numpy as np
+    lam, dt = -2 * np.pi, 1e-3
+    for f in (7.0, 8.0, 9.0):
+        E = np.exp((lam + 1j * 2 * np.pi * f) * dt)
+        assert np.isclose(np.log(abs(E)) / dt, lam)
