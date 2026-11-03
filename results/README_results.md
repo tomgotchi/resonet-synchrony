@@ -485,7 +485,7 @@ brackets.
 | centred band, cycle delay | -0.0009 (0) | +0.0011 (9) | +0.0062 (10) |
 | fixed band, fixed delay, phase-advance rotation | +0.0020 (10) | +0.0004 (7) | +0.0062 (10) |
 | **centred band, fixed delay, phase-advance rotation (v3r)** | **-0.0001 (5)** | **+0.0001 (6)** | **+0.0061 (10)** |
-| bin dithering (4 grids), any combination | same as without | | |
+| bin dithering (4 grids), any combination | same as without (**invalid test**: past and future grids were shifted together, so the relative offset never changed; review board, Zhao) | | |
 
 **Interpretation.** A uniform frequency shift with white-noise input does not change the physics in real time
 (rotating frame), so the delay must stay fixed in time. The confound comes from the estimator: the fixed band, plus

@@ -143,7 +143,7 @@ def denoised_stats(fit, p=25, n=200, T=250, seed=0):
 
 def simulate_observed(fit, n=150, T=250, burn=100, seed=0):
     """Full generative model INCLUDING sensor noise R: y_t = C x_t + v_t. Returns (n, M, T)."""
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng([seed, 1])                 # audit fix: not the state-noise stream
     Z = simulate_denoised(fit, n, T, burn, seed)
     return Z + np.sqrt(fit["R"])[None, :, None] * rng.standard_normal(Z.shape)
 

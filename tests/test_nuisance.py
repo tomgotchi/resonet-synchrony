@@ -40,3 +40,31 @@ def test_aligned_matches_diag_and_reduces_to_rotation():
     f_c = N.peak_freq(X)
     a = Mx.analytic(X, 250.0, (f_c - 2, f_c + 2))
     assert np.isclose(N.s_te_aligned(X)[0], diag10b.te_rot(a, 8.0, f_c, True, 1))
+
+
+def test_decide_nan_is_invalid_not_correct():
+    from resonet_sync import screen10 as S
+    cells = {"F1": (None, None, False)}
+    vals = {f"F1|{s}": {"A": {"S_TE_al": 1.0, "S_inst_dn": 0.1}, "B": {"S_TE_al": 0.0, "S_inst_dn": 0.1}}
+            for s in range(10)}
+    for v in vals.values():
+        v["A"].update(f_c=8.0, R_mean=0.1); v["B"].update(f_c=8.0, R_mean=0.1)
+    res, ver = S.decide(vals, cells, list(range(10)), "S_TE_al")
+    assert res["F1"]["fires"] is True and ver["false_positives"] == ["F1"]       # sanity: a clear false positive
+    vals["F1|3"]["A"]["S_inst_dn"] = float("nan")
+    res, ver = S.decide(vals, cells, list(range(10)), "S_TE_al")
+    assert res["F1"]["fires"] is None and not ver["valid"] and not ver["all_cells_correct"]
+    assert ver["invalid_cells"] == ["F1"]
+
+
+def test_runs_from_ids_splits_adjacent_runs():
+    from resonet_sync.data_hc5 import runs_from_ids
+    assert runs_from_ids([0, 1, 1, 2, 2, 0, 3]) == [(1, 3, 1), (3, 5, 2), (6, 7, 3)]
+
+
+def test_simulate_observed_noise_independent_of_state_stream():
+    from resonet_sync import lds
+    fit = dict(A=0.5 * np.eye(2), Q=np.eye(2), R=np.ones(1), C=np.array([[1.0, 0.0]]))
+    Y = lds.simulate_observed(fit, n=1, T=5, burn=0, seed=3)
+    Z = lds.simulate_denoised(fit, n=1, T=5, burn=0, seed=3)
+    assert not np.allclose(Y - Z, np.random.default_rng(3).standard_normal(Z.shape))

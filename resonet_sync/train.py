@@ -103,6 +103,7 @@ def train(model, tr: Split, va: Split, device, *, augment=True, max_epochs=80, l
             log(f"    ep {ep:3d} train {np.mean(tl):.4f} val {v['loss']:.4f} acc {v['acc']:.3f}")
         if v["loss"] < best - 1e-5:
             best, bad = v["loss"], 0
+            hist["best_epoch"] = ep
             best_state = {k: t.detach().cpu().clone() for k, t in model.state_dict().items()}
         else:
             bad += 1
@@ -110,6 +111,6 @@ def train(model, tr: Split, va: Split, device, *, augment=True, max_epochs=80, l
                 break
     if best_state is not None:
         model.load_state_dict(best_state)
-    hist["best_epoch"] = int(np.argmin(hist["val_loss"]))
+    hist.setdefault("best_epoch", None)
     hist["epochs_run"] = len(hist["val_loss"])
     return model, hist

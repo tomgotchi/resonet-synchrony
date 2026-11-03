@@ -74,11 +74,8 @@ def runs_from_ids(ids):
     on = ids > 0
     if not on.any():
         return []
-    edges = np.flatnonzero(np.diff(np.concatenate([[0], on.astype(int), [0]])))
-    out = []
-    for s, e in zip(edges[::2], edges[1::2]):
-        out.append((int(s), int(e), int(ids[s])))
-    return out
+    b = np.concatenate([[0], np.flatnonzero(np.diff(ids) != 0) + 1, [len(ids)]])   # audit fix: id changes split runs
+    return [(int(s), int(e), int(ids[s])) for s, e in zip(b[:-1], b[1:]) if ids[s] > 0]
 
 
 def load_behav(mat_path):

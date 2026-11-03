@@ -59,15 +59,22 @@ def decide(vals, cells, sessions, te_key="S_TE_cyc", inst_key="S_inst_dn"):
         A = [vals[f"{c}|{s}"]["A"] for s in sessions]; B = [vals[f"{c}|{s}"]["B"] for s in sessions]
         dte = np.array([x[te_key] - y[te_key] for x, y in zip(A, B)])
         rel = np.array([(x[inst_key] - y[inst_key]) / y[inst_key] for x, y in zip(A, B)])
-        ci_te, ci_r = boot_ci(dte), boot_ci(rel)
-        fires = bool(np.sum(dte > 0) >= 9 and ci_te[0] > 0 and ci_r[1] < REL_MARGIN)
-        res[c] = dict(dTE=float(dte.mean()), dTE_ci=ci_te, dTE_pos=int(np.sum(dte > 0)), rel=float(rel.mean()),
+        finite = bool(np.isfinite(dte).all() and np.isfinite(rel).all())   # audit fix: a NaN must not read as "no fire"
+        if finite:
+            ci_te, ci_r = boot_ci(dte), boot_ci(rel)
+            need = int(np.ceil(0.9 * len(sessions)))
+            fires = bool(np.sum(dte > 0) >= need and ci_te[0] > 0 and ci_r[1] < REL_MARGIN)
+        else:
+            ci_te, ci_r, fires = [np.nan, np.nan], [np.nan, np.nan], None
+        res[c] = dict(finite=finite, n_nonfinite=int((~np.isfinite(dte)).sum() + (~np.isfinite(rel)).sum()), dTE=float(dte.mean()), dTE_ci=ci_te, dTE_pos=int(np.sum(dte > 0)), rel=float(rel.mean()),
                       rel_ci=ci_r, fires=fires, should_fire=should, correct=fires == should,
                       d_fc=float(np.mean([x["f_c"] - y["f_c"] for x, y in zip(A, B)])),
                       d_R=float(np.mean([x["R_mean"] - y["R_mean"] for x, y in zip(A, B)])))
-    verdict = dict(all_cells_correct=all(r["correct"] for r in res.values()),
-                   false_positives=[c for c, r in res.items() if r["fires"] and not r["should_fire"]],
-                   misses=[c for c, r in res.items() if not r["fires"] and r["should_fire"]])
+    valid = all(r["finite"] for r in res.values())
+    verdict = dict(valid=valid, all_cells_correct=valid and all(r["correct"] for r in res.values()),
+                   false_positives=[c for c, r in res.items() if r["fires"] is True and not r["should_fire"]],
+                   misses=[c for c, r in res.items() if r["fires"] is False and r["should_fire"]],
+                   invalid_cells=[c for c, r in res.items() if not r["finite"]])
     return res, verdict
 
 
