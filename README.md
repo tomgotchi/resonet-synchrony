@@ -22,6 +22,7 @@ generated internally (hippocampal wheel running), and not where it is stimulus-d
 | [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md) | review board rounds 1-2: findings, verdicts, revised plan |
 | [docs/PREREG_H3_REDESIGN_DRAFT.md](docs/PREREG_H3_REDESIGN_DRAFT.md) | hc-5 pre-registration draft (**not frozen**; the board recommends reframing it) |
 | [docs/RUN_PHASE1_LOCAL.md](docs/RUN_PHASE1_LOCAL.md) | exact commands for the Phase 1 GPU run |
+| [notebooks/resonet_synchrony_full_colab.ipynb](notebooks/resonet_synchrony_full_colab.ipynb) | **standalone Colab pipeline**: Drive data, tests, Phase 1 GPU training (resumable to Drive), results, hc-5 QC, synthetic figures, push |
 
 ## Layout
 
@@ -41,7 +42,7 @@ resonet_sync/            library
   sanitize.py            shared with phasetrack;   _vendor.py: imports vendor/ unmodified
 resonet_sync/screens/    frozen synthetic screen runners screen1..screen10 + diagnostics diag10, diag10b
 scripts/make_figures.py  all figures in results/figures/
-notebooks/               Colab notebook for hc-5 QC
+notebooks/               Colab: full pipeline (resonet_synchrony_full_colab) and hc-5 QC only
 vendor/                  unmodified published code (hashes checked by tests)
 tests/                   pytest suite
 docs/                    spec, review board, drafts, run instructions
@@ -57,7 +58,7 @@ cp config.example.yaml config.yaml                                       # set p
 .venv/bin/python -m resonet_sync.run --phase 1 --smoke --arms all        # tiny synthetic end-to-end
 .venv/bin/python -m resonet_sync.run --phase 1 --arms core --subjects 1-14   # published 6 arms (GPU)
 .venv/bin/python -m resonet_sync.screens.screen10 --stage C --workers 4  # a frozen screen (resumable)
-.venv/bin/python scripts/make_figures.py --diag <dir with diag10*.json>  # figures
+.venv/bin/python scripts/make_figures.py                                  # all figures
 ```
 
 Rules kept throughout:

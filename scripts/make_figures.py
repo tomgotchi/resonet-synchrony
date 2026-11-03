@@ -1,5 +1,5 @@
 """Figures for the synthetic mechanism-statistic programme (screens 7-10, diagnostics, review board).
-python scripts/make_figures.py [--diag DIR]  -> results/figures/*.png
+python scripts/make_figures.py [--diag DIR]  -> results/figures/*.png  (diagnostics default: results/screen10/*.json)
 
 Palette: reference categorical slots 1-3 (validated light-mode), status colours only with icon + label."""
 from __future__ import annotations
@@ -281,9 +281,12 @@ def main(argv=None):
     a = ap.parse_args(argv)
     OUT.mkdir(parents=True, exist_ok=True)
     da = db = None
-    if a.diag:
+    if a.diag:                                   # explicit directory with diag10.json / diag10b.json
         da = json.loads((Path(a.diag) / "diag10.json").read_text())
         db = json.loads((Path(a.diag) / "diag10b.json").read_text())
+    elif (ROOT / "results/screen10/diag10_variants.json").exists():      # committed copies (default)
+        da = json.loads((ROOT / "results/screen10/diag10_variants.json").read_text())
+        db = json.loads((ROOT / "results/screen10/diag10b_alignment.json").read_text())
     sc = ROOT / "results" / "screen10" / "stage_C" / "results.json"
     stage_c = json.loads(sc.read_text())["per_cell"] if sc.exists() else None
     hist_c = None
