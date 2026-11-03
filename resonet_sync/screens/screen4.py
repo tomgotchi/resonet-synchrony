@@ -1,5 +1,5 @@
 """DEVIATIONS 14: confirmatory test of the rule  emergent := S_TE > t_TE and S_inst < t_inst  on fresh seeds
-30-39 (thresholds frozen from seeds 20-29). python -m resonet_sync.screen4 [--workers 4]."""
+30-39 (thresholds frozen from seeds 20-29). python -m resonet_sync.screens.screen4 [--workers 4]."""
 from __future__ import annotations
 
 import argparse
@@ -9,11 +9,11 @@ from pathlib import Path
 
 import numpy as np
 
-from . import mechanism as Mx
-from . import synth
+from .. import mechanism as Mx
+from .. import synth
 from .screen2 import _params
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 SEEDS = list(range(30, 40))
 T_TE, T_INST = 0.015295, 0.111262                     # frozen in DEVIATIONS 14
 CONDS = {"base": 0.85, "rho70": 0.70, "rho95": 0.95, "K25": 0.70, "K60": 0.95, "M16": 0.70, "win05": 0.85,

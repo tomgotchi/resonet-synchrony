@@ -1,5 +1,5 @@
 """DEVIATIONS 16: confirmatory test of  emergent := S_TE > t_TE and S_inst_dn < t_dn  on fresh seeds 50-59.
-python -m resonet_sync.screen6 [--workers 4]."""
+python -m resonet_sync.screens.screen6 [--workers 4]."""
 from __future__ import annotations
 
 import argparse
@@ -9,12 +9,12 @@ from pathlib import Path
 
 import numpy as np
 
-from . import lds
-from . import mechanism as Mx
-from . import synth
+from .. import lds
+from .. import mechanism as Mx
+from .. import synth
 from .screen2 import _params
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 SEEDS = list(range(50, 60))
 T_TE, T_DN = 0.015295, 0.115964                       # frozen (DEVIATIONS 14 / 16)
 # name -> (screen2 condition for common params, rho, obs SNR or None)

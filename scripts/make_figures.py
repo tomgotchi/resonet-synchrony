@@ -16,7 +16,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from resonet_sync.screen import boot_ci  # noqa: E402
+from resonet_sync.stats import boot_ci  # noqa: E402
 
 OUT = ROOT / "results" / "figures"
 SURF, INK, INK2, MUTED, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#8a8984", "#e4e3de"

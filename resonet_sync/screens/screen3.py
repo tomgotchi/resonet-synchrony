@@ -1,5 +1,5 @@
 """DEVIATIONS 13: conditional Granger (lagged) vs instantaneous dependence; fresh seeds 20-29.
-python -m resonet_sync.screen3 [--workers 4]. Exploratory, synthetic only; protocol frozen before this ran."""
+python -m resonet_sync.screens.screen3 [--workers 4]. Exploratory, synthetic only; protocol frozen before this ran."""
 from __future__ import annotations
 
 import argparse
@@ -9,12 +9,12 @@ from pathlib import Path
 
 import numpy as np
 
-from . import mechanism as Mx
-from . import synth
+from .. import mechanism as Mx
+from .. import synth
 from .screen2 import _params
-from .screen import boot_ci
+from ..stats import boot_ci
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 SEEDS = list(range(20, 30))
 CONDS = {"base": 0.85, "rho70": 0.70, "rho95": 0.95}
 STATS = ("S_GC", "S_inst", "S_TE")

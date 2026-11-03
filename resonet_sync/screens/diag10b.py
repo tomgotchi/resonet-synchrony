@@ -9,7 +9,7 @@ from multiprocessing import Pool
 
 import numpy as np
 
-from . import mechanism as Mx, nuisance as N, synth
+from .. import mechanism as Mx, nuisance as N, synth
 from .screen10 import CELLS_D
 
 D = 8.0

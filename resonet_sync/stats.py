@@ -58,3 +58,12 @@ def contrast_table(per_unit, contrasts, n_boot=10000, seed=0):
     for r, p in zip(rows, adj):
         r["p_holm"] = float(p)
     return rows
+
+
+def boot_ci(d, n=10000, seed=0):
+    """Percentile bootstrap 95% CI of the mean (moved from the screen-1 runner; used by every screen).
+    Review board: anti-conservative at small n (coverage ~0.90 at n=10, ~0.87 at n=7)."""
+    d = np.asarray(d, float)
+    rng = np.random.default_rng(seed)
+    b = d[rng.integers(0, len(d), (n, len(d)))].mean(1)
+    return [float(np.percentile(b, 2.5)), float(np.percentile(b, 97.5))]

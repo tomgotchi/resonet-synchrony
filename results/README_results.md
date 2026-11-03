@@ -114,7 +114,7 @@ pre-registered threshold. A real-data null in Phase 3 would therefore be uninter
 3. Increase sensitivity, with more seeds and pre-registered power analysis, *only* if the target effect is the
    interaction. The current interaction estimate (+0.007) suggests the required n would be large.
 
-## Exploratory mechanism-statistic screen (DEVIATIONS 11; synthetic only; `results/screen/screen_results.json`)
+## Exploratory mechanism-statistic screen (DEVIATIONS 11; synthetic only; `results/screen1/screen_results.json`)
 
 The screen used three generators: EMERGENT; DRIVEN (narrowband common input); and DRIVEN_COMMON (EMERGENT's units with
 coupling replaced by an unobserved shared white-noise source, rho = 0.85, calibrated on seed 999 so that plain PLV
@@ -470,7 +470,7 @@ before stage C.
 - **Cycle normalisation over-corrects.** It fixed +1 Hz but turned -1 Hz into a false positive. Under the old
   sample delay only +1 Hz was biased. This asymmetry points to the fixed 6-10 Hz analysis band, not the delay, as
   the main frequency confound (a 9 Hz peak sits close to its upper edge). A development diagnostic of band/delay
-  variants on these used sessions decides the revision (`resonet_sync/diag10.py`).
+  variants on these used sessions decides the revision (`resonet_sync/screens/diag10.py`).
 - The coupling control is unaffected by either fix (+0.0062 vs +0.0063 in screen 9).
 
 ### Development diagnostics and revision 1 (used sessions 80-89)

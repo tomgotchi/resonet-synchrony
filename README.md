@@ -1,22 +1,69 @@
 # resonet-synchrony
 
-ResoNet follow-up "Pitch 1": does nonlinear coupling between oscillators earn its cost where the
-rhythm is internally generated (hippocampal wheel running) and not where it is stimulus-driven? Spec:
-[TASK_PITCH1.md](TASK_PITCH1.md). Deviations and judgement calls: [DEVIATIONS.md](DEVIATIONS.md).
-Results: [results/README_results.md](results/README_results.md). `PREREG.md` will be written together
-with Tom and committed before Phase 3.
+ResoNet follow-up "Pitch 1": does nonlinear coupling between oscillators earn its cost where the rhythm is
+generated internally (hippocampal wheel running), and not where it is stimulus-driven?
 
-```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-cp config.example.yaml config.yaml                       # set paths.hgd_cache_hg (FULL-BAND cache)
-.venv/bin/python -m pytest -q tests                      # ~3 min on CPU
-.venv/bin/python -m resonet_sync.run --phase 1 --smoke --arms all     # tiny synthetic end-to-end
-.venv/bin/python -m resonet_sync.run --phase 1 --arms core --subjects 1-14   # published 6 arms first
-.venv/bin/python -m resonet_sync.run --phase 1 --arms all  --subjects 1-14   # + new arms (resumes)
-.venv/bin/python -m resonet_sync.run --phase 1 --arms core --rk4-substeps 2  # integrator sensitivity
+**Where things stand (2026-11-03):**
+- **Phase 1** (HGD replication) is written and smoke-tested. It runs on Tom's GPU.
+- **Phase 2** (synthetic H0) hit its stop rule.
+- **Synthetic mechanism-statistic screens 1-10** are documented in DEVIATIONS 11-20. Screen 10 stage C is
+  running.
+- **A six-persona review board** concluded that the TE/LDS within-session rule gets one terminal calibration
+  (screen 11), and is retired if it fails rhythmic common input. See [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md).
+
+## Start here
+
+| document | what it is |
+|---|---|
+| [docs/TASK_PITCH1.md](docs/TASK_PITCH1.md) | the original spec |
+| [DEVIATIONS.md](DEVIATIONS.md) | every departure and judgement call; **frozen protocols** for each screen (append-only) |
+| [results/README_results.md](results/README_results.md) | all results, phase by phase and screen by screen |
+| [results/figures/](results/figures/) | figures (regenerate: `scripts/make_figures.py`) |
+| [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md) | review board rounds 1-2: findings, verdicts, revised plan |
+| [docs/PREREG_H3_REDESIGN_DRAFT.md](docs/PREREG_H3_REDESIGN_DRAFT.md) | hc-5 pre-registration draft (**not frozen**; the board recommends reframing it) |
+| [docs/RUN_PHASE1_LOCAL.md](docs/RUN_PHASE1_LOCAL.md) | exact commands for the Phase 1 GPU run |
+
+## Layout
+
+```
+resonet_sync/            library
+  banks.py               oscillator banks: lin, nl_uncoupled, nl_coupled, nl_uncoupled_wide (Hz-parameterised)
+  readouts.py            sync, power, surrogate, sync+power, trial_shuffle readouts
+  train.py               published training loop + same-split shuffle partners
+  decomposition.py       evoked-vs-induced decomposition (analysis control, not a decoder arm)
+  run.py                 Phase 1 (HGD) and Phase 2 (synthetic) runners
+  synth.py               synthetic generators: emergent / driven / driven_common / mixed (+ screen-11 options)
+  mechanism.py           phase TE, Granger, residual correlation
+  lds.py                 latent linear dynamical system (EM) and denoised statistics
+  nuisance.py            rule v3/v3r adjustments: centred band, phase rotation, LDS noise matching
+  stats.py               paired tests, Holm, bootstrap CI
+  data_hgd.py            HGD cache loader;   data_hc5.py, qc_hc5.py: hc-5 loading and QC (no hypothesis test)
+  sanitize.py            shared with phasetrack;   _vendor.py: imports vendor/ unmodified
+resonet_sync/screens/    frozen synthetic screen runners screen1..screen10 + diagnostics diag10, diag10b
+scripts/make_figures.py  all figures in results/figures/
+notebooks/               Colab notebook for hc-5 QC
+vendor/                  unmodified published code (hashes checked by tests)
+tests/                   pytest suite
+docs/                    spec, review board, drafts, run instructions
+results/                 phase2/, screen1..screen10/ (one folder per frozen screen), figures/
 ```
 
-Package `resonet_sync/`: `banks.py` (lin, nl_uncoupled, nl_coupled, nl_uncoupled_wide; Hz-parameterized),
-`readouts.py` (sync, power, surrogate, sync+power, trial_shuffle), `train.py` (published training loop
-plus same-class partners), `data_hgd.py`, `stats.py`, `run.py`, `sanitize.py` (shared with phasetrack).
-`vendor/` holds the unmodified published code, and the tests check its hashes.
+## Commands
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt     # exact versions: requirements.lock
+cp config.example.yaml config.yaml                                       # set paths.hgd_cache_hg (FULL-BAND cache)
+.venv/bin/python -m pytest -q tests                                      # ~5 min on CPU
+.venv/bin/python -m resonet_sync.run --phase 1 --smoke --arms all        # tiny synthetic end-to-end
+.venv/bin/python -m resonet_sync.run --phase 1 --arms core --subjects 1-14   # published 6 arms (GPU)
+.venv/bin/python -m resonet_sync.screens.screen10 --stage C --workers 4  # a frozen screen (resumable)
+.venv/bin/python scripts/make_figures.py --diag <dir with diag10*.json>  # figures
+```
+
+Rules kept throughout:
+- **Data:** never committed (`.gitignore`).
+- **`vendor/`:** never edited.
+- **Protocols:** frozen in DEVIATIONS before each run.
+- **Seeds and sessions:** fresh for every confirmatory step.
+- **Resumable checkpoints:** `results/**/partial.json` is not tracked; the final `results.json` of each screen
+  holds every per-dataset value.

@@ -1,6 +1,15 @@
 # DEVIATIONS
 
 Every departure from TASK_PITCH1.md, or a judgement call the spec leaves open, with the reason.
+
+> **Layout note (2026-11-03, repository cleanup).** Frozen entries below are left verbatim. Since then:
+> - `resonet_sync/screen.py`, `screen2..10.py`, `diag10*.py` live in `resonet_sync/screens/`; `screen.py` is now
+>   `screen1.py`, with output in `results/screen1/`.
+> - `boot_ci` moved to `resonet_sync/stats.py`.
+> - `TASK_PITCH1.md`, `RUN_PHASE1_LOCAL.md`, `PREREG_H3_REDESIGN_DRAFT.md` and `REVIEW_BOARD.md` live in `docs/`.
+>
+> Only import paths changed; no protocol logic changed. Run a screen as
+> `python -m resonet_sync.screens.screenN`.
 PREREG.md does not exist yet. Per Tom, it is written together before Phase 3; entries logged before then
 are design decisions, not post-hoc changes.
 

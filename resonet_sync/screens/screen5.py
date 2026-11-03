@@ -1,5 +1,5 @@
 """DEVIATIONS 15: operating range of the DEVIATIONS 14 rule under strong common input (rho 0.95) x observation SNR.
-python -m resonet_sync.screen5 [--workers 4]."""
+python -m resonet_sync.screens.screen5 [--workers 4]."""
 from __future__ import annotations
 
 import argparse
@@ -9,11 +9,11 @@ from pathlib import Path
 
 import numpy as np
 
-from . import mechanism as Mx
-from . import synth
+from .. import mechanism as Mx
+from .. import synth
 from .screen4 import T_INST, T_TE
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 SEEDS = list(range(40, 50))
 SNRS = (20.0, 10.0, 5.0, 0.0)
 RHO = 0.95

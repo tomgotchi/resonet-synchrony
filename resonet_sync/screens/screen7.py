@@ -1,5 +1,5 @@
 """DEVIATIONS 17: within-session contrast rule on fresh session seeds 60-69.
-python -m resonet_sync.screen7 [--workers 4]. Exploratory, synthetic; protocol frozen before this ran."""
+python -m resonet_sync.screens.screen7 [--workers 4]. Exploratory, synthetic; protocol frozen before this ran."""
 from __future__ import annotations
 
 import argparse
@@ -9,12 +9,12 @@ from pathlib import Path
 
 import numpy as np
 
-from . import lds
-from . import mechanism as Mx
-from . import synth
-from .screen import boot_ci
+from .. import lds
+from .. import mechanism as Mx
+from .. import synth
+from ..stats import boot_ci
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 SESSIONS = list(range(60, 70))
 EPS = 1e-9
 SCEN = {"S1_coupling_up": ((40.0, 0.5), (25.0, 0.5), True),

@@ -1,5 +1,5 @@
 """DEVIATIONS 19: nuisance-confound traps (frequency, SNR) for rule v2 on fresh sessions 80-89.
-python -m resonet_sync.screen8 [--workers 4]."""
+python -m resonet_sync.screens.screen9 [--workers 4]."""
 from __future__ import annotations
 
 import argparse
@@ -9,12 +9,12 @@ from pathlib import Path
 
 import numpy as np
 
-from . import lds
-from . import mechanism as Mx
-from . import synth
-from .screen import boot_ci
+from .. import lds
+from .. import mechanism as Mx
+from .. import synth
+from ..stats import boot_ci
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 SESSIONS = list(range(80, 90))
 REL_MARGIN = 0.25
 # cell -> ((A params, B params, should_fire)). Mechanism K25 rho0.5 in both unless stated.

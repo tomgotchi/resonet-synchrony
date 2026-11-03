@@ -1,4 +1,4 @@
-"""DEVIATIONS 11 mechanism-statistic screen: python -m resonet_sync.screen [--workers 4]
+"""DEVIATIONS 11 mechanism-statistic screen: python -m resonet_sync.screens.screen1 [--workers 4]
 Exploratory, synthetic only. Success criterion frozen in DEVIATIONS.md before this ran."""
 from __future__ import annotations
 
@@ -9,10 +9,11 @@ from pathlib import Path
 
 import numpy as np
 
-from . import mechanism as Mx
-from . import synth
+from .. import mechanism as Mx
+from .. import synth
+from ..stats import boot_ci  # noqa: F401  (moved to stats.py)
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 SEEDS = list(range(10))
 STATS = ("S_couple", "S_TE", "S_asym", "S_resid", "S_plv")
 CANDIDATES = ("S_couple", "S_TE", "S_asym", "S_resid")
@@ -22,12 +23,6 @@ def _job(args):
     kind, seed = args
     X, *_ = synth.make_dataset(seed, kind, 100, 1)        # train trials only (identical to Phase 2's)
     return kind, seed, Mx.all_stats(X, synth.FS_OUT)
-
-
-def boot_ci(d, n=10000, seed=0):
-    rng = np.random.default_rng(seed)
-    b = d[rng.integers(0, len(d), (n, len(d)))].mean(1)
-    return [float(np.percentile(b, 2.5)), float(np.percentile(b, 97.5))]
 
 
 def criterion(vals):
@@ -62,7 +57,7 @@ def main(argv=None):
             vals[kind][seed] = st
             print(f"  {kind:14s} seed {seed}: " + " ".join(f"{k}={v:.4f}" for k, v in st.items()), flush=True)
     crit = criterion(vals)
-    out_dir = ROOT / "results" / "screen"
+    out_dir = ROOT / "results" / "screen1"
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "screen_results.json").write_text(json.dumps(dict(
         protocol="DEVIATIONS.md #11", seeds=SEEDS, params={k: synth.DEFAULTS[k] for k in synth.KINDS},

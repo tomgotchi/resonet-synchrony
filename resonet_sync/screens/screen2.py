@@ -1,5 +1,5 @@
 """DEVIATIONS 12: TE re-validation on fresh seeds 10-19, base + 10 one-at-a-time variants.
-python -m resonet_sync.screen2 [--workers 4]. Exploratory, synthetic only; protocol frozen before this ran."""
+python -m resonet_sync.screens.screen2 [--workers 4]. Exploratory, synthetic only; protocol frozen before this ran."""
 from __future__ import annotations
 
 import argparse
@@ -9,11 +9,11 @@ from pathlib import Path
 
 import numpy as np
 
-from . import mechanism as Mx
-from . import synth
-from .screen import boot_ci
+from .. import mechanism as Mx
+from .. import synth
+from ..stats import boot_ci
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 SEEDS = list(range(10, 20))
 CALIB_SEED, RHO_GRID = 999, (0.3, 0.5, 0.7, 0.85, 0.95)
 # id -> (params applied to every generator, params for emergent only, rho rule)

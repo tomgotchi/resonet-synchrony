@@ -3,7 +3,7 @@ frequency confound? TE only (no noise matching needed: dR ~ 0 in F cells)."""
 import json, sys
 from multiprocessing import Pool
 import numpy as np
-from . import mechanism as Mx, nuisance as N, synth
+from .. import mechanism as Mx, nuisance as N, synth
 from .screen10 import CELLS_D
 
 VARIANTS = {"fixband_fixdelay": (None, None), "fixband_cycdelay": (None, "cyc"),

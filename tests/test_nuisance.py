@@ -35,7 +35,7 @@ def test_causal_free_of_labels():
 
 
 def test_aligned_matches_diag_and_reduces_to_rotation():
-    from resonet_sync import diag10b
+    from resonet_sync.screens import diag10b
     X = _X()
     f_c = N.peak_freq(X)
     a = Mx.analytic(X, 250.0, (f_c - 2, f_c + 2))
@@ -43,7 +43,7 @@ def test_aligned_matches_diag_and_reduces_to_rotation():
 
 
 def test_decide_nan_is_invalid_not_correct():
-    from resonet_sync import screen10 as S
+    from resonet_sync.screens import screen10 as S
     cells = {"F1": (None, None, False)}
     vals = {f"F1|{s}": {"A": {"S_TE_al": 1.0, "S_inst_dn": 0.1}, "B": {"S_TE_al": 0.0, "S_inst_dn": 0.1}}
             for s in range(10)}

@@ -1,5 +1,5 @@
 """DEVIATIONS 20: rule v3 (cycle-normalised TE + LDS noise-fraction matching).
-python -m resonet_sync.screen10 --stage D|C [--workers 4]."""
+python -m resonet_sync.screens.screen10 --stage D|C [--workers 4]."""
 from __future__ import annotations
 
 import argparse
@@ -9,13 +9,13 @@ from pathlib import Path
 
 import numpy as np
 
-from . import lds
-from . import mechanism as Mx
-from . import nuisance as N
-from . import synth
-from .screen import boot_ci
+from .. import lds
+from .. import mechanism as Mx
+from .. import nuisance as N
+from .. import synth
+from ..stats import boot_ci
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 REL_MARGIN = 0.25
 B0 = dict(K=25.0, rho=0.5, obs_snr_db=10.0)
 P = lambda **kw: dict(B0, **kw)
