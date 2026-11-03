@@ -68,14 +68,20 @@ def _scalar(v):
     return None if v.size == 0 else float(v[0])
 
 
-def runs_from_ids(ids):
-    """Per-sample run-id vector (0 = not in a run) -> list of (start, end_exclusive, id)."""
+def runs_from_ids(ids, split_on_id_change=False):
+    """Per-sample run-id vector (0 = not in a run) -> list of (start, end_exclusive, id).
+    Default (documented definition): a run = a contiguous stretch with id > 0, labelled by its first id.
+    split_on_id_change=True also splits where a nonzero id changes without a 0 in between (review board: whether
+    NLapCW counts runs or laps must be checked on a real session before this is used for train/test splits)."""
     ids = np.asarray(ids).ravel()
     on = ids > 0
     if not on.any():
         return []
-    b = np.concatenate([[0], np.flatnonzero(np.diff(ids) != 0) + 1, [len(ids)]])   # audit fix: id changes split runs
-    return [(int(s), int(e), int(ids[s])) for s, e in zip(b[:-1], b[1:]) if ids[s] > 0]
+    if split_on_id_change:
+        b = np.concatenate([[0], np.flatnonzero(np.diff(ids) != 0) + 1, [len(ids)]])
+        return [(int(s), int(e), int(ids[s])) for s, e in zip(b[:-1], b[1:]) if ids[s] > 0]
+    edges = np.flatnonzero(np.diff(np.concatenate([[0], on.astype(int), [0]])))
+    return [(int(s), int(e), int(ids[s])) for s, e in zip(edges[::2], edges[1::2])]
 
 
 def load_behav(mat_path):

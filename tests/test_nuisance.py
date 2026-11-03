@@ -59,7 +59,8 @@ def test_decide_nan_is_invalid_not_correct():
 
 def test_runs_from_ids_splits_adjacent_runs():
     from resonet_sync.data_hc5 import runs_from_ids
-    assert runs_from_ids([0, 1, 1, 2, 2, 0, 3]) == [(1, 3, 1), (3, 5, 2), (6, 7, 3)]
+    assert runs_from_ids([0, 1, 1, 2, 2, 0, 3]) == [(1, 5, 1), (6, 7, 3)]                       # documented default
+    assert runs_from_ids([0, 1, 1, 2, 2, 0, 3], split_on_id_change=True) == [(1, 3, 1), (3, 5, 2), (6, 7, 3)]
 
 
 def test_simulate_observed_noise_independent_of_state_stream():
@@ -84,3 +85,13 @@ def test_exact_integrator_damping_is_frequency_independent():
     for f in (7.0, 8.0, 9.0):
         E = np.exp((lam + 1j * 2 * np.pi * f) * dt)
         assert np.isclose(np.log(abs(E)) / dt, lam)
+
+
+def test_rhythmic_drive_keeps_trial_noise_paired_and_options_are_mixed_only():
+    import pytest
+    base = dict(K=25.0, rho=0.5, obs_snr_db=10.0)
+    _, y0, *_ = synth.make_dataset(7, "mixed", 2, 1, base)
+    _, y1, *_ = synth.make_dataset(7, "mixed", 2, 1, dict(base, kappa_nb=4.0))
+    assert np.array_equal(y0, y1)                      # same label permutation => same shared stream
+    with pytest.raises(ValueError):
+        synth.make_dataset(7, "driven_common", 2, 1, dict(integrator="exact"))

@@ -107,7 +107,8 @@ def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=None):
         kap = p.get("kappa_nb", 0.0)
         if kap:
             a_nb = np.exp((-2 * np.pi * p.get("nb_bw_hz", 2.0) + 1j * 2 * np.pi * p.get("nb_f_hz", 8.0)) * dt)
-            e_nb = rng.standard_normal(n) + 1j * rng.standard_normal(n)
+            r_nb = p["_nb_rng"]                          # dedicated stream: trial noise stays paired with kappa_nb=0
+            e_nb = r_nb.standard_normal(n) + 1j * r_nb.standard_normal(n)
             s_nb = signal.lfilter([np.sqrt(1 - abs(a_nb) ** 2)], [1, -a_nb], e_nb) * np.sqrt(0.5)
             drive_nb = kap * np.exp(1j * tpl["psi"][k])
         xs = p.get("extra_self_damp_K", 0.0)
@@ -151,6 +152,11 @@ def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=None):
 
 def make_dataset(seed, kind, n_train_per_class=100, n_test_per_class=40, params=None):
     p = dict(DEFAULTS[kind], **(params or {}))
+    s11 = [k for k in ("kappa_nb", "extra_self_damp_K", "integrator") if p.get(k)]
+    if s11 and kind != "mixed":
+        raise ValueError(f"options {s11} are implemented for kind='mixed' only")
+    if p.get("kappa_nb"):
+        p["_nb_rng"] = np.random.default_rng([seed, 11, 99, int(p.get("stream", 0) or 0)])
     tpl = templates(seed, kind, p)
     key = [seed, 11, {"driven": 0, "emergent": 1, "driven_common": 2, "mixed": 3}[kind]]
     if p.get("stream"):                      # DEVIATIONS 17: independent trial draws, same session templates
@@ -168,4 +174,5 @@ def make_dataset(seed, kind, n_train_per_class=100, n_test_per_class=40, params=
 
     Xtr, ytr = block(n_train_per_class)
     Xte, yte = block(n_test_per_class)
+    p.pop("_nb_rng", None)
     return Xtr, ytr, Xte, yte, dict(seed=seed, kind=kind, params=p, fs=FS_OUT, M=p.get("M", M))

@@ -53,6 +53,21 @@ def _job(args):
     return cell, seed, out
 
 
+def _clean(o):
+    if isinstance(o, float):
+        return o if np.isfinite(o) else None
+    if isinstance(o, dict):
+        return {k: _clean(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [_clean(v) for v in o]
+    return o
+
+
+def _strict_json(o, **kw):
+    """JSON without NaN/Infinity tokens (review board, round 2): non-finite -> null."""
+    return json.dumps(_clean(o), allow_nan=False, **kw)
+
+
 def decide(vals, cells, sessions, te_key="S_TE_cyc", inst_key="S_inst_dn"):
     res = {}
     for c, (_, _, should) in cells.items():
@@ -96,7 +111,7 @@ def main(argv=None):
     te_key = "S_TE_al" if a.stage == "C" else "S_TE_cyc"     # DEVIATIONS 20 revision: stage C uses rule v3r
     res, verdict = decide(vals, cells, sessions, te_key)
     res_v2, verdict_v2 = decide(vals, cells, sessions, "S_TE_v2", "S_inst_dn_v2")
-    (out / "results.json").write_text(json.dumps(dict(protocol="DEVIATIONS.md #20", stage=a.stage, te_statistic=te_key, sessions=sessions,
+    (out / "results.json").write_text(_strict_json(dict(protocol="DEVIATIONS.md #20", stage=a.stage, te_statistic=te_key, sessions=sessions,
                                                       per_dataset=vals, per_cell=res, verdict=verdict,
                                                       unmatched_v2=dict(per_cell=res_v2, verdict=verdict_v2)), indent=1))
     print(f"\nstage {a.stage}   cell                       dTE_cyc [CI] (n>0)             rel dInst [CI]       dfc   dR    fires should | v2 fires")
