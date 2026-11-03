@@ -472,3 +472,22 @@ before stage C.
   the main frequency confound (a 9 Hz peak sits close to its upper edge). A development diagnostic of band/delay
   variants on these used sessions decides the revision (`resonet_sync/diag10.py`).
 - The coupling control is unaffected by either fix (+0.0062 vs +0.0063 in screen 9).
+
+### Development diagnostics and revision 1 (used sessions 80-89)
+Each value is Delta S_TE (A - B), averaged over 10 sessions; the number of sessions with a positive Delta is in
+brackets.
+
+| variant | F1 +1 Hz | F2 -1 Hz | C1 coupling |
+|---|---|---|---|
+| fixed 6-10 Hz band, fixed delay (v2) | +0.0027 (10) | -0.0001 (6) | +0.0063 (10) |
+| fixed band, delay in cycles (v3) | +0.0002 (5) | +0.0019 (10) | +0.0062 (10) |
+| centred band, fixed delay | +0.0032 (10) | +0.0019 (9) | +0.0064 (10) |
+| centred band, cycle delay | -0.0009 (0) | +0.0011 (9) | +0.0062 (10) |
+| fixed band, fixed delay, phase-advance rotation | +0.0020 (10) | +0.0004 (7) | +0.0062 (10) |
+| **centred band, fixed delay, phase-advance rotation (v3r)** | **-0.0001 (5)** | **+0.0001 (6)** | **+0.0061 (10)** |
+| bin dithering (4 grids), any combination | same as without | | |
+
+**Interpretation.** A uniform frequency shift with white-noise input does not change the physics in real time
+(rotating frame), so the delay must stay fixed in time. The confound comes from the estimator: the fixed band, plus
+the interaction between the mean phase advance and the 8-bin grid. Both must be removed. The fix was frozen as
+DEVIATIONS 20 revision 1 before stage C.
