@@ -491,3 +491,39 @@ brackets.
 (rotating frame), so the delay must stay fixed in time. The confound comes from the estimator: the fixed band, plus
 the interaction between the mean phase advance and the 8-bin grid. Both must be removed. The fix was frozen as
 DEVIATIONS 20 revision 1 before stage C.
+
+## Screen 10, stage C: rule v3r on fresh sessions 90-99 (DEVIATIONS 20 + revision 1; `results/screen10/stage_C/`)
+
+The verdict was recomputed with the fixed `decide()`, as pre-committed (`results_recomputed.json`). It is valid
+(no non-finite values) and identical to the verdict the run wrote.
+
+| cell | Delta S_TE_al [CI] (n>0) | rel Delta S_inst_dn [CI] | Delta f_c | Delta R | v3r fires | should | v2 (unmatched) fires |
+|---|---|---|---|---|---|---|---|
+| F1 freq up | -0.0002 [-0.0005, +0.0002] (4) | -0.003 | +1.01 | 0.000 | no | no | **yes** |
+| F2 freq down | +0.0001 [-0.0002, +0.0004] (5) | -0.001 | -1.02 | 0.000 | no | no | no |
+| N1 SNR up | -0.0004 [-0.0007, -0.0001] (2) | +0.028 | -0.01 | -0.427 | no | no | no |
+| N2 SNR down | -0.0002 [-0.0006, +0.0001] (3) | -0.020 | -0.02 | +0.426 | no | no | no |
+| X1 both nuisances up | -0.0003 [-0.0006, +0.0000] (3) | +0.020 | +1.00 | -0.426 | no | no | **yes** |
+| T1 mild common trap (rho 0.5 -> 0.7) | +0.0007 [-0.0001, +0.0016] (6) | **+0.940** [+0.842, +1.027] | -0.01 | +0.003 | no | no | no |
+| C1 coupling up | +0.0070 [+0.0064, +0.0076] (10) | +0.025 | -0.02 | -0.004 | yes | yes | yes |
+| C2 coupling up, A noisier | +0.0060 [+0.0054, +0.0066] (10) | +0.049 | -0.02 | +0.427 | yes | yes | **no (miss)** |
+| C3 coupling up, A slower | +0.0070 [+0.0064, +0.0076] (10) | +0.025 | -1.02 | -0.004 | yes | yes | yes |
+
+**Verdict: rule v3r, all 9 cells correct.** No false positives and no misses. On the same data, the unmatched v2
+rule fails 3/9:
+- false positives in F1 and X1 (the screen 9 frequency confound, replicated on fresh sessions);
+- a miss in C2, a real coupling increase hidden because regime A was noisier.
+
+**What this does and does not show (frozen before the result, DEVIATIONS 20 pre-commitment):**
+- **It is not confirmation of v3r.** The F1/F2/X1/C3 cells run on the Euler-Maruyama generator, whose damping
+  depends on frequency. That mixes the estimator confound with a small change in the physics, so the result is
+  reported as **no counter-example found** within this generator family.
+- **Noise matching does both jobs.** It removes the SNR confound (N1 +0.0007 under v2, -0.0004 here) and rescues
+  sensitivity when the coupled regime is noisier (C2: missed by v2, found by v3r). This is the first time the
+  S_TE_al + matching combination was run.
+- **The mild common-input trap** did not even pass the TE leg (6/10 positive). The guard would have blocked it
+  anyway (+94% in S_inst_dn).
+- **Untested by stage C:** *rhythmic* common input. The review board named it the rival hypothesis, and expects
+  this rule to read it as coupling. Rule development is closed. The only remaining synthetic step is the terminal
+  calibration (screen 11), with retirement pre-committed if any rhythmic or rho cell has an estimated
+  P(fire) > 0.05.
