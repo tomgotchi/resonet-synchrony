@@ -240,6 +240,7 @@ which must **not fire**.
 **Success.** All 9 cells behave as required. A false positive in any trap or null cell is a failure of rule v2 and
 is reported as such.
 | 19 | 2026-11-02 | **Screen 9: nuisance-confound traps for rule v2** (theta-frequency and SNR differences between regimes). Synthetic only. | The H3 redesign draft names theta-frequency and signal-strength differences between wheel and maze as possible confounds of Delta S_TE. They are untested. Frozen before any run on sessions 80-89. |
+| 20 | 2026-11-03 | **Screen 10: rule v3 = rule v2 + cycle-normalised TE delay + LDS noise-fraction matching.** Synthetic only. | Screen 9 failed: +1 Hz theta (F1) and +10 dB SNR (N1) each triggered rule v2 without any coupling change. Fixes and both stages frozen before any run. |
 
 ### DEVIATION 19: protocol (frozen 2026-11-02)
 **Rule v2** is unchanged from DEVIATIONS 18. Generator `mixed` with K = 25 and rho = 0.5 in **both** regimes
@@ -258,3 +259,40 @@ frequencies, applied after the seeded draw (so templates are otherwise identical
 **Success.** All 5 cells as required. Any firing in F1, F2, N1 or N2 is a **false positive caused by a nuisance
 variable**. It would invalidate H3' as drafted unless the corresponding nuisance is matched or adjusted in the hc-5
 design.
+
+### DEVIATION 20: protocol (frozen 2026-11-03, before any run)
+**Rule v3.** Per session, per regime, label-free (code: `resonet_sync/nuisance.py`, `resonet_sync/screen10.py`):
+1. **Frequency.** f_c = Welch peak in 6-10 Hz, pooled over trials and channels, with parabolic interpolation.
+   The TE delay = 0.256 cycles of f_c (= 8 samples at 8 Hz, 250 Hz), applied as a fractional delay on the
+   unwrapped phase. Bins, band and edges are unchanged.
+2. **Noise matching.** Fit the latent LDS (EM, 200 iterations, tol 1e-6, at most 150 trials) to each regime.
+   R_c = noise fraction of channel c (z-scored data). Per channel, the target is max(R_A,c, R_B,c). The regime
+   below target gets white noise of variance v = (target - R) / (1 - target) added to its z-scored channel
+   (seed = 1000 * session + regime index). Refit the LDS on both (possibly degraded) regimes.
+3. **Statistics on the matched data:** S_TE_cyc and S_inst_dn (as DEVIATIONS 16).
+4. **Decision rule:** unchanged from v2. Delta S_TE_cyc > 0 in >= 9/10 sessions with bootstrap CI > 0, **and**
+   the relative Delta S_inst_dn has an upper CI < 0.25.
+- **Also reported:** Delta f_c, mean Delta R before matching, and the unmatched v2 statistics.
+
+**Stage D (development): sessions 80-89, the 5 screen 9 cells.** These sessions are already used, so this is a bug
+and feasibility check, not evidence. If any cell is wrong, one documented revision is allowed before stage C. A
+second failure ends the line.
+
+**Stage C (confirmation): fresh sessions 90-99, 9 cells.** Mechanism K 25, rho 0.5 unless stated; 10 dB unless
+stated.
+
+| cell | A | B | must |
+|---|---|---|---|
+| F1 freq up | +1 Hz | 0 | not fire |
+| F2 freq down | -1 Hz | 0 | not fire |
+| N1 SNR up | 10 dB | 0 dB | not fire |
+| N2 SNR down | 0 dB | 10 dB | not fire |
+| X1 both nuisances up | +1 Hz, 10 dB | 0 Hz, 0 dB | not fire |
+| T1 mild common-input trap | rho 0.7 | rho 0.5 | not fire |
+| C1 coupling up | K 40 | K 25 | **fire** |
+| C2 coupling up, A noisier | K 40, 0 dB | K 25, 10 dB | **fire** |
+| C3 coupling up, A slower | K 40, -1 Hz | K 25, 0 Hz | **fire** |
+
+**Success.** All 9 cells correct. A miss in C2 or C3 (matching that removes real coupling effects) counts as a
+failure, as does any false positive.
+
