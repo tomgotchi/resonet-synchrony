@@ -317,3 +317,24 @@ sessions 80-89 (`results/screen10/diag10_variants.log`, `diag10b_alignment.log`)
 this line: no further revision.
 - **Caveat stated in advance:** the noise-matching cells were developed with S_TE_cyc. The S_TE_al + matching
   combination is first seen in stage C.
+
+#### DEVIATION 20, pre-commitment before stage C finishes (2026-11-03; review board round 2)
+Frozen while stage C is still running. The judge read stage C partial results mid-run once, and checkpoint commits
+of partial.json exist, so this is stated before the final verdict:
+1. **A stage C pass is NOT confirmation of rule v3r.** The F1, F2, X1 and C3 cells run on the Euler-Maruyama
+   generator. Its damping depends on frequency (-5.32 / -5.03 / -4.69 s^-1 at 7 / 8 / 9 Hz vs -6.28 nominal), so
+   these cells mix the estimator confound with a small change in the physics, and they cannot be credited as
+   evidence of frequency robustness.
+   - A pass is reported only as "no counter-example found".
+   - A fail ends the v3r line, as frozen.
+2. **Verdict code.** The running process loaded `decide()` before the NaN fix (commit c43eaf7). The final verdict
+   is recomputed with the fixed `decide()` on the final data, and both verdicts are reported, including
+   `valid`.
+3. **The sign threshold `ceil(0.9 n)` (c43eaf7) applies to the synthetic n = 10 only (= 9/10).** For hc-5 (n = 7)
+   the threshold is an open pre-registration decision: 6/7 gives p = 0.0625, and 7/7 has low power. It is not
+   settled by that bug fix.
+4. **Rule development is closed.** After stage C, the only further synthetic work on this rule is a *terminal
+   calibration* (screen 11): graded traps (including rhythmic common input), with the false-positive rate
+   estimated by resampling, frozen before running, with no revisions allowed.
+   - Pre-commitment: if any rhythmic-common-input or rho cell has an estimated P(fire) > 0.05, the TE/LDS rule is
+     retired from H3' and reported as a negative methods result.
