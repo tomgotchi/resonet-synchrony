@@ -32,3 +32,11 @@ def test_causal_free_of_labels():
     import inspect
     for f in (N.peak_freq, N.s_te_cyc, N.degrade_to):
         assert "y" not in inspect.signature(f).parameters
+
+
+def test_aligned_matches_diag_and_reduces_to_rotation():
+    from resonet_sync import diag10b
+    X = _X()
+    f_c = N.peak_freq(X)
+    a = Mx.analytic(X, 250.0, (f_c - 2, f_c + 2))
+    assert np.isclose(N.s_te_aligned(X)[0], diag10b.te_rot(a, 8.0, f_c, True, 1))

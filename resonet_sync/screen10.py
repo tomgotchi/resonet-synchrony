@@ -47,7 +47,7 @@ def _job(args):
         Y, v = N.degrade_to(X[r], fits[r]["R"], tgt, seed=1000 * seed + i)
         fit_m = lds.em_fit(Y, **EM)
         te, f_c = N.s_te_cyc(Y)
-        st.update(f_c=f_c, added_noise_var=float(v.mean()), R_mean_matched=float(fit_m["R"].mean()),
+        st.update(S_TE_al=N.s_te_aligned(Y)[0], f_c=f_c, added_noise_var=float(v.mean()), R_mean_matched=float(fit_m["R"].mean()),
                   S_TE_cyc=te, S_inst_dn=lds.denoised_stats(fit_m)["S_inst_dn"])
         out[r] = st
     return cell, seed, out
@@ -86,9 +86,10 @@ def main(argv=None):
             part.write_text(json.dumps(vals))
             if (i + 1) % 10 == 0:
                 print(f"  {i + 1}/{len(jobs)}", flush=True)
-    res, verdict = decide(vals, cells, sessions)
+    te_key = "S_TE_al" if a.stage == "C" else "S_TE_cyc"     # DEVIATIONS 20 revision: stage C uses rule v3r
+    res, verdict = decide(vals, cells, sessions, te_key)
     res_v2, verdict_v2 = decide(vals, cells, sessions, "S_TE_v2", "S_inst_dn_v2")
-    (out / "results.json").write_text(json.dumps(dict(protocol="DEVIATIONS.md #20", stage=a.stage, sessions=sessions,
+    (out / "results.json").write_text(json.dumps(dict(protocol="DEVIATIONS.md #20", stage=a.stage, te_statistic=te_key, sessions=sessions,
                                                       per_dataset=vals, per_cell=res, verdict=verdict,
                                                       unmatched_v2=dict(per_cell=res_v2, verdict=verdict_v2)), indent=1))
     print(f"\nstage {a.stage}   cell                       dTE_cyc [CI] (n>0)             rel dInst [CI]       dfc   dR    fires should | v2 fires")

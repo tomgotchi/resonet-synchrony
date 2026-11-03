@@ -296,3 +296,24 @@ stated.
 **Success.** All 9 cells correct. A miss in C2 or C3 (matching that removes real coupling effects) counts as a
 failure, as does any false positive.
 
+
+#### DEVIATION 20, revision 1 (the one allowed; frozen 2026-11-03, before any stage C run)
+Stage D failed (F2 false positive under the cycle-normalised delay). Two development diagnostics on the used
+sessions 80-89 (`results/screen10/diag10_variants.log`, `diag10b_alignment.log`) showed the following:
+- A uniform frequency shift with white-noise input is a rotating-frame change, so the physics is identical in real
+  time. The delay must therefore stay fixed in **time**; delay-in-cycles was the wrong fix.
+- The remaining bias comes from plug-in TE **bin alignment** (mean phase advance per delay = 2.05 bins at 8 Hz,
+  fractional at 7/9 Hz) together with the fixed band.
+- Only the combination **band centred on f_c (f_c +/- 2 Hz) + future phase rotated by -2 pi f_c d** removed it in both
+  directions: F1 -0.0001 (5/10), F2 +0.0001 (6/10), C1 +0.0061 (10/10). Bin dithering added nothing.
+
+**Rule v3r** = rule v3 with step 1 replaced by:
+1'. f_c as before. Analysis band = f_c +/- 2 Hz (same Butterworth/Hilbert/edges). Delay = 8 samples (32 ms).
+    The future phase is rotated by -2 pi f_c * 32 ms before binning (`nuisance.s_te_aligned`).
+- Steps 2-4 are unchanged: LDS noise matching, S_inst_dn on the matched data, and the decision rule with margin
+  0.25.
+
+**Stage C proceeds as frozen** (fresh sessions 90-99, 9 cells, all must be correct), using S_TE_al. A failure ends
+this line: no further revision.
+- **Caveat stated in advance:** the noise-matching cells were developed with S_TE_cyc. The S_TE_al + matching
+  combination is first seen in stage C.

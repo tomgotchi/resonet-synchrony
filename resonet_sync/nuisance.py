@@ -78,3 +78,34 @@ def degrade_to(X, r_have, r_target, seed=0):
     v = np.clip((r_target - r_have) / np.maximum(1 - r_target, 1e-6), 0.0, None)
     rng = np.random.default_rng(seed)
     return Z + np.sqrt(v)[None, :, None] * rng.standard_normal(Z.shape), v
+
+
+# ---------------------------------------------------------------- DEVIATIONS 20 revision (rule v3r)
+BAND_HW = 2.0                        # analysis band = f_c +/- 2 Hz (per regime)
+DELAY_S = 8 / 250.0                  # 32 ms, fixed in TIME (a uniform frequency shift is a rotating-frame change)
+
+
+def te_matrix_aligned(a, f_c, fs=250.0, delay_s=DELAY_S, bins=Mx.TE_BINS):
+    """As mechanism.te_matrix with an integer delay fixed in time, but the future phase is rotated by
+    -2 pi f_c d so the regime's mean phase advance does not interact with the bin grid."""
+    d = int(round(delay_s * fs))
+    phi = np.angle(a)
+    past, fut = phi[..., :-d], phi[..., d:] - 2 * np.pi * f_c * d / fs
+    q = lambda p: np.clip((((np.angle(np.exp(1j * p)) + np.pi) / (2 * np.pi)) * bins).astype(np.int64), 0, bins - 1)
+    P, F = q(past), q(fut)
+    M = phi.shape[1]
+    TE = np.zeros((M, M))
+    for i in range(M):
+        xf, xp = F[:, i].ravel(), P[:, i].ravel()
+        h_fp, h_p = Mx._H(xf, xp, bins=bins), Mx._H(xp, bins=bins)
+        for j in range(M):
+            if j != i:
+                yp = P[:, j].ravel()
+                TE[j, i] = h_fp + Mx._H(xp, yp, bins=bins) - h_p - Mx._H(xf, xp, yp, bins=bins)
+    return TE
+
+
+def s_te_aligned(X, fs=250.0):
+    f_c = peak_freq(X, fs)
+    a = Mx.analytic(X, fs, (f_c - BAND_HW, f_c + BAND_HW))
+    return Mx.s_te(te_matrix_aligned(a, f_c, fs)), f_c
