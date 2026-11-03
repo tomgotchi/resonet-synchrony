@@ -450,3 +450,25 @@ DEVIATIONS 19, H3' as drafted is invalid unless theta frequency and SNR are matc
 - **Next step: candidate fixes, tested on fresh sessions (DEVIATIONS 20).** (a) Set the TE delay in cycles of each
   regime's own train-free spectral peak. (b) Degrade the higher-SNR regime to match, using the latent-LDS noise
   fraction.
+
+## Screen 10, stage D: rule v3 development check (DEVIATIONS 20; used sessions 80-89; `results/screen10/stage_D/`)
+
+| cell | Delta S_TE_cyc [CI] (n>0) | rel Delta S_inst_dn [CI] | Delta f_c | Delta R | v3 fires | should | v2 fires |
+|---|---|---|---|---|---|---|---|
+| F1 freq up | +0.0002 [-0.0003, +0.0008] (5) | -0.002 | +1.02 | 0.000 | no | no | yes |
+| F2 freq down | **+0.0019 [+0.0013, +0.0025] (10)** | -0.003 | -1.01 | -0.001 | **yes** | no | no |
+| N1 SNR up | -0.0002 [-0.0005, +0.0000] (3) | -0.059 | +0.01 | -0.426 | no | no | yes |
+| N2 SNR down | -0.0001 [-0.0004, +0.0003] (5) | -0.017 | +0.01 | +0.425 | no | no | no |
+| C1 coupling up | +0.0062 [+0.0057, +0.0066] (10) | +0.028 | +0.01 | -0.004 | yes | yes | yes |
+
+**Verdict: stage D FAILED (F2 false positive).** As allowed by DEVIATIONS 20, one documented revision is permitted
+before stage C.
+
+**Reading:**
+- **Noise matching works.** The SNR confound is gone in both directions (N1: +0.0007 -> -0.0002). The
+  relative-guard asymmetry from screen 9 disappears with it (rel Delta S_inst_dn -21% -> -6%).
+- **Cycle normalisation over-corrects.** It fixed +1 Hz but turned -1 Hz into a false positive. Under the old
+  sample delay only +1 Hz was biased. This asymmetry points to the fixed 6-10 Hz analysis band, not the delay, as
+  the main frequency confound (a 9 Hz peak sits close to its upper edge). A development diagnostic of band/delay
+  variants on these used sessions decides the revision (`resonet_sync/diag10.py`).
+- The coupling control is unaffected by either fix (+0.0062 vs +0.0063 in screen 9).
