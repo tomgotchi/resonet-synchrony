@@ -418,3 +418,35 @@ Rule v2: Delta S_TE > 0 (>= 9/10 sessions, CI > 0) **and** the relative change i
   hc-5.
 - Still synthetic, with one model family (noise-driven Stuart-Landau, linear diffusive coupling). Application to hc-5
   remains Tom's decision and would need its own PREREG.
+
+## Screen 9: nuisance-confound traps for rule v2 (DEVIATIONS 19; fresh sessions 80-89; `results/screen9/`)
+
+Both regimes have the same mechanism (`mixed`, K 25, rho 0.5). Only one nuisance differs per cell; C1 is the
+positive control.
+
+| cell | Delta S_TE [CI] (n>0) | rel Delta S_inst_dn [CI] | fires | should | correct |
+|---|---|---|---|---|---|
+| F1 freq up (+1 Hz) | **+0.0027 [+0.0021, +0.0033] (10)** | -0.003 [-0.040, +0.034] | **yes** | no | **no** |
+| F2 freq down (-1 Hz) | -0.0001 [-0.0007, +0.0005] (6) | -0.004 [-0.036, +0.028] | no | no | yes |
+| N1 SNR up (10 vs 0 dB) | **+0.0007 [+0.0003, +0.0009] (9)** | -0.209 [-0.253, -0.152] | **yes** | no | **no** |
+| N2 SNR down (0 vs 10 dB) | -0.0009 [-0.0013, -0.0006] (0) | +0.245 [+0.184, +0.303] | no | no | yes |
+| C1 control: coupling up (K 40 vs 25) | +0.0063 [+0.0058, +0.0068] (10) | +0.026 [-0.018, +0.070] | yes | yes | yes |
+
+**Verdict (frozen criterion): FAILED, with 2 nuisance-caused false positives (F1, N1) and no misses.** Under
+DEVIATIONS 19, H3' as drafted is invalid unless theta frequency and SNR are matched or adjusted between regimes.
+
+**Reading:**
+- **Both confounds act in one direction.** A regime with a *higher* theta frequency, or a *higher* SNR, gets a
+  higher S_TE without any change in coupling. The opposite shifts lower S_TE, so the rule (which needs Delta > 0)
+  stays silent there.
+- **Frequency.** +1 Hz alone produced 43% of the TE increase that a 60% coupling increase produced (+0.0027 vs
+  +0.0063), in 10/10 sessions. The likely cause is that the TE delay is fixed in *samples* (8 = 32 ms), so it spans
+  more of a cycle at a higher frequency. The guard cannot help: S_inst_dn does not move (-0.3%).
+- **SNR.** Higher SNR raises S_TE slightly (+0.0007, 9/10) and *lowers* S_inst_dn by 21%. The relative guard only
+  blocks increases in S_inst_dn, so this change passes it.
+- **Relevance to hc-5.** Theta frequency is known to differ with running speed and between wheel and maze, and
+  signal quality differs between behavioural states. Both confounds are therefore plausible in the real
+  comparison, in the direction that would produce a positive result.
+- **Next step: candidate fixes, tested on fresh sessions (DEVIATIONS 20).** (a) Set the TE delay in cycles of each
+  regime's own train-free spectral peak. (b) Degrade the higher-SNR regime to match, using the latent-LDS noise
+  fraction.
