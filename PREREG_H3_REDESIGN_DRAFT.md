@@ -56,9 +56,12 @@ The session counts are adapted from the synthetic 9/10 to the 7 available sessio
   behaviour-locked evoked structure).
 - The relative guard loses sensitivity with short or noisy windows (screen 8, S1 win05). A null result may be a
   sensitivity limit.
-- Wheel and maze also differ in speed, sensory input and theta frequency. Theta-frequency differences change TE
-  without coupling changes. **To decide:** whether to match f_c across regimes, or to report Delta f_c and include
-  it as a covariate.
+- Wheel and maze also differ in speed, sensory input and theta frequency. **Screen 9 (DEVIATIONS 19) showed that
+  rule v2 is not safe against these:** +1 Hz theta in one regime, or +10 dB SNR, each triggered it with no coupling
+  change (10/10 and 9/10 sessions). H3' must not use rule v2 as written. The candidate rule v3 (DEVIATIONS 20:
+  TE delay in cycles of each regime's own f_c, plus LDS noise-fraction matching) is being tested on synthetic
+  data. **To decide after screen 10:** adopt v3, or match f_c and SNR by window selection instead. Delta f_c and
+  Delta R are reported either way.
 - 7 sessions from one animal; no population-level claims.
 
 ## What must be true before freezing
