@@ -287,12 +287,14 @@ def main(argv=None):
     elif (ROOT / "results/screen10/diag10_variants.json").exists():      # committed copies (default)
         da = json.loads((ROOT / "results/screen10/diag10_variants.json").read_text())
         db = json.loads((ROOT / "results/screen10/diag10b_alignment.json").read_text())
-    sc = ROOT / "results" / "screen10" / "stage_C" / "results.json"
+    sc = ROOT / "results" / "screen10" / "stage_C" / "results_recomputed.json"   # fixed decide (DEVIATIONS 20)
+    if not sc.exists():
+        sc = sc.with_name("results.json")
     stage_c = json.loads(sc.read_text())["per_cell"] if sc.exists() else None
     hist_c = None
     if stage_c:
         hist_c = ("Screen 10 C\nrule v3r, fresh sessions", sum(r["correct"] for r in stage_c.values()),
-                  sum(bool(r["fires"]) and not r["should_fire"] for r in stage_c.values()),
+                  sum(r["fires"] is True and not r["should_fire"] for r in stage_c.values()),
                   sum(r["fires"] is False and r["should_fire"] for r in stage_c.values()))
     fig_traps(db, stage_c)
     if da and db:
