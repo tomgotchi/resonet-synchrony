@@ -61,3 +61,31 @@ def test_documented_map_only_for_129():
     reg, src = H5.region_map(129)
     assert reg[0] == "EC" and reg[32] == "CA1_R" and reg[64] == "CA1_L" and reg[104] == "wheel_ttl" and reg[106] == "sync"
     assert H5.region_map(102)[1].startswith("unknown")
+
+
+def test_bipolar_default_non_overlapping_and_skip_flags(tmp_path):
+    x = np.arange(30, dtype=float).reshape(3, 10)
+    y, pairs = H5.bipolar(x, [[0, 1, 2, 3, 4]])
+    assert pairs == [(0, 1), (2, 3)]                              # no shared electrode
+    y2, pairs2 = H5.bipolar(x, [[0, 1, 2]], overlap=True)
+    assert pairs2 == [(0, 1), (1, 2)]
+    d = tmp_path / "k"; d.mkdir()
+    (d / "a.xml").write_text("<parameters><acquisitionSystem><nBits>16</nBits><nChannels>3</nChannels>"
+                             "<samplingRate>20000</samplingRate></acquisitionSystem><anatomicalDescription><channelGroups>"
+                             "<group><channel>0</channel><channel skip=\"1\">1</channel><channel>2</channel></group>"
+                             "</channelGroups></anatomicalDescription></parameters>")
+    xm = H5.parse_xml(str(d / "a.xml"))
+    assert xm["skipped"] == [1] and xm["groups_clean"] == [[0, 2]]
+
+
+def test_find_base_refuses_ambiguous_sessions(tmp_path):
+    d = _fake(tmp_path / "s")
+    import shutil
+    shutil.copy(d / "fake_MS.001.xml", d / "other.xml"); shutil.copy(d / "fake_MS.001.eeg", d / "other.eeg")
+    with pytest.raises(ValueError):
+        H5.find_base(d)
+
+
+def test_qc_reports_laminar_coverage(tmp_path):
+    rep = Q.qc_session(_fake(tmp_path / "c"))
+    assert len(rep["laminar_coverage"]) == 2 and all("usable" in g for g in rep["laminar_coverage"])

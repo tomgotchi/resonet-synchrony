@@ -20,7 +20,8 @@ generated internally (hippocampal wheel running), and not where it is stimulus-d
 | [results/README_results.md](results/README_results.md) | all results, phase by phase and screen by screen |
 | [results/figures/](results/figures/) | figures (regenerate: `scripts/make_figures.py`) |
 | [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md) | review board rounds 1-2: findings, verdicts, revised plan |
-| [docs/PREREG_H3_REDESIGN_DRAFT.md](docs/PREREG_H3_REDESIGN_DRAFT.md) | hc-5 pre-registration draft (**not frozen**; the board recommends reframing it) |
+| [docs/PREREG_H3_GENERATOR_MIX_DRAFT.md](docs/PREREG_H3_GENERATOR_MIX_DRAFT.md) | **adopted** hc-5 plan: generator mix (CA3 radiatum vs EC3 l-m CSD), frozen after Gate 0 (laminar coverage) + Gate 1 (forward-model null) |
+| [docs/PREREG_H3_REDESIGN_DRAFT.md](docs/PREREG_H3_REDESIGN_DRAFT.md) | superseded H3' draft (coupling between sites) |
 | [docs/RUN_PHASE1_LOCAL.md](docs/RUN_PHASE1_LOCAL.md) | exact commands for the Phase 1 GPU run |
 | [notebooks/resonet_synchrony_full_colab.ipynb](notebooks/resonet_synchrony_full_colab.ipynb) | **standalone Colab pipeline**: Drive data, tests, Phase 1 GPU training (resumable to Drive), results, hc-5 QC, synthetic figures, push |
 
@@ -37,6 +38,7 @@ resonet_sync/            library
   mechanism.py           phase TE, Granger, residual correlation
   lds.py                 latent linear dynamical system (EM) and denoised statistics
   nuisance.py            rule v3/v3r adjustments: centred band, phase rotation, LDS noise matching
+  laminar.py             CA1 laminar forward model (CA3/EC3 generators), CSD, layer localisation, generator mix
   stats.py               paired tests, Holm, bootstrap CI
   data_hgd.py            HGD cache loader;   data_hc5.py, qc_hc5.py: hc-5 loading and QC (no hypothesis test)
   sanitize.py            shared with phasetrack;   _vendor.py: imports vendor/ unmodified

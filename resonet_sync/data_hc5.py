@@ -28,10 +28,15 @@ DOC_129 = dict(EC=range(1, 33), CA1_R=range(33, 65), CA1_L=[c for c in range(65,
 
 
 def find_base(session_dir):
+    """The session's Neuroscope base path. Refuses ambiguity: exactly one .xml that has a matching .eeg
+    (review board: taking the first .xml silently could pick the wrong file)."""
     xml = sorted(glob.glob(str(Path(session_dir) / "**" / "*.xml"), recursive=True))
+    cand = [Path(x).with_suffix("") for x in xml if Path(x).with_suffix(".eeg").exists()]
     if not xml:
         raise FileNotFoundError(f"{session_dir}: no .xml")
-    return Path(xml[0]).with_suffix("")
+    if len(cand) > 1:
+        raise ValueError(f"{session_dir}: {len(cand)} .xml/.eeg pairs; pass the session directory of exactly one")
+    return cand[0] if cand else Path(xml[0]).with_suffix("")
 
 
 def parse_xml(path):
@@ -41,8 +46,10 @@ def parse_xml(path):
                fs=float(acq.findtext("samplingRate")))
     lfp = root.findtext("fieldPotentials/lfpSamplingRate")
     out["lfp_fs"] = float(lfp) if lfp else None
-    out["groups"] = [[int(c.text) for c in g.findall("channel")]
-                     for g in root.findall("anatomicalDescription/channelGroups/group")]
+    gs = root.findall("anatomicalDescription/channelGroups/group")
+    out["groups"] = [[int(c.text) for c in g.findall("channel")] for g in gs]
+    out["skipped"] = sorted(int(c.text) for g in gs for c in g.findall("channel") if c.get("skip") == "1")
+    out["groups_clean"] = [[int(c.text) for c in g.findall("channel") if c.get("skip") != "1"] for g in gs]
     return out
 
 
@@ -124,12 +131,15 @@ def region_map(n_channels):
     return {c: reg.get(c, "unlabelled") for c in range(n_channels)}, "crcns-hc5-data-description v0.6 (129-ch layout)"
 
 
-def bipolar(x, groups):
-    """x: (n, nCh). Each channel minus the next channel in its anatomical group (group order = probe order).
+def bipolar(x, groups, overlap=False):
+    """x: (n, nCh). Local re-reference within each anatomical group (group order = probe order; verify per session).
+    Default: NON-overlapping pairs (a-b, c-d, ...). Overlapping pairs (a-b, b-c) share an electrode, which induces a
+    -0.5 residual correlation under equal white sensor noise (review board) and breaks diagonal-noise models.
     Returns (y, pairs) with pairs[k] = (ch, ref)."""
     cols, pairs = [], []
     for g in groups:
-        for a, b in zip(g[:-1], g[1:]):
+        it = zip(g[:-1], g[1:]) if overlap else zip(g[0::2], g[1::2])
+        for a, b in it:
             cols.append(np.asarray(x[:, a], float) - np.asarray(x[:, b], float))
             pairs.append((a, b))
     return (np.stack(cols, 1) if cols else np.zeros((len(x), 0))), pairs

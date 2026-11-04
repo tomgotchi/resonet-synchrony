@@ -40,6 +40,24 @@ def _plv_within(x, fs, groups_cols, band=(6.0, 10.0), max_s=300.0):
     return float(np.mean(out)) if out else None
 
 
+def _laminar_coverage(X, fs, groups, max_s=120.0):
+    """Feasibility gate for the generator-mix hypothesis (docs/PREREG_H3_GENERATOR_MIX_DRAFT.md): per anatomical
+    group (shank, in xml order = assumed depth order), the ripple-power peak (pyramidal layer) and whether a theta
+    phase reversal exists below it. Site spacing is not in the .xml, so the span is reported in sites."""
+    from . import laminar as L
+    n = min(X.shape[1], int(max_s * fs))
+    out = []
+    for gi, g in enumerate(groups):
+        if len(g) < 3:
+            out.append(dict(group=gi, n_sites=len(g), usable=False)); continue
+        lay = L.localise_layers(X[g, :n], fs)
+        out.append(dict(group=gi, n_sites=len(g), pyramidal_site=lay["pyramidal"], theta_reversal_site=lay["theta_reversal"],
+                        sites_below_pyramidal=len(g) - 1 - lay["pyramidal"],
+                        theta_phase_deg=[round(v, 1) for v in lay["theta_phase_deg"]],
+                        usable=lay["theta_reversal"] is not None))
+    return out
+
+
 def qc_session(session_dir, max_power_s=600.0):
     base = H5.find_base(session_dir)
     name = base.name
@@ -65,11 +83,12 @@ def qc_session(session_dir, max_power_s=600.0):
     th = P[:, (f >= 6) & (f <= 10)].mean(1); de = P[:, (f >= 1) & (f <= 4)].mean(1)
     rep["theta_delta_ratio_per_channel"] = (th / np.maximum(de, 1e-30)).round(3).tolist()
     rep["top_theta_channels"] = np.argsort(-th)[:10].tolist()
-    groups = [[c for c in g if c < xmlp["n_channels"]] for g in xmlp["groups"]]
-    xb, pairs = H5.bipolar(eeg[:n], groups)
-    gcols_b, k = [], 0
-    for g in groups:
-        m = max(len(g) - 1, 0); gcols_b.append(list(range(k, k + m))); k += m
+    non_lfp = {c for r in ("wheel_ttl", "sync") for c in (H5.DOC_129[r] if xmlp["n_channels"] == 129 else [])}
+    groups = [[c for c in g if c < xmlp["n_channels"] and (c + 1) not in non_lfp] for g in xmlp["groups_clean"]]
+    rep["skipped_channels"] = xmlp["skipped"]
+    xb, pairs = H5.bipolar(eeg[:n], groups)                    # non-overlapping pairs (review board)
+    gcols_b = [[k for k, (a, _) in enumerate(pairs) if a in g] for g in groups]
+    rep["laminar_coverage"] = _laminar_coverage(X, fs, groups)
     rep["theta_plv_within_group"] = dict(common_reference=_plv_within(eeg, fs, groups),
                                          local_bipolar=_plv_within(xb, fs, gcols_b),
                                          note="first <=300 s of the session; whole-session, not split by behaviour")

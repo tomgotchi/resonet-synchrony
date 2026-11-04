@@ -1,4 +1,8 @@
-# H3 redesign: pre-registration DRAFT (NOT frozen; for Tom)
+# H3 redesign: pre-registration DRAFT (SUPERSEDED)
+
+> **Superseded 2026-11-04** by [PREREG_H3_GENERATOR_MIX_DRAFT.md](PREREG_H3_GENERATOR_MIX_DRAFT.md). The review board
+> recommended retiring the 'coupling between CA1 sites' construct, and Tom delegated the choice to the board.
+> Kept for the record; do not use.
 
 Phase 2 (synthetic H0) showed that the original H3 contrast, the nl_coupled - lin *decoder* advantage, cannot detect
 emergent coupling. The stop rule was triggered and Phase 3 was not started. Screens 1-8 (DEVIATIONS 11-18) then
