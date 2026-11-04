@@ -572,18 +572,29 @@ the synchrony increase of K 25 -> 40 (Delta PLV 0.055).
 1. **Rhythmic common input is indistinguishable from coupling for this rule.** Per unit of synchrony gained, it
    raises TE as much as coupling does (+0.0054 at Delta PLV 0.056, vs +0.0043 at 0.044 for K35). It also moves
    the denoised instantaneous correlation by the same small amount (+8% vs +8%).
-   - A shared rhythm is a latent oscillator with memory. The LDS absorbs it into the lagged dynamics A, not into
-     the instantaneous covariance Q, exactly as the information theorist and the statistician predicted in
-     board round 2.
+   - A shared rhythm is a latent oscillator with memory, so it plausibly appears in the lagged dynamics A rather
+     than in the instantaneous covariance Q, as the board predicted in round 2. This mechanism is **asserted,
+     not shown**: a quick refit in a later board check did not clearly support it. Status: PENDING.
+   - The TE leg behaves as a synchrony index here: Delta TE is about 0.099 x Delta PLV per session, for coupling
+     and rhythm alike.
    - This is the rival hypothesis for hc-5 (septal/EC theta drive), so the rule cannot answer the question it was
      built for.
 2. **What the guard does catch.** It works for instantaneous sources: white common input (P 0.00 at rho 0.60 and
    0.65) and volume conduction (rel Delta +427%, P 0.00).
-3. **Noise matching fails under spatially correlated 1/f noise.** Q1 fires with P 1.00, because the diagonal-R
-   model mis-estimates correlated noise and the guard then sees a 25% *drop*. This confirms the board's concern
-   about real sensor noise.
+3. **Noise matching fails under spatially correlated 1/f noise.** Q1 fires with P 1.00. The fitted noise fraction
+   R is about 0.01, so matching adds almost nothing, and the guard then sees a 25% *drop*. This confirms the
+   board's concern about real sensor noise.
 4. **The frequency fix is incomplete with the exact integrator** (-1 Hz: P 0.34). Part of the stage D/C
    frequency "fix" was compensating the Euler damping artefact.
+
+**Corrections from a later board check (2026-11-04).**
+- **"TE bound" cells are not strict upper bounds.** The tier-T TE leg is computed on *unmatched* data, while the
+  rule's TE leg uses matched data. Read those P values as approximate.
+- **F2's P(fire) of 0.34 depends on the estimator and the session set** (range about 0.16-0.73). It is above 0.05
+  in every variant.
+- **The candidate statistics were not computed.** The board's revised plan said to compute but quarantine them
+  (drift/diffusion; augmented latent likelihood ratio). Screen 11 computed neither. Neither affects the
+  pre-committed retirement, which holds under every bootstrap variant.
 
 **Consequences (already in place).**
 - **hc-5:** the adopted plan is the generator-mix hypothesis (`docs/PREREG_H3_GENERATOR_MIX_DRAFT.md`), not a
