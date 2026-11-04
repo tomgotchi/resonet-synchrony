@@ -1,0 +1,556 @@
+{
+ "protocol": "docs/PREREG_H3_GENERATOR_MIX_DRAFT.md Gate 1",
+ "geometry": {
+  "n_sites": 8,
+  "spacing_um": 20.0,
+  "z0_um": 100.0
+ },
+ "dry_run": true,
+ "seeds": [
+  2000,
+  2001,
+  2002,
+  2003,
+  2004,
+  2005,
+  2006,
+  2007,
+  2008,
+  2009
+ ],
+ "cells": {
+  "freq_up_1Hz": {
+   "usable": false,
+   "note": "geometry fails the coverage gate",
+   "rows": [
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    }
+   ]
+  },
+  "speed_drift": {
+   "usable": false,
+   "note": "geometry fails the coverage gate",
+   "rows": [
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": null
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": null
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": null
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": null
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": null
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": null
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": null
+     }
+    }
+   ]
+  },
+  "asymmetry": {
+   "usable": false,
+   "note": "geometry fails the coverage gate",
+   "rows": [
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    }
+   ]
+  },
+  "amplitude_x1.3": {
+   "usable": false,
+   "note": "geometry fails the coverage gate",
+   "rows": [
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    }
+   ]
+  },
+  "background_1f": {
+   "usable": false,
+   "note": "geometry fails the coverage gate",
+   "rows": [
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    }
+   ]
+  },
+  "ec_phase_lag_10deg": {
+   "usable": false,
+   "note": "geometry fails the coverage gate",
+   "rows": [
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    }
+   ]
+  },
+  "EC_drive_plus20pct": {
+   "usable": false,
+   "note": "geometry fails the coverage gate",
+   "rows": [
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 1,
+      "reversal": 7
+     }
+    },
+    {
+     "usable": false,
+     "layers": {
+      "pyramidal": 4,
+      "reversal": 7
+     }
+    }
+   ]
+  }
+ },
+ "gate1_pass": false
+}

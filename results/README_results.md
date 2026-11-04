@@ -527,3 +527,19 @@ rule fails 3/9:
   this rule to read it as coupling. Rule development is closed. The only remaining synthetic step is the terminal
   calibration (screen 11), with retirement pre-committed if any rhythmic or rho cell has an estimated
   P(fire) > 0.05.
+
+## hc-5 generator-mix plan, Gate 1 runner: DRY RUNS on hypothetical geometry (`results/gate1_laminar/*_DRYRUN.json`)
+
+These are not Gate 1. The real Gate 1 uses the probe geometry that Gate 0 (hc-5 QC, `laminar_coverage`) reports.
+The dry runs check that the runner and the analysis path behave.
+
+| geometry | outcome |
+|---|---|
+| 16 sites x 50 um | **passes**. No nuisance moves Delta (all \|mean\| <= 0.026, sign-flip p >= 0.18): +1 Hz, speed-locked drift, sawtooth asymmetry, amplitude x1.3, 1/f background, 10 deg EC phase lag. EC drive +20% gives mean Delta +0.21, 8/10 positive (exactly at the threshold). |
+| 8 sites x 20 um | **fails the coverage gate** (no theta reversal with >= 300 um below the pyramidal layer), as expected. |
+
+**Reading.**
+- With adequate laminar coverage, the CSD generator-mix statistic is robust to every nuisance the board listed.
+- Its power for a 20% EC change is marginal at 10 sessions. hc-5 has 7, so only effects of about 30% or more are
+  realistic.
+- Short 8-site shanks make the whole route infeasible. Gate 0 will decide this on the real data.
