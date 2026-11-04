@@ -21,4 +21,4 @@ __pycache__/
 results/phase*/raw/
 
 # resumable checkpoints of running screens (final results.json holds per_dataset)
-results/**/partial.json
+results/**/*partial.json
