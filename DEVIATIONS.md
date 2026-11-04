@@ -250,6 +250,7 @@ which must **not fire**.
 is reported as such.
 | 19 | 2026-11-02 | **Screen 9: nuisance-confound traps for rule v2** (theta-frequency and SNR differences between regimes). Synthetic only. | The H3 redesign draft names theta-frequency and signal-strength differences between wheel and maze as possible confounds of Delta S_TE. They are untested. Frozen before any run on sessions 80-89. |
 | 20 | 2026-11-03 | **Screen 10: rule v3 = rule v2 + cycle-normalised TE delay + LDS noise-fraction matching.** Synthetic only. | Screen 9 failed: +1 Hz theta (F1) and +10 dB SNR (N1) each triggered rule v2 without any coupling change. Fixes and both stages frozen before any run. |
+| 21 | 2026-11-04 | **Screen 11: terminal calibration of rule v3r** (review board rounds 1-2; Tom approved). Synthetic only. | Stage C found no counter-example within its family. The board requires graded traps, including the rival hypothesis (rhythmic common input), with false-positive rates estimated by resampling rather than pass/fail cells. Retirement is pre-committed. Frozen before any calibration or tier run. |
 
 ### DEVIATION 19: protocol (frozen 2026-11-02)
 **Rule v2** is unchanged from DEVIATIONS 18. Generator `mixed` with K = 25 and rho = 0.5 in **both** regimes
@@ -347,3 +348,71 @@ of partial.json exist, so this is stated before the final verdict:
    estimated by resampling, frozen before running, with no revisions allowed.
    - Pre-commitment: if any rhythmic-common-input or rho cell has an estimated P(fire) > 0.05, the TE/LDS rule is
      retired from H3' and reported as a negative methods result.
+
+### DEVIATION 21: protocol (frozen 2026-11-04, before any run)
+**Rule under test:** v3r, unchanged (DEVIATIONS 20 + revision 1). This is a calibration, not a development step:
+**no revisions are allowed after any result is seen.** Code: `resonet_sync/screens/screen11.py`.
+
+**Generator (review board corrections).**
+- **Every regime** uses `integrator="exact"`. With it, a uniform frequency shift is an exact symmetry of the
+  simulator.
+- **Rhythmic common input:**
+  - an AR(1) complex narrowband drive at 8 Hz, 2 Hz bandwidth, its frequency shifting with `f_shift_hz`;
+  - its **own loadings**: a smooth spatial phase gradient of 15 deg per unit, not the white-noise loadings;
+  - its own RNG stream.
+- **Volume conduction:** `vc_spread` (W_ij = exp(-|i-j|/s), rows normalised).
+- **Spatially correlated 1/f noise:** `obs_noise_exp` 1.5, `obs_noise_corr` 0.3 (Sigma_ij = 0.3^|i-j|).
+
+**Base regime:** K 25, rho 0.5, 10 dB, exact integrator. Regime A uses trial stream 0, regime B stream 1.
+
+**Calibration** (pilot sessions 990-994, used for nothing else). Rhythmic levels L1, L2, L3 are the kappa_nb values
+whose mean pairwise PLV increase over the base equals 0.5x, 1x and 2x the PLV increase of K 25 -> 40. They are
+interpolated on the grid {2, 4, 8, 12, 16, 24, 32}, using 50 trials per class. This is a matched-synchrony design:
+does the rule confuse a synchrony increase caused by shared rhythm with one caused by coupling?
+
+**Cells** (A vs B; B = base unless stated):
+
+| must NOT fire | | must fire | |
+|---|---|---|---|
+| N0 | null (identical parameters) | K30 / K35 / K40 | coupling K vs 25 |
+| F1 / F2 | +1 / -1 Hz | K35R | K 35 with rhythm L2 vs K 25 with rhythm L2 |
+| R1 / R2 / R3 | rhythmic kappa L1 / L2 / L3 | | |
+| W055 / W060 / W065 | white common rho 0.55 / 0.60 / 0.65 | | |
+| D075 / D150 | self-damping only (extra_self_damp_K 7.5 / 15) | | |
+| VC | volume conduction s = 1.0 | | |
+| Q1 | correlated 1/f noise in both; A 10 dB vs B 0 dB | | |
+
+**Tier T (TE leg, all cells).**
+- **Sessions:** 100-129 (30, fresh), 100 trials per class.
+- **Statistic:** S_TE_al on the *unmatched* data, plus PLV.
+- **P_TE(fire):** the probability that the TE leg fires (>= 9/10 positive and boot_ci lower bound > 0) on a random
+  10 of the 30 sessions. 10,000 subsets drawn without replacement.
+
+**Tier F (full v3r).**
+- **Sessions:** 100-109.
+- **Cells, selected by a pre-specified rule:**
+  - always Q1, K35 and K35R;
+  - plus every must-not-fire cell with P_TE(fire) > 0.05.
+- **P(fire):** a smoothed bootstrap of the per-session (Delta S_TE_al, rel Delta S_inst_dn) pairs, drawing 10
+  sessions with replacement. The kernel bandwidth is 1.06 x SD x n^(-1/5) per coordinate, with 2,000 resamples.
+  The full rule is applied to each resample.
+- **Per cell:** P(fire) = the tier-F estimate if the cell ran in tier F, otherwise P_TE(fire), which is an upper
+  bound, since the rule can only fire if its TE leg fires.
+
+**Pre-committed decisions.**
+1. **Retirement.**
+   - If any rhythmic (R) or white-common-input (W) cell has P(fire) > 0.05, the TE/LDS rule is **retired**.
+   - It is then not used on any real data, and is reported as a negative methods result.
+   - A non-finite tier-F value counts as a failure.
+2. **Calibration pass.** Every must-not-fire cell has P(fire) <= 0.05, **and** power at K35 (tier F P(fire)) >= 0.8.
+   - The effective alpha = the maximum P(fire) over the must-not-fire cells.
+3. **Reported in every outcome:**
+   - P(fire) per cell;
+   - mean Delta PLV and Delta TE;
+   - the effective alpha.
+
+**Fixed details.**
+- **Compute:** OMP_NUM_THREADS = 1, 4 workers.
+- **Resumability:** the run resumes from `results/screen11/tier*_partial.json` (untracked).
+- **Provenance:** results are written with strict JSON.
+

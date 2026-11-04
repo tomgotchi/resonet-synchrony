@@ -106,11 +106,12 @@ def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=None):
         #                           uniform frequency shift is an exact symmetry of the discrete-time simulator
         kap = p.get("kappa_nb", 0.0)
         if kap:
-            a_nb = np.exp((-2 * np.pi * p.get("nb_bw_hz", 2.0) + 1j * 2 * np.pi * p.get("nb_f_hz", 8.0)) * dt)
+            f_nb = p.get("nb_f_hz", 8.0) + p.get("f_shift_hz", 0.0)
+            a_nb = np.exp((-2 * np.pi * p.get("nb_bw_hz", 2.0) + 1j * 2 * np.pi * f_nb) * dt)
             r_nb = p["_nb_rng"]                          # dedicated stream: trial noise stays paired with kappa_nb=0
             e_nb = r_nb.standard_normal(n) + 1j * r_nb.standard_normal(n)
             s_nb = signal.lfilter([np.sqrt(1 - abs(a_nb) ** 2)], [1, -a_nb], e_nb) * np.sqrt(0.5)
-            drive_nb = kap * np.exp(1j * tpl["psi"][k])
+            drive_nb = kap * np.exp(1j * np.deg2rad(p.get("nb_grad_deg", 15.0)) * np.arange(M))   # own loadings
         xs = p.get("extra_self_damp_K", 0.0)
         self_d = -(xs / deg) * A.sum(1) if xs else 0.0
         exact = p.get("integrator") == "exact"
@@ -137,22 +138,30 @@ def _trial(kind, k, tpl, p, rng, burn_s=1.0, win_s=None):
             out[t] = z
     x = out[int(burn_s * FS_SIM):].real.T                                    # (M, T_sim) observed
     x = signal.decimate(x, int(FS_SIM / FS_OUT), ftype="fir", zero_phase=True, axis=1)
+    if p.get("vc_spread"):                              # screen 11: instantaneous volume-conduction mixing W x
+        i = np.arange(x.shape[0])
+        W = np.exp(-np.abs(i[:, None] - i[None, :]) / p["vc_spread"])
+        x = (W / np.linalg.norm(W, axis=1, keepdims=True)) @ x
     if p.get("obs_snr_db") is not None:                 # DEVIATIONS 12: white observation noise (drawn only if set)
         nv = x.var(1, keepdims=True) / 10 ** (p["obs_snr_db"] / 10)
         if p.get("obs_noise_exp"):                      # screen 11: coloured (1/f^chi) observation noise, same variance
             Nf = np.fft.rfft(rng.standard_normal(x.shape), axis=1)
             f = np.fft.rfftfreq(x.shape[1], 1 / FS_OUT); f[0] = f[1]
             nz = np.fft.irfft(Nf * f ** (-p["obs_noise_exp"] / 2), n=x.shape[1], axis=1)
-            x = x + np.sqrt(nv) * nz / nz.std(1, keepdims=True)
+            nz = nz / nz.std(1, keepdims=True)
         else:
-            x = x + np.sqrt(nv) * rng.standard_normal(x.shape)
+            nz = rng.standard_normal(x.shape)
+        if p.get("obs_noise_corr"):                     # screen 11: spatially correlated noise, Sigma_ij = c^|i-j|
+            i = np.arange(x.shape[0])
+            nz = np.linalg.cholesky(p["obs_noise_corr"] ** np.abs(i[:, None] - i[None, :])) @ nz
+        x = x + np.sqrt(nv) * nz
     x = (x - x.mean(1, keepdims=True)) / (x.std(1, keepdims=True) + 1e-12)   # power-matched
     return x.astype(np.float32)
 
 
 def make_dataset(seed, kind, n_train_per_class=100, n_test_per_class=40, params=None):
     p = dict(DEFAULTS[kind], **(params or {}))
-    s11 = [k for k in ("kappa_nb", "extra_self_damp_K", "integrator") if p.get(k)]
+    s11 = [k for k in ("kappa_nb", "extra_self_damp_K", "integrator") if p.get(k)]      # mixed-only options
     if s11 and kind != "mixed":
         raise ValueError(f"options {s11} are implemented for kind='mixed' only")
     if p.get("kappa_nb"):
