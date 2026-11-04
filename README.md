@@ -68,3 +68,9 @@ Rules kept throughout:
 - **Seeds and sessions:** fresh for every confirmatory step.
 - **Resumable checkpoints:** `results/**/partial.json` is not tracked; the final `results.json` of each screen
   holds every per-dataset value.
+
+## Review board
+Six reviewer personas ship with the repo as agents (`.claude/agents/board-*.md`), with a skill that runs the
+whole procedure (`.claude/skills/review-board/SKILL.md`). In Claude Code, opened in this repo, type
+`/review-board <what to review>`. The steps are independent reviews, judge verification, cross-examination,
+and a record in `docs/REVIEW_BOARD.md`.
