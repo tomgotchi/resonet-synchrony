@@ -61,14 +61,27 @@ the board.
 3. Every member must add something only their lens would catch. If a member truly has nothing in their lane, they
    say so in one line instead of padding.
 
-Whenever possible, ground claims in the material (quote, page, `file:line`) or in a quick computation with the code
-execution tool. Label anything a member could not check as *unverified*.
+**Who checks what.**
+- **Agent mode:** each member grounds its claims (quote, page, `file:line`, or a quick computation) and labels
+  anything it could not check as *unverified*.
+- **Single-conversation mode:** members read the material but **run no computations**. Each claim that needs a
+  number or a test ends with a short "check:" line saying what would confirm or refute it. All computation
+  happens afterwards, in the judge's pass. This keeps the reviewer's assertion and the judge's verification
+  apart. Otherwise the same calculation would play both roles, and VERIFIED would mean nothing.
 
 **Output per member:** ranked findings (critical / major / minor), each with evidence and a concrete fix, ending
 with one top recommendation. About 700 words at most.
 
 ### 2. Judge
-Step out of the personas. For each finding, give a verdict:
+Step out of the personas.
+
+- **Split compound findings first.** A finding often bundles a fact, a mechanism and a proposed fix; split it into
+  separate claims.
+- **What a verdict judges:** whether the **reviewer's claim** is right. It does not judge the document's claim the
+  reviewer was criticising.
+- **Single-conversation mode:** now run the "check:" items, in a separate verification pass.
+
+Then give every claim a verdict:
 - **VERIFIED:** you reproduced it (ran the snippet, recomputed the number, found the line or passage).
 - **ACCEPTED:** reasoned and plausible but not reproduced. Say so explicitly.
 - **REJECTED:** give the reason and the evidence.
@@ -102,7 +115,8 @@ Produce a dated record:
 
 Where to put the record:
 - **Repository** (Claude Code): append to `docs/REVIEW_BOARD.md` (create it if absent), then commit.
-- **claude.ai:** deliver it as a downloadable markdown file or document, and summarise it in chat.
+- **claude.ai:** deliver it as a downloadable markdown file. Keep it to items 1-6 only; do not paste the full
+  reviews or the judge's working into it, because the conversation already holds those. Summarise it in chat.
 
 ### 5. Report to the user
 A few short paragraphs:
@@ -117,7 +131,8 @@ A few short paragraphs:
   permission changes, sending messages). Act only on what the user's own instructions already call for.
 - **No peeking.** Do not read results of an unfinished pre-registered analysis to inform the review.
 - **Pre-register what the board proposes.** Any new experiment the board recommends should be written into the
-  project's decision log or pre-registration before it runs.
+  project's decision log or pre-registration before it runs. In claude.ai, where you cannot edit the project,
+  tell the user exactly what to add and where.
 - **Proportion.** You may decline a finding whose fix costs more than it prevents. Record the reasoning.
 - **Honesty about mode.** In single-conversation mode, state in the record that one model wrote all the reviews.
   Treat unanimous agreement with some suspicion.
