@@ -276,6 +276,39 @@ def fig_drift():
     plt.close(fig)
 
 
+# ------------------------------------------------------------------ 8. screen 11 terminal calibration
+def fig_screen11():
+    rp = ROOT / "results" / "screen11" / "report.json"
+    if not rp.exists():
+        return
+    R = json.loads(rp.read_text())
+    cells = R["cells"]
+    names = list(cells)
+    fig, ax = plt.subplots(figsize=(10, 0.36 * len(names) + 2.2))
+    fig.subplots_adjust(left=0.3, right=0.95, top=1 - 1.25 / (0.36 * len(names) + 2.2), bottom=0.6 / (0.36 * len(names) + 2.2))
+    v = R["verdict"]
+    _title(fig, "Screen 11: how often does rule v3r fire? (terminal calibration)",
+           f"P(fire) per cell; full rule where run (tier F), otherwise the TE-leg upper bound (tier T).  "
+           f"Effective alpha {v['effective_alpha']:.2f}; retire rule: {'YES' if v['retire_TE_LDS_rule'] else 'no'}.")
+    for i, c in enumerate(names):
+        r = cells[c]; y = len(names) - 1 - i
+        col = S1 if r["should_fire"] else S2
+        tier_f = r.get("p_rule") is not None
+        ax.barh(y, r["p_fire"], height=0.6, color=col if tier_f else SURF, edgecolor=col, linewidth=1.5)
+        ok = (r["p_fire"] >= 0.8) if r["should_fire"] else (r["p_fire"] <= 0.05)
+        ax.text(min(r["p_fire"], 1.0) + 0.015, y, f"{r['p_fire']:.2f} {'✓' if ok else '✗'}", va="center", fontsize=9,
+                color=GOOD if ok else CRIT)
+    ax.axvline(0.05, color=CRIT, lw=1, ls="--"); ax.axvline(0.8, color=GOOD, lw=1, ls="--")
+    ax.set_yticks(range(len(names)), names[::-1]); ax.set_xlim(0, 1.15); ax.grid(axis="y", visible=False)
+    ax.set_xlabel("P(fire)   (dashed: 0.05 false-positive limit, 0.8 power target)")
+    handles = [plt.Rectangle((0, 0), 1, 1, color=S1), plt.Rectangle((0, 0), 1, 1, color=S2),
+               plt.Rectangle((0, 0), 1, 1, facecolor=SURF, edgecolor=INK2)]
+    ax.legend(handles, ["must fire (filled: full rule)", "must NOT fire (filled: full rule)", "hollow: TE-leg bound only"],
+              loc="lower right", bbox_to_anchor=(1, 1.0), ncol=3, fontsize=8.5)
+    fig.savefig(OUT / "fig8_screen11_calibration.png", dpi=150)
+    plt.close(fig)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(); ap.add_argument("--diag", default=None, help="dir with diag10.json, diag10b.json")
     a = ap.parse_args(argv)
@@ -304,6 +337,7 @@ def main(argv=None):
     fig_traces()
     fig_board()
     fig_drift()
+    fig_screen11()
     print("wrote", sorted(p.name for p in OUT.glob("*.png")))
 
 
