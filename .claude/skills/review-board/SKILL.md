@@ -18,6 +18,13 @@ Six independent reviewer personas, defined as agents in `.claude/agents/board-*.
 
 You (the main session) are the **judge**. The board advises; it never edits the repository.
 
+**Self-contained.** Each persona's full brief is in `personas/<member>.md`, next to this file. When you launch a
+member:
+- If an agent type with that name exists (project `.claude/agents/board-*.md`), use it as `subagent_type`.
+- Otherwise, launch a general-purpose agent whose prompt starts with the full contents of `personas/<member>.md`.
+
+This way the board works in any project, and from a user-level install (`~/.claude/skills/review-board/`).
+
 ## Inputs
 
 `/review-board <target> [--members a,b,...] [--rounds 1|2]`
@@ -40,8 +47,9 @@ Then add 3-6 persona-specific questions per member. Point each member at their o
 same thing.
 
 ### 1. Round 1: independent reviews (parallel)
-Launch every selected member **in one message**, as background agents (`subagent_type` = the agent name), each with
-the brief + its questions. Ask for: ranked findings (critical / major / minor) with file:line or numbers, concrete
+Launch every selected member **in one message**, as background agents (agent type = the member name if it exists,
+else general-purpose with the persona file prepended; see "Self-contained" above). Each gets the brief + its questions.
+Ask for: ranked findings (critical / major / minor) with file:line or numbers, concrete
 fixes, and one top recommendation.
 
 ### 2. Judge
@@ -85,5 +93,10 @@ the user's to make. Offer a figure only if numbers were produced.
   reason.
 
 ## Adding a member
-Copy any `.claude/agents/board-*.md`, change the persona and lens, and add a row to the table above. Keep the shared
-"Rules for every board member" block unchanged.
+Copy any `personas/board-*.md` (and, optionally, the matching `.claude/agents/` file), change the persona and lens,
+and add a row to the table above. Keep the shared "Rules for every board member" block unchanged.
+
+## Installing it everywhere
+- **One computer:** copy this folder to `~/.claude/skills/review-board/`.
+- **Every session on your claude.ai account:** upload `review-board.zip` (this folder, zipped) under claude.ai
+  Settings > Capabilities > Skills. Account skills sync into Claude Code sessions.
