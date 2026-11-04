@@ -416,3 +416,8 @@ does the rule confuse a synchrony increase caused by shared rhythm with one caus
 - **Resumability:** the run resumes from `results/screen11/tier*_partial.json` (untracked).
 - **Provenance:** results are written with strict JSON.
 
+**DEVIATION 21 outcome (2026-11-04, appended after the run; protocol above unchanged).** Calibration failed:
+effective alpha 1.00, power at K35 0.99. The pre-committed retirement was triggered by R1/R2/R3 (rhythmic common
+input: P(fire) 1.00 / 1.00 / 0.94). **The TE/LDS rule is retired from real-data use.** Results:
+`results/screen11/report.json` and README_results "Screen 11".
+

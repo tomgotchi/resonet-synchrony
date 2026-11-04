@@ -543,3 +543,52 @@ The dry runs check that the runner and the analysis path behave.
 - Its power for a 20% EC change is marginal at 10 sessions. hc-5 has 7, so only effects of about 30% or more are
   realistic.
 - Short 8-site shanks make the whole route infeasible. Gate 0 will decide this on the real data.
+
+## Screen 11: terminal calibration of rule v3r (DEVIATIONS 21; `results/screen11/`; fig 8)
+
+**Pre-committed outcome: the TE/LDS within-session rule is RETIRED.** It must not be used on any real data. This is
+reported as a negative methods result.
+
+**Calibration.** The rhythmic-drive levels were kappa 4.25 / 5.91 / 9.22, which raise synchrony by 0.5x / 1x / 2x
+the synchrony increase of K 25 -> 40 (Delta PLV 0.055).
+
+| cell | Delta PLV | Delta S_TE_al | rel Delta S_inst_dn | P(TE leg) | **P(rule)** | must |
+|---|---|---|---|---|---|---|
+| null / +1 Hz / self-damping x2 | <= 0 | <= 0 | - | 0.00 | <= 0.00 (TE bound) | not fire |
+| -1 Hz | -0.011 | +0.0005 | +0.05 | 0.16 | **0.34** | not fire |
+| **rhythmic common input low / mid / high** | +0.032 / +0.056 / +0.111 | +0.0029 / +0.0054 / +0.0115 | +0.06 / +0.08 / +0.11 | 1.00 | **1.00 / 1.00 / 0.94** | not fire |
+| white common rho 0.55 / 0.60 / 0.65 | +0.005 / +0.012 / +0.020 | small | +0.46 / +0.70 (0.60 / 0.65) | 0.01 / 0.10 / 0.15 | 0.01 (bound) / 0.00 / 0.00 | not fire |
+| volume conduction | +0.166 | +0.0197 | +4.27 | 1.00 | 0.00 | not fire |
+| correlated 1/f noise, A 10 dB vs B 0 dB | +0.029 | +0.0017 | -0.25 | 1.00 | **1.00** | not fire |
+| coupling K30 / K35 / K40 | +0.023 / +0.044 / +0.064 | +0.0021 / +0.0043 / +0.0065 | +0.08 (K35) | 1.00 | 0.99 (K35) | fire |
+| coupling K35 with rhythm in both | +0.052 | +0.0056 | +0.09 | 1.00 | 1.00 | fire |
+
+**Verdict (frozen criteria).**
+- Effective alpha = **1.00** (calibration fails).
+- Power at K35 = 0.99.
+- Retirement is triggered by all three rhythmic cells (DEVIATIONS 20/21 pre-commitment).
+
+**What the numbers say.**
+1. **Rhythmic common input is indistinguishable from coupling for this rule.** Per unit of synchrony gained, it
+   raises TE as much as coupling does (+0.0054 at Delta PLV 0.056, vs +0.0043 at 0.044 for K35). It also moves
+   the denoised instantaneous correlation by the same small amount (+8% vs +8%).
+   - A shared rhythm is a latent oscillator with memory. The LDS absorbs it into the lagged dynamics A, not into
+     the instantaneous covariance Q, exactly as the information theorist and the statistician predicted in
+     board round 2.
+   - This is the rival hypothesis for hc-5 (septal/EC theta drive), so the rule cannot answer the question it was
+     built for.
+2. **What the guard does catch.** It works for instantaneous sources: white common input (P 0.00 at rho 0.60 and
+   0.65) and volume conduction (rel Delta +427%, P 0.00).
+3. **Noise matching fails under spatially correlated 1/f noise.** Q1 fires with P 1.00, because the diagonal-R
+   model mis-estimates correlated noise and the guard then sees a 25% *drop*. This confirms the board's concern
+   about real sensor noise.
+4. **The frequency fix is incomplete with the exact integrator** (-1 Hz: P 0.34). Part of the stage D/C
+   frequency "fix" was compensating the Euler damping artefact.
+
+**Consequences (already in place).**
+- **hc-5:** the adopted plan is the generator-mix hypothesis (`docs/PREREG_H3_GENERATOR_MIX_DRAFT.md`), not a
+  coupling statistic.
+- **Synthetic programme:** screens 1-11 are closed as a methods result. Within-session phase-dependence statistics
+  (TE plus instantaneous-correlation guard, with frequency and noise adjustments) separate coupling from
+  *instantaneous* common input. They do not separate it from *rhythmic* common input, which is the physiologically
+  relevant alternative.

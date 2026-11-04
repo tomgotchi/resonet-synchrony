@@ -8,8 +8,10 @@ generated internally (hippocampal wheel running), and not where it is stimulus-d
 - **Phase 2** (synthetic H0) hit its stop rule.
 - **Synthetic mechanism-statistic screens 1-10** are documented in DEVIATIONS 11-20. Screen 10 stage C is
   running.
-- **A six-persona review board** concluded that the TE/LDS within-session rule gets one terminal calibration
-  (screen 11), and is retired if it fails rhythmic common input. See [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md).
+- **A six-persona review board** sent the TE/LDS within-session rule to a final calibration (screen 11). **It
+  failed and is retired** (2026-11-04): it reads rhythmic common input as coupling (P(fire) 0.94-1.00). See
+  [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md) and results "Screen 11".
+- **hc-5** now follows the generator-mix plan (CSD of the CA3 vs EC3 theta sinks), gated by laminar coverage.
 
 ## Start here
 

@@ -1,0 +1,178 @@
+{
+ "protocol": "DEVIATIONS.md #21",
+ "levels": [
+  4.253485362564968,
+  5.907984519843065,
+  9.218356184124818
+ ],
+ "cells": {
+  "N0_null": {
+   "should_fire": false,
+   "dTE_mean": -4.7728981754587525e-05,
+   "dPLV_mean": 0.00022707689004824265,
+   "p_te_leg": 0.0006,
+   "p_fire": 0.0006
+  },
+  "F1_freq_up": {
+   "should_fire": false,
+   "dTE_mean": -0.0003727125540212324,
+   "dPLV_mean": -0.009188593440732787,
+   "p_te_leg": 0.0,
+   "p_fire": 0.0
+  },
+  "F2_freq_down": {
+   "should_fire": false,
+   "dTE_mean": 0.0004607072211109358,
+   "dPLV_mean": -0.011404853491898188,
+   "p_te_leg": 0.1569,
+   "tier_F_finite": true,
+   "p_rule": 0.3395,
+   "rel_mean": 0.049298269267527645,
+   "p_fire": 0.3395
+  },
+  "R1_rhythm_low": {
+   "should_fire": false,
+   "dTE_mean": 0.002941282229440621,
+   "dPLV_mean": 0.03150968738103542,
+   "p_te_leg": 1.0,
+   "tier_F_finite": true,
+   "p_rule": 0.9995,
+   "rel_mean": 0.06437270251983551,
+   "p_fire": 0.9995
+  },
+  "R2_rhythm_mid": {
+   "should_fire": false,
+   "dTE_mean": 0.005392370429313801,
+   "dPLV_mean": 0.056256947252917223,
+   "p_te_leg": 1.0,
+   "tier_F_finite": true,
+   "p_rule": 0.999,
+   "rel_mean": 0.07705079098935978,
+   "p_fire": 0.999
+  },
+  "R3_rhythm_high": {
+   "should_fire": false,
+   "dTE_mean": 0.01147463022827775,
+   "dPLV_mean": 0.11116941528525145,
+   "p_te_leg": 1.0,
+   "tier_F_finite": true,
+   "p_rule": 0.941,
+   "rel_mean": 0.11179480972288233,
+   "p_fire": 0.941
+  },
+  "W055_white_common": {
+   "should_fire": false,
+   "dTE_mean": 0.00013231834961271657,
+   "dPLV_mean": 0.005179280960434507,
+   "p_te_leg": 0.0096,
+   "p_fire": 0.0096
+  },
+  "W060_white_common": {
+   "should_fire": false,
+   "dTE_mean": 0.00032464358177047424,
+   "dPLV_mean": 0.01162300352767125,
+   "p_te_leg": 0.0965,
+   "tier_F_finite": true,
+   "p_rule": 0.0,
+   "rel_mean": 0.4570952679785411,
+   "p_fire": 0.0
+  },
+  "W065_white_common": {
+   "should_fire": false,
+   "dTE_mean": 0.0006216968814919033,
+   "dPLV_mean": 0.019879645037390013,
+   "p_te_leg": 0.1545,
+   "tier_F_finite": true,
+   "p_rule": 0.0,
+   "rel_mean": 0.700476675668253,
+   "p_fire": 0.0
+  },
+  "D075_self_damping": {
+   "should_fire": false,
+   "dTE_mean": -0.004659539914638641,
+   "dPLV_mean": -0.060953443500207,
+   "p_te_leg": 0.0,
+   "p_fire": 0.0
+  },
+  "D150_self_damping": {
+   "should_fire": false,
+   "dTE_mean": -0.006358572307348514,
+   "dPLV_mean": -0.08611321869256287,
+   "p_te_leg": 0.0,
+   "p_fire": 0.0
+  },
+  "VC_volume_conduction": {
+   "should_fire": false,
+   "dTE_mean": 0.019714489902234743,
+   "dPLV_mean": 0.16563332643724937,
+   "p_te_leg": 1.0,
+   "tier_F_finite": true,
+   "p_rule": 0.0,
+   "rel_mean": 4.269336740341222,
+   "p_fire": 0.0
+  },
+  "Q1_pink_corr_noise_snr": {
+   "should_fire": false,
+   "dTE_mean": 0.0016703690991027496,
+   "dPLV_mean": 0.02875754411749263,
+   "p_te_leg": 1.0,
+   "tier_F_finite": true,
+   "p_rule": 1.0,
+   "rel_mean": -0.2495009339045354,
+   "p_fire": 1.0
+  },
+  "K30_coupling": {
+   "should_fire": true,
+   "dTE_mean": 0.002136921955939945,
+   "dPLV_mean": 0.023002391003934187,
+   "p_te_leg": 1.0,
+   "p_fire": 1.0
+  },
+  "K35_coupling": {
+   "should_fire": true,
+   "dTE_mean": 0.004327740069605628,
+   "dPLV_mean": 0.044318315984275165,
+   "p_te_leg": 1.0,
+   "tier_F_finite": true,
+   "p_rule": 0.9945,
+   "rel_mean": 0.0832769956194312,
+   "p_fire": 0.9945
+  },
+  "K40_coupling": {
+   "should_fire": true,
+   "dTE_mean": 0.006470100432486674,
+   "dPLV_mean": 0.06424732702543898,
+   "p_te_leg": 1.0,
+   "p_fire": 1.0
+  },
+  "K35R_coupling_with_rhythm": {
+   "should_fire": true,
+   "dTE_mean": 0.0056235213002052056,
+   "dPLV_mean": 0.05226876368206816,
+   "p_te_leg": 1.0,
+   "tier_F_finite": true,
+   "p_rule": 0.997,
+   "rel_mean": 0.08707047369369109,
+   "p_fire": 0.997
+  }
+ },
+ "verdict": {
+  "effective_alpha": 1.0,
+  "must_not_fire_over_005": [
+   "F2_freq_down",
+   "R1_rhythm_low",
+   "R2_rhythm_mid",
+   "R3_rhythm_high",
+   "Q1_pink_corr_noise_snr"
+  ],
+  "power_K35": 0.9945,
+  "power_ok": true,
+  "calibration_pass": false,
+  "retire_TE_LDS_rule": true,
+  "retire_because": [
+   "R1_rhythm_low",
+   "R2_rhythm_mid",
+   "R3_rhythm_high"
+  ]
+ }
+}
