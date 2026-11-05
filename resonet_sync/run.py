@@ -32,6 +32,7 @@ ALL = (CORE
        + [f"nl_uncoupled:{r}" for r in ("sync", "surrogate", "power")]
        + [f"nl_uncoupled_wide:{r}" for r in ("sync", "surrogate", "power")]
        + [f"{b}:sync+power" for b in BANKS]
+       + [f"{b}:power+surrogate" for b in BANKS]          # DEVIATIONS 22
        + ["eegnet", "shallow"])
 
 
@@ -105,6 +106,9 @@ def contrasts_phase1(per_subject_acc):
                      ("nl_coupled-nl_uncoupled_wide (sync)", "nl_coupled:sync", "nl_uncoupled_wide:sync"),
                      ("nl_uncoupled-lin (sync)", "nl_uncoupled:sync", "lin:sync")],
         "incremental_sync_over_power": [(f"{b}: (sync+power)-power", f"{b}:sync+power", f"{b}:power") for b in BANKS],
+        # DEVIATIONS 22: capacity-matched test of "phase adds beyond band power"
+        "incremental_capacity_matched": [(f"{b}: (sync+power)-(power+surrogate)", f"{b}:sync+power",
+                                          f"{b}:power+surrogate") for b in BANKS],
     }
     return {k: contrast_table(per_subject_acc, v) for k, v in fam.items()}
 

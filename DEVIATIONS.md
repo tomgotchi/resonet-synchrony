@@ -251,6 +251,7 @@ is reported as such.
 | 19 | 2026-11-02 | **Screen 9: nuisance-confound traps for rule v2** (theta-frequency and SNR differences between regimes). Synthetic only. | The H3 redesign draft names theta-frequency and signal-strength differences between wheel and maze as possible confounds of Delta S_TE. They are untested. Frozen before any run on sessions 80-89. |
 | 20 | 2026-11-03 | **Screen 10: rule v3 = rule v2 + cycle-normalised TE delay + LDS noise-fraction matching.** Synthetic only. | Screen 9 failed: +1 Hz theta (F1) and +10 dB SNR (N1) each triggered rule v2 without any coupling change. Fixes and both stages frozen before any run. |
 | 21 | 2026-11-04 | **Screen 11: terminal calibration of rule v3r** (review board rounds 1-2; Tom approved). Synthetic only. | Stage C found no counter-example within its family. The board requires graded traps, including the rival hypothesis (rhythmic common input), with false-positive rates estimated by resampling rather than pass/fail cells. Retirement is pre-committed. Frozen before any calibration or tier run. |
+| 22 | 2026-11-05 | **New arm `power+surrogate`** (log power + surrogate-phase coherence, N + 2P dims) and family `incremental_capacity_matched` = (sync+power) - (power+surrogate), per bank. Added to `ALL` (not `CORE`). | Review board (statistician): `(sync+power) - power` is capacity-confounded (N + 2P vs N dims). The capacity-matched control is the analogue of the published sync-vs-surrogate logic. Frozen before any all-arms Phase 1 result exists; the running Colab job computes core arms only. |
 
 ### DEVIATION 19: protocol (frozen 2026-11-02)
 **Rule v2** is unchanged from DEVIATIONS 18. Generator `mixed` with K = 25 and rho = 0.5 in **both** regimes
@@ -420,4 +421,17 @@ does the rule confuse a synchrony increase caused by shared rhythm with one caus
 effective alpha 1.00, power at K35 0.99. The pre-committed retirement was triggered by R1/R2/R3 (rhythmic common
 input: P(fire) 1.00 / 1.00 / 0.94). **The TE/LDS rule is retired from real-data use.** Results:
 `results/screen11/report.json` and README_results "Screen 11".
+
+### DEVIATION 22: protocol (frozen 2026-11-05, before any all-arms Phase 1 result)
+- **Readout.** `power+surrogate` = concat[ log mean |z|^2 per oscillator (N), surrogate coherence (2P; the same
+  fixed per-oscillator circular roll as `surrogate`) ].
+  - Same BatchNorm, dropout (0.5), training loop, seeds and splits as `sync+power`.
+  - Exactness test: `tests/test_banks.py::test_power_surrogate_is_exact_concatenation`.
+- **Arms.** `{bank}:power+surrogate` for all four banks. They are part of `--arms all` and can be run alone with
+  `--arms lin:power+surrogate,nl_coupled:power+surrogate`.
+- **Family `incremental_capacity_matched`.** Per bank: (sync+power) - (power+surrogate) in test balanced
+  accuracy, paired over the 14 subjects. Holm within the family, the same machinery as the other Phase 1
+  families.
+  - **This is the confirmatory test of "phase synchrony adds information beyond band power".**
+  - `incremental_sync_over_power` stays, but is reported as capacity-confounded (descriptive).
 

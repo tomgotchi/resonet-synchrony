@@ -157,3 +157,12 @@ def test_vendor_untouched():
     for f in ("resonance_network.py", "hc2_loader.py"):
         h = hashlib.sha256((ROOT / "vendor" / f).read_bytes()).hexdigest()
         assert h in readme, f"vendor/{f} was modified"
+
+
+def test_power_surrogate_is_exact_concatenation():
+    """DEVIATIONS 22: power+surrogate = [log power, surrogate coherence], the same size as sync+power."""
+    torch.manual_seed(0)
+    z = torch.randn(3, 50, 6, dtype=torch.complex64)
+    ps, p, s, sp = (Readout(6, 4, kind=k, seed=5) for k in ("power+surrogate", "power", "surrogate", "sync+power"))
+    assert ps.dim == sp.dim
+    assert torch.allclose(ps.features(z), torch.cat([p.features(z), s.features(z)], dim=1))

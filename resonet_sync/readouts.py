@@ -7,6 +7,7 @@ sync / power / surrogate are the published formulas (vendor/resonance_network.py
               (surr_frac from a generator seeded seed+1, as published)    (2P dims)
 New:
   sync+power    : concatenation                                           (N + 2P dims)
+  power+surrogate: power + surrogate coherence (capacity-matched control for sync+power; DEVIATIONS 22)
   trial_shuffle : C_ij = <u_i^(n) conj(u_j^(m))>_t with m a different trial of the SAME class
                   (shift-predictor logic: keeps class-locked/evoked phase structure, destroys
                   trial-specific coupling). Partner selection needs the label, including at test
@@ -20,7 +21,7 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-READOUTS = ("sync", "power", "surrogate", "sync+power", "trial_shuffle")
+READOUTS = ("sync", "power", "surrogate", "sync+power", "power+surrogate", "trial_shuffle")
 
 
 def unit(z):
@@ -44,7 +45,7 @@ class Readout(nn.Module):
         self.register_buffer("ju", ju)
         P = iu.numel()
         dim = {"power": n_osc, "sync": 2 * P, "surrogate": 2 * P, "sync+power": n_osc + 2 * P,
-               "trial_shuffle": 2 * P}[kind]
+               "power+surrogate": n_osc + 2 * P, "trial_shuffle": 2 * P}[kind]
         self.register_buffer("surr_frac",
                              torch.rand(n_osc, generator=torch.Generator().manual_seed(seed + 1)))
         drop = dropout if dropout is not None else (0.2 if kind == "power" else 0.5)
@@ -64,12 +65,12 @@ class Readout(nn.Module):
         if self.kind == "trial_shuffle":
             assert z_partner is not None, "trial_shuffle needs a same-class partner trajectory"
             return coherence_upper(u, unit(z_partner), self.iu, self.ju)
-        if self.kind == "surrogate":
+        if self.kind in ("surrogate", "power+surrogate"):
             T = u.shape[1]
             sh = (self.surr_frac * T).long()
             u = torch.stack([torch.roll(u[:, :, i], int(sh[i]), dims=1) for i in range(self.N)], dim=2)
         f = coherence_upper(u, u, self.iu, self.ju)
-        if self.kind == "sync+power":
+        if self.kind in ("sync+power", "power+surrogate"):     # power+surrogate: capacity-matched control (DEVIATIONS 22)
             f = torch.cat([torch.log((z.abs() ** 2).mean(dim=1) + 1e-6), f], dim=1)
         return f
 

@@ -226,3 +226,49 @@ them and to cross-examine the other reviewers.
 3. **phasetrack:** Asante's amendment, frozen before any hc-2 run.
 4. **hc-5:** move from H3' to a generator-mix hypothesis (Echeverria); descriptive and pre-registered only. Tom
    decides.
+
+---
+
+# Board session, 2026-11-05: Tom's questions on closed loop, FFT padding, ICA and the power+surrogate arm
+
+**Header.**
+- **Members:** code auditor (Novak), DSP engineer (Asante), statistician (Halvorsen); 1 round.
+- **Mode:** single-conversation. The reviewer agents were launched twice and stopped on usage limits both times,
+  so one model wrote the three sealed reviews (claims and "check:" lines only), and the judge ran all checks
+  afterwards.
+- **Code reviewed:** `vendor/resonance_network.py`, `resonet_sync/banks.py`, `readouts.py`, `run.py`,
+  `train.py`; `/reso-net/build_hg_cache.py`, `build_nonemg_cache.py`, `run_surrogate.py`; the Colab notebook.
+
+| sev | member | claim | verdict | evidence |
+|---|---|---|---|---|
+| - | Novak | ResoNet's FFT convolution is zero-padded (L >= 2T), so linear and causal, with no circular wrap | VERIFIED | impulse test on the exact `_linear` path: output before t0 < 5e-8 (float round-off), 1.000 at t0; `banks.py:131-139`, vendor `:419-424` |
+| minor | Novak | ICA (non-EMG cache only) is fitted per file on a 400 s crop, separately for the train and test EDF; components are rejected by EOG/muscle/EMG correlation; **no labels** | VERIFIED | `build_nonemg_cache.py:55-63, 108-110`; `y` built only after `ica.exclude` |
+| minor | Novak | The test file's cleaning is fitted on test data (unsupervised, transductive); train and test get different decompositions | VERIFIED | same lines. Report it as session-level preprocessing; not deployable online as is |
+| - | Novak | The Colab Phase 1 run is unaffected: it uses `subj_cache_hg`, which has no ICA | VERIFIED | `build_hg_cache.py` (the two "ica" hits are "canonical"/"identical"); notebook path |
+| - | Novak | Validation and early stopping come from train only | VERIFIED | `run.py:67-70` |
+| major | Asante | ResoNet is not causal end to end: the cache uses zero-phase FIR, and the readout is per 4.5 s trial | VERIFIED | `build_hg_cache.py:47` `phase="zero"` |
+| major | Asante | "A DC zero removes the separate high-pass" does not hold for ResoNet: the tanh encoder precedes the bank, so drift must be removed before the nonlinearity, and any prefilter on x changes what the encoder sees, so retraining plus a new reference model is required | VERIFIED | vendor `:299` `complex_tanh(x W_enc + b)` before the bank. A DC zero after the encoder is exact for the linear bank (Delta z = bank(Delta I)) but leaves drift in the tanh |
+| minor | Asante | The DC zero is a differentiator, not a flat high-pass | VERIFIED | -38 dB at 0.5 Hz, -12 dB at 10 Hz, -2.7 dB at 30 Hz (fs 250) |
+| major | Halvorsen | The Colab run has no power+surrogate arm; neither do "all arms" nor the published analysis | VERIFIED | `run.py:30-35`; `run_surrogate.py` `ARMS` |
+| major | Halvorsen | `(sync+power) - power` is capacity-confounded (N + 2P vs N dims); power+surrogate is the matched control | VERIFIED | readout dims `readouts.py:46-48`; the published docstring makes the same argument for sync vs power |
+
+**Fixed.** DEVIATIONS 22 (frozen before any all-arms result) adds the `power+surrogate` readout and arms, plus the
+family `incremental_capacity_matched`. Tests pass.
+
+**Pending (Tom).**
+1. **The closed-loop target:** phase-locked stimulation (latency of about 10 ms; phasetrack's estimators) or online
+   decoding (a sliding-window decision within a few hundred ms; ResoNet).
+2. **Running the new arms:** about 4 extra arms (sync+power and power+surrogate for lin and nl_coupled). That is
+   roughly +65% of the core-arm GPU time.
+
+**Positions.**
+- **Novak:** the code is sound for the questions asked. Document the non-EMG ICA as transductive in any paper.
+- **Asante:** pick the closed-loop target first. Change nothing in ResoNet until the Phase 1 replication is
+  done. The DC-zero shortcut belongs to phasetrack-style estimators, not to ResoNet.
+- **Halvorsen:** make `incremental_capacity_matched` the confirmatory test of "phase beyond power".
+
+**Judge's plan.**
+1. Let the core run finish.
+2. Run the 4 arms for lin and nl_coupled.
+3. Report the capacity-matched family as primary for the phase-beyond-power claim.
+4. Decide on closed loop separately, after Phase 1.
