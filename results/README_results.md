@@ -603,3 +603,29 @@ the synchrony increase of K 25 -> 40 (Delta PLV 0.055).
   (TE plus instantaneous-correlation guard, with frequency and noise adjustments) separate coupling from
   *instantaneous* common input. They do not separate it from *rhythmic* common input, which is the physiologically
   relevant alternative.
+
+## Phase 1 (HGD replication, Hz-parameterised banks): INTERIM, 6 of 14 subjects (descriptive only)
+
+- **Run:** Colab GPU, git 3c10616, core arms. The session stopped after subject 6, with subject 7 half done; the
+  run resumes from the JSONs on Drive.
+- **Metric:** test balanced accuracy (4 classes, chance 0.25; per-subject significance threshold 0.31).
+- **Status:** not the frozen analysis. That runs on all 14 subjects with Holm correction.
+
+| arm | new (mean, n=6) | published 10 Jul (same subjects) |
+|---|---|---|
+| lin: sync / surrogate / power | 0.541 / 0.306 / 0.585 | 0.566 / 0.399 / 0.564 |
+| nl_coupled: sync / surrogate / power | 0.564 / 0.323 / 0.606 | 0.522 / 0.363 / 0.574 |
+
+**Interim readings (to be confirmed at n = 14).**
+- **The phase effect (sync - surrogate) replicates and is larger.**
+  - New: lin +0.23, nl_coupled +0.24, 6/6 subjects each.
+  - Published, on the same 6 subjects: +0.17 and +0.16.
+  - The increase comes mostly from **lower surrogate accuracy** (lin 0.31 vs 0.40). Several surrogate runs stop at
+    best epoch 0-1 with validation loss near ln 4. Check at n = 14 whether the surrogate readout trains at all;
+    if it does not, the phase effect is partly "a readout that fails to train".
+- **Band power alone matches or beats sync.** sync - power is -0.045 (lin, 2/6) and -0.043 (nl, 1/6), even though
+  power has fewer features. This makes the capacity-matched test (DEVIATIONS 22: (sync+power) - (power+surrogate))
+  the decisive one for "phase adds beyond power".
+- **Coupling:** nl_coupled - lin (sync) is +0.023 (4/6), small.
+- **Hz-parameterised vs published:** no systematic shift in sync or power (|mean| <= 0.04). Surrogate is lower,
+  as above.
