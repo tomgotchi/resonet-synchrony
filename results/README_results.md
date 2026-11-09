@@ -691,3 +691,20 @@ Bold: the contrast fires where the classes carry no phase information.
 - **Context for HGD.** ResoNet's trained readouts are a weak decoder of band power. A positive Phase 1 F2 is
   expected from source-power differences alone (movement EEG classes differ mainly in mu/beta/high-gamma
   power), so it cannot support a phase interpretation.
+
+## hc-5 Gate 1 v2, validation seeds 2200-2209 (16 x 50 um, first site 150 um above the pyramidal layer; DRY RUN)
+`results/gate1_v2/gate1v2_16x50um_top-150_val_DRYRUN.json`. Frozen code (DEVIATION 25); seeds never used in
+development.
+- **PASS.** EC drive +20%: +0.365 [90% CI +0.289, +0.441] (the ideal is ln 1.44 = 0.365), 10/10, resampled power
+  at n = 7 of 1.00; identification 0.9.
+- **Must-not-move cells:** all inside the bound +/-0.122, with identification 0.9-1.0. They include CA3-EC
+  coherence 0.75, EC lags 200 and 225 deg, perisomatic and DG theta x1.3, all theta x1.3 with absolute noise,
+  speed with shared drift, background, and EC asymmetry. The DG cell, which failed marginally on the dev seeds,
+  passes here (+0.065, CI to +0.112).
+  - The null-type cells share one positive draw (about +0.04), because cells reuse the same seeds (common random
+    numbers).
+- **Curve:** EC +10% +0.208, +30% +0.525; CA3 -20% +0.456.
+- **Limitation:** a radiatum sink that moves 50 um between regimes gives an unusable Delta (CI -0.23 to +0.78).
+  The depth-shift QC flagged only 3/10 such sessions here (6/10 on dev), so it is a weak guard; this is a stated
+  limit of the plan.
+- The geometry pass map (validation seeds) is running; it will replace the guessed 300 um span in Gate 0.
