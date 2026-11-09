@@ -38,3 +38,26 @@ def test_generator_mix_tracks_ec_weight_not_nuisances():
     for nuis in (dict(f0=7.0), dict(asym=0.4), dict(drift_hz=0.5), dict(noise_exp=1.6)):
         d = _mix(seed=3, **nuis)["log_power_ratio_lm_over_rad"] - base
         assert abs(d) < 0.15, (nuis, d)                               # nuisances do not
+
+
+def test_v2_ripple_peaks_at_pyramidal_layer_and_fit_recovers_generators():
+    """Gate 1 v2 (board 2026-11-09): the ripple LFP peaks AT the pyramidal layer, and the template fit recovers
+    both theta sinks within one site; doubling EC drive raises G by about log 4."""
+    import numpy as np
+    from resonet_sync import laminar as L
+    pa, z, tr = L.simulate_laminar_v2(T_s=30.0, seed=3, return_truth=True, gains=np.ones(16))
+    lay = L.localise_layers(pa, 1250.0)
+    assert lay["pyramidal"] == int(np.argmin(np.abs(z - L.PYR_DEPTH)))
+    P, dep = L.fit_generators_refined(L.theta_csd_cov(pa, 1250.0, 50e-6), z - z[0], 50e-6)
+    assert np.allclose(dep[:, 0], [tr["ca3"] - z[0], tr["ec"] - z[0]], atol=50e-6)
+    pb, _ = L.simulate_laminar_v2(T_s=30.0, seed=4, w_ec=2.0, gains=np.ones(16))
+    g = [np.log(L.generator_powers(L.theta_csd_cov(p, 1250.0, 50e-6), P, (0, 1))[[1, 0]]).dot([1, -1]) for p in (pa, pb)]
+    assert abs((g[1] - g[0]) - np.log(4)) < 0.4
+
+
+def test_v2_amplitude_change_is_not_renormalised_away():
+    import numpy as np
+    from resonet_sync import laminar as L
+    a, _ = L.simulate_laminar_v2(T_s=5.0, seed=1, ripple_amp=0, noise_rel=0, gains=np.ones(16))
+    b, _ = L.simulate_laminar_v2(T_s=5.0, seed=1, ripple_amp=0, noise_rel=0, gains=np.ones(16), w_ca3=1.3, w_ec=1.3)
+    assert np.allclose(b, 1.3 * a)

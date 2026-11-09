@@ -559,3 +559,7 @@ input: P(fire) 1.00 / 1.00 / 0.94). **The TE/LDS rule is retired from real-data 
 - **Disclosure.** One timing job ran G1 on pilot seed 999 with the final settings before this freeze. It showed
   F2 = +0.19 and F5a = -0.05 (FBCSP + sync scored below FBCSP + fresh-roll surrogate). Pilot data only; the
   criteria above were set from the board's round-2 proposals, not from it.
+
+| # | date | where | decision | reason |
+|---|---|---|---|---|
+| 25 | 2026-11-09 | **hc-5 Gate 1 v2** (`laminar.simulate_laminar_v2`, `generator_mix_fit`, `screens/gate1_v2.py`; recorded edit of `docs/PREREG_H3_GENERATOR_MIX_DRAFT.md`, section "Gate 1 v2"). The generator-mix statistic is computed from two fitted sink/source CSD templates (generator powers by projection), not from two picked sites. Forward model with disc sources, shared septal drift, CA3-EC coherence, perisomatic/DG theta, absolute noise, per-session probe offset, thickness and gains. Criteria: equivalence relative to the target effect, n = 7 resampled power, identification within one site, a depth-shift QC. | Review board 2026-11-09 (Echeverria, Novak, Volkov; verified by the judge): the v1 site picker never found the radiatum sink, a 10 um probe offset reversed the must-move response, and the replacement site rule also failed. Designed on dev seeds 2100-2109; the validation seeds 2200-2209 and the geometry pass map run on the frozen code. The v1 runner and its dry runs are kept unchanged. |

@@ -61,6 +61,42 @@ below if larger:
 Gate 1 passes only if both hold. If a nuisance moves Delta, that nuisance is matched by window selection before
 freezing, and Gate 1 is re-run. Each re-run is logged in DEVIATIONS.
 
+### Gate 1 v2 (review board 2026-11-09; replaces the analysis path above; recorded edit, DEVIATION 25)
+The board found the v1 path broken: the ripple dipole has a potential null at the pyramidal layer, the
+"radiatum" site was the reversal or the CA3 return source (never the sink), a 10 um probe offset reversed the
+must-move response, and the site rule "between pyramidal layer and reversal" cannot find a sink that lies below
+the reversal. Two v1 nuisance failures were model artefacts (independent drift; renormalised asymmetry).
+- **Forward model** (`laminar.simulate_laminar_v2`): disc sources (R = 0.5 mm); a perisomatic ripple tripole
+  (LFP peak at the layer); one septal phase path for all theta generators (shared speed-locked drift);
+  CA3-EC coherence as a parameter (baseline PLV 0.95); optional perisomatic and DG molecular-layer theta;
+  EC-only asymmetry with the fundamental fixed; noise in absolute units; per session a probe offset
+  U(0, spacing), a layer-thickness factor U(0.85, 1.15) and site gains 1 + N(0, 0.03) shared by both regimes.
+- **Statistic.** Generators, not sites. Two sink/source CSD templates are fitted to the neutral theta-CSD
+  cross-spectrum (first halves pooled over both regimes; coarse pair search, then refinement on a 10 um grid with
+  the return source proximal). Each regime's generator powers come from projecting its own theta-CSD
+  cross-spectrum (second half) on the fixed templates. G = log(P_EC / P_CA3), with EC the deeper sink;
+  Delta = G(wheel) - G(maze).
+- **Cells and criteria** (`resonet_sync/screens/gate1_v2.py`; dev seeds 2100-2109, validation seeds
+  2200-2209).
+  - *Must not move* (90% t-CI of Delta inside +/- 1/3 of the EC+20% effect): null; CA3-EC coherence 0.75 vs 0.95;
+    EC lag 200 and 225 deg; perisomatic theta x1.3; all theta x1.3 with absolute noise; DG theta x1.3; speed
+    (+1 Hz with shared drift 0.5 Hz); background 1/f 1.6 with 15% noise; EC-only asymmetry 0.4.
+  - *Must move:* EC drive +20%: Delta > 0 in >= 8/10 and resampled power >= 0.8 for the exact sign-flip test
+    at n = 7. A curve is reported at EC +10/30% and CA3 -20%.
+  - *Identification* (null, coherence, lag and target cells): both fitted sinks within one site spacing of the
+    truth in >= 9/10 sessions.
+  - *Limitation, not gating:* the radiatum sink 50 um more proximal in one regime. The neutral fit cannot absorb
+    a generator that moves between regimes. **Depth-shift QC on real data:** generators are fitted separately on
+    each regime's first half; a sink-depth difference larger than one site spacing makes that session's
+    statistic not interpretable. Gate 1 reports this QC's flag rate in every cell.
+- **Dev result** (16 x 50 um, top 150 um above the pyramidal layer; DRY RUN, development seeds): every cell
+  passes, with identification 0.9-1.0, except DG theta x1.3: its 90% CI [+0.015, +0.136] crosses the bound
+  +0.125, because a DG molecular-layer generator leaks into the EC estimate on a shank ending 600 um below the
+  pyramidal layer. The depth-shift QC flagged the radiatum-shift cell in 6/10 sessions and no null-cell session.
+- **Geometry pass map** (validation seeds): spacing {20, 50, 100} um x {8, 16, 32} sites x first site at
+  {-150, -50, +50} um from the pyramidal layer. The smallest passing geometry replaces the guessed 300 um span in
+  Gate 0.
+
 ## Data and preprocessing
 - **Sessions:** the 7 TASK_PITCH1 sessions. One animal, so the result is within-animal.
 - **Signal:** monopolar `.eeg` at 1250 Hz. CSD is reference-free, so no bipolar or common-reference

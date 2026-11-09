@@ -124,3 +124,213 @@ def sink_sites(z_sites):
     """Indices of the sites nearest the radiatum and l-m sink depths (known geometry; on real data these come from
     the train-split CSD profile)."""
     return int(np.argmin(np.abs(z_sites - DEPTHS["radiatum"]))), int(np.argmin(np.abs(z_sites - DEPTHS["lm"])))
+
+
+# =============================================================================================== #
+# Gate 1 v2 (review board 2026-11-09). v1 above is kept unchanged so the committed dry runs reproduce.
+#  - disc sources (delta-iCSD form, radius 0.5 mm) instead of 50 um point sources;
+#  - ripple = perisomatic tripole (LFP peaks AT the pyramidal layer; v1's dipole had a null there);
+#  - theta generators share one septal phase path (common speed-locked drift); CA3-EC coherence is a parameter
+#    (stationary OU phase noise on the EC drive); optional perisomatic and DG theta generators;
+#  - EC-only asymmetry with the fundamental held fixed; noise in absolute units (no renormalisation);
+#  - per-session probe offset, layer-thickness factor and per-site gain;
+#  - generator identification by fitting two sink/source templates to the neutral theta-CSD cross-spectrum,
+#    then generator power by projection (generator_mix_fit), instead of two picked sites.
+# =============================================================================================== #
+R_DISC = 0.5e-3
+# depths below the pyramidal layer (m), before the thickness factor
+GEN2 = dict(ca3=(200e-6, 0.0), ec=(400e-6, 250e-6), peri=(60e-6, 0.0), dg=(550e-6, 750e-6))   # (sink, source)
+PYR_DEPTH = 150e-6          # pyramidal layer below the alveus
+
+
+def disc_forward(z_sites, sources, sigma=SIGMA, R=R_DISC):
+    """sources: list of (z, current (T,)) of CSD discs (current per area; sinks negative) -> phi (n_sites, T).
+    phi(z) = 1/(2 sigma) sum_j I_j (sqrt((z - z_j)^2 + R^2) - |z - z_j|)."""
+    phi = 0.0
+    for zj, I in sources:
+        d = z_sites - zj
+        phi = phi + np.outer((np.sqrt(d ** 2 + R ** 2) - np.abs(d)) / (2 * sigma), I)
+    return np.asarray(phi)
+
+
+def _ou(n, fs, tau, var, rng):
+    a = np.exp(-1.0 / (fs * tau))
+    return np.sqrt(var) * signal.lfilter([np.sqrt(1 - a * a)], [1, -a], rng.standard_normal(n))
+
+
+_NOISE_REF = {}
+
+
+def simulate_laminar_v2(T_s=120.0, fs=1250.0, spacing=50e-6, n_sites=16, top=-150e-6, thick=1.0, gain_sd=0.03,
+                        w_ca3=1.0, w_ec=1.0, ec_phase_deg=180.0, plv=0.95, f0=8.0, drift_hz=0.0, asym_ec=0.0,
+                        w_peri=0.0, w_dg=0.0, rad_shift=0.0, noise_rel=0.05, noise_exp=1.0, ripple_amp=0.3,
+                        seed=0, return_truth=False, gains=None):
+    """top: depth of the first site relative to the pyramidal layer (negative = above it). Returns (phi, z_sites)
+    with z_sites relative to the alveus; with return_truth also the true sink depths."""
+    rng = np.random.default_rng(seed)
+    n = int(T_s * fs)
+    z = PYR_DEPTH + top + np.arange(n_sites) * spacing
+    inst_f = f0 + drift_hz * np.cumsum(rng.standard_normal(n)) / np.sqrt(n)          # ONE septal frequency path
+    ph = 2 * np.pi * np.cumsum(inst_f) / fs
+
+    def env():
+        pole = np.exp(-2 * np.pi * 1.0 / fs)
+        e = signal.lfilter([1 - pole], [1, -pole], rng.standard_normal(n))
+        return np.clip(1.0 + 0.3 * e / (e.std() + 1e-12), 0.1, None)
+
+    psi = _ou(n, fs, 0.5, -2 * np.log(plv), rng) if plv < 1 else 0.0
+    lag = np.deg2rad(ec_phase_deg)
+    cur = dict(ca3=w_ca3 * env() * np.cos(ph),
+               ec=w_ec * env() * (np.cos(ph + lag + psi) + asym_ec * np.cos(2 * (ph + lag + psi) - np.pi / 2)))
+    if w_peri:
+        cur["peri"] = w_peri * env() * np.cos(ph + np.pi / 2)
+    if w_dg:
+        cur["dg"] = w_dg * env() * np.cos(ph + np.deg2rad(200.0))
+    srcs, truth = [], {}
+    for g, I in cur.items():
+        zs, zr = GEN2[g]
+        zs = PYR_DEPTH + thick * (zs - (rad_shift if g == "ca3" else 0.0))
+        zr = PYR_DEPTH + thick * zr
+        srcs += [(zs, -I), (zr, +I)]
+        truth[g] = zs
+    if ripple_amp:
+        burst = np.zeros(n)
+        k = np.arange(int(0.08 * fs))
+        for c in rng.integers(0, n - len(k), max(1, int(T_s * 0.5))):
+            burst[c + k] += np.hanning(len(k)) * np.sin(2 * np.pi * 200.0 * k / fs)
+        r = ripple_amp * 3 * burst
+        srcs += [(PYR_DEPTH, -2 * r), (PYR_DEPTH - 60e-6, r), (PYR_DEPTH + 60e-6, r)]
+    phi = disc_forward(z, srcs)
+    key = (round(spacing, 9), n_sites)
+    if key not in _NOISE_REF:            # absolute noise scale: theta LFP std of the default session, fixed
+        ref = disc_forward(z, [(PYR_DEPTH + GEN2["ca3"][0], -np.cos(ph)), (PYR_DEPTH, np.cos(ph))])
+        _NOISE_REF[key] = float(ref.std())
+    g = (1 + gain_sd * rng.standard_normal(n_sites)) if gains is None else np.asarray(gains)   # same probe: pass
+    phi = phi * g[:, None]                                                                    # one vector per session
+    phi = phi + noise_rel * _NOISE_REF[key] * pink_noise(phi.shape, fs, noise_exp, rng.integers(1 << 31))
+    return (phi, z, truth) if return_truth else (phi, z)
+
+
+def dipole_templates(z_sites, spacing, depth_step=10e-6, offsets=(-300e-6, -200e-6, -150e-6, -100e-6, 150e-6,
+                                                                   250e-6, 350e-6)):
+    """CSD-estimate templates (the same csd() as the data) of unit sink/source disc pairs. Sinks on a fine depth
+    grid over the shank; the return source at sink + offset (negative = above). Returns (T (sites, m), sinks)."""
+    sinks = np.arange(z_sites[0], z_sites[-1] + 1e-12, depth_step)
+    cols, meta = [], []
+    for zs in sinks:
+        for off in offsets:
+            t = csd(disc_forward(z_sites, [(zs, -np.ones(1)), (zs + off, np.ones(1))]), spacing)[:, 0]
+            cols.append(t / np.linalg.norm(t)); meta.append((zs, zs + off))
+    return np.array(cols).T, np.array(meta)
+
+
+def theta_csd_cov(phi, fs, spacing, theta=(6.0, 10.0)):
+    c = signal.hilbert(band(csd(phi, spacing), fs, *theta), axis=-1)
+    return c @ c.conj().T / c.shape[1]
+
+
+def fit_generators(S, Tm, meta, min_sep=150e-6):
+    """Best pair of templates (sinks at least min_sep apart) spanning the 2-D subspace that captures most of the
+    theta-CSD cross-spectrum S: maximise ||Q^H S Q||_F^2, Q an orthonormal basis of span(t_i, t_j).
+    Returns indices (shallow sink first) and their (sink, source) depths."""
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return _fit_generators(S, Tm, meta, min_sep)
+
+
+def _fit_generators(S, Tm, meta, min_sep):
+    G = (Tm.T @ Tm).real
+    H = Tm.T @ S @ Tm
+    gi, gj, gij = np.diag(G)[:, None], np.diag(G)[None, :], G
+    det = gi * gj - gij ** 2
+    hi, hj, hij = np.diag(H).real[:, None], np.diag(H).real[None, :], H
+    # tr(G2^-1 H2 G2^-1 H2) for every pair, closed form with G2^-1 = adj(G2) / det
+    a, b, d = gj / det, -gij / det, gi / det                            # G2^-1 = [[a, b], [b, d]]
+    m11 = a * hi + b * hij.conj(); m12 = a * hij + b * hj
+    m21 = b * hi + d * hij.conj(); m22 = b * hij + d * hj
+    score = (m11 * m11 + m12 * m21 + m21 * m12 + m22 * m22).real
+    sep = np.abs(meta[:, 0][:, None] - meta[:, 0][None, :]) >= min_sep
+    score = np.where(sep & (det > 1e-6), score, -np.inf)
+    i, j = np.unravel_index(int(np.argmax(score)), score.shape)
+    if meta[i, 0] > meta[j, 0]:
+        i, j = j, i
+    return (i, j), meta[[i, j]]
+
+
+def _template(z_sites, spacing, zs, zr):
+    t = csd(disc_forward(z_sites, [(zs, -np.ones(1)), (zr, np.ones(1))]), spacing)[:, 0]
+    return t / np.linalg.norm(t)
+
+
+def fine_bank(z_sites, spacing, step=10e-6, src_above=(50e-6, 450e-6)):
+    """Fine template bank: sinks every `step` over the shank, return source `src_above` above the sink (both CA3
+    and EC3 return currents flow proximally), also every `step`."""
+    cols, meta = [], []
+    for zs in np.arange(z_sites[0], z_sites[-1] + 1e-12, step):
+        for off in np.arange(src_above[0], src_above[1] + 1e-12, step):
+            cols.append(_template(z_sites, spacing, zs, zs - off)); meta.append((zs, zs - off))
+    return np.array(cols).T, np.array(meta)
+
+
+def _pair_score(S, f, Tm):
+    """||Q^H S Q||^2 for span(f, t) for every column t of Tm (f, t unit norm)."""
+    g = Tm.T @ f.conj()                                     # <t, f> (real templates)
+    det = 1 - np.abs(g) ** 2
+    hff = np.real(f.conj() @ S @ f)
+    hft = Tm.T @ (S.conj().T @ f.conj()).conj()           # t^H S f  (real t)
+    htt = np.real(np.einsum("ij,ik,kj->j", Tm, S, Tm))
+    hft = np.einsum("ij,i->j", Tm, S @ f)                  # t^T S f
+    with np.errstate(divide="ignore", invalid="ignore"):
+        a, b, d = 1 / det, -g / det, 1 / det
+        m11 = a * hff + b * hft.conj(); m12 = a * np.conj(hft) + b * htt
+        m21 = b * hff + d * hft.conj(); m22 = b * np.conj(hft) + d * htt
+        sc = (m11 * m11 + m12 * m21 + m21 * m12 + m22 * m22).real
+    return np.where(det > 1e-6, sc, -np.inf)
+
+
+def fit_generators_refined(S, z_sites, spacing, min_sep=150e-6, n_iter=4):
+    """Coarse pair search (dipole_templates) followed by coordinate refinement over the fine bank."""
+    Tc, mc = dipole_templates(z_sites, spacing)
+    (i, j), _ = fit_generators(S, Tc, mc, min_sep)
+    Tf, mf = fine_bank(z_sites, spacing)
+    cur = [Tc[:, i], Tc[:, j]]
+    dep = [mc[i], mc[j]]
+    for _ in range(n_iter):
+        for k in (0, 1):
+            other = cur[1 - k]
+            sc = _pair_score(S, other, Tf)
+            sc = np.where(np.abs(mf[:, 0] - dep[1 - k][0]) >= min_sep, sc, -np.inf)
+            m = int(np.argmax(sc))
+            cur[k], dep[k] = Tf[:, m], mf[m]
+    order = np.argsort([dep[0][0], dep[1][0]])
+    return np.array([cur[o] for o in order]).T, np.array([dep[o] for o in order])
+
+
+def generator_powers(S, Tm, idx):
+    P = Tm[:, list(idx)]
+    Pp = np.linalg.pinv(P)
+    M = Pp @ S @ Pp.conj().T
+    return np.real(np.diag(M))
+
+
+def generator_mix_per_regime(fit_halves, eval_halves, fs, spacing):
+    """Per-regime variant: each regime's generators are fitted on its own first half and its G computed on its own
+    second half (robust to a generator depth that differs between regimes)."""
+    z = np.arange(fit_halves[0].shape[0]) * spacing
+    G, dep = [], []
+    for f, e in zip(fit_halves, eval_halves):
+        P, d = fit_generators_refined(theta_csd_cov(f, fs, spacing), z, spacing)
+        pw = generator_powers(theta_csd_cov(e, fs, spacing), P, (0, 1))
+        G.append(float(np.log(max(pw[1], 1e-30) / max(pw[0], 1e-30)))); dep.append(d[:, 0].tolist())
+    return dict(G=G, sinks_rel_first_site=dep)
+
+
+def generator_mix_fit(phi_neutral, regimes, fs, spacing):
+    """Fit the two generator templates on neutral data, then log power ratio (deep / shallow sink = EC / CA3) of
+    the projected generator powers in each regime. Returns dict(fit=depths, G=[per regime])."""
+    z = np.arange(phi_neutral.shape[0]) * spacing
+    P, depths = fit_generators_refined(theta_csd_cov(phi_neutral, fs, spacing), z, spacing)
+    G = []
+    for p in regimes:
+        pw = generator_powers(theta_csd_cov(p, fs, spacing), P, (0, 1))
+        G.append(float(np.log(max(pw[1], 1e-30) / max(pw[0], 1e-30))))
+    return dict(sinks_rel_first_site=depths[:, 0].tolist(), sources_rel_first_site=depths[:, 1].tolist(), G=G)
