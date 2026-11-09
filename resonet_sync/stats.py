@@ -97,22 +97,25 @@ def phase1_rows(rows, margin=0.05, alpha=0.05):
         if r["n"] < 2 or r.get("incomplete"):
             continue
         r["p_wilcoxon"] = r["p"]
-        try:
-            r["p_wilcoxon_exact"] = float(stats.wilcoxon(d, method="exact").pvalue) if np.any(d != 0) else 1.0
-        except ValueError:
-            r["p_wilcoxon_exact"] = np.nan
+        nz = d[d != 0]
+        exact_ok = nz.size > 0 and nz.size == d.size and np.unique(np.abs(nz)).size == nz.size
+        r["p_wilcoxon_exact"] = float(stats.wilcoxon(d, method="exact").pvalue) if exact_ok else np.nan  # no ties/zeros only
         r["p"] = sign_flip_p(d)
         r["ci95_t"], r["ci90_t"], r["p_tost"] = t_ci(d, 0.95), t_ci(d, 0.90), tost_p(d, margin)
     tested = [r for r in rows if r["n"] >= 2 and not r.get("incomplete") and np.isfinite(r["p"])]
+    # Holm over ALL declared rows (board 2026-11-09, round 3): an untested declared row enters as p = 1, so a missing
+    # arm can never shrink the family (m = number of declared rows).
     for key, out in (("p", "p_holm"), ("p_tost", "p_tost_holm")):
-        adj = holm([r[key] for r in tested]) if tested else []
-        for r, p in zip(tested, adj):
-            r[out] = float(p)
+        adj = holm([r[key] if r in tested else 1.0 for r in rows]) if tested else []
+        for r, p in zip(rows, adj):
+            if r in tested:
+                r[out] = float(p)
     for r in tested:
-        r["holm_m"] = len(tested)
-        r["outcome"] = ("superior" if r["p_holm"] < alpha and r["mean_diff"] > 0 else
-                        "inferior" if r["p_holm"] < alpha and r["mean_diff"] < 0 else
-                        "equivalent" if r["p_tost_holm"] < alpha else "inconclusive")
+        r["holm_m"] = len(rows)
+        within = r["ci90_t"][0] > -margin and r["ci90_t"][1] < margin
+        r["outcome"] = ("superior" + (", within margin" if within else "") if r["p_holm"] < alpha and r["mean_diff"] > 0
+                        else "inferior" + (", within margin" if within else "") if r["p_holm"] < alpha and r["mean_diff"] < 0
+                        else "equivalent" if r["p_tost_holm"] < alpha else "inconclusive")
     return rows
 
 

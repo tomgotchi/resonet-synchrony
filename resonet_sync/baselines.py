@@ -16,7 +16,7 @@ import numpy as np
 from scipy import signal
 
 FB_BANDS = [(lo, lo + 4.0) for lo in range(4, 40, 4)]
-HG_BANDS = [(40.0, 60.0), (60.0, 80.0), (80.0, 100.0), (100.0, 124.0)]     # reported separately (descriptive)
+HG_BANDS = [(40.0, 48.0), (52.0, 60.0), (60.0, 80.0), (80.0, 100.0), (100.0, 124.0)]   # descriptive; 48-52 Hz (mains) skipped
 DROP = 125
 
 

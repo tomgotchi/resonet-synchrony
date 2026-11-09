@@ -276,13 +276,13 @@ def _pair_score(S, f, Tm):
     g = Tm.T @ f.conj()                                     # <t, f> (real templates)
     det = 1 - np.abs(g) ** 2
     hff = np.real(f.conj() @ S @ f)
-    hft = Tm.T @ (S.conj().T @ f.conj()).conj()           # t^H S f  (real t)
     htt = np.real(np.einsum("ij,ik,kj->j", Tm, S, Tm))
-    hft = np.einsum("ij,i->j", Tm, S @ f)                  # t^T S f
+    x = np.einsum("ij,i->j", Tm, S @ f)                    # t^T S f (real t); f^H S t = conj(x)
     with np.errstate(divide="ignore", invalid="ignore"):
+        # M = G2^-1 H2, G2^-1 = [[a, b], [b, d]], H2 = [[hff, conj(x)], [x, htt]]  (board 2026-11-09 fix)
         a, b, d = 1 / det, -g / det, 1 / det
-        m11 = a * hff + b * hft.conj(); m12 = a * np.conj(hft) + b * htt
-        m21 = b * hff + d * hft.conj(); m22 = b * np.conj(hft) + d * htt
+        m11 = a * hff + b * x; m12 = a * np.conj(x) + b * htt
+        m21 = b * hff + d * x; m22 = b * np.conj(x) + d * htt
         sc = (m11 * m11 + m12 * m21 + m21 * m12 + m22 * m22).real
     return np.where(det > 1e-6, sc, -np.inf)
 

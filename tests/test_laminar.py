@@ -61,3 +61,22 @@ def test_v2_amplitude_change_is_not_renormalised_away():
     a, _ = L.simulate_laminar_v2(T_s=5.0, seed=1, ripple_amp=0, noise_rel=0, gains=np.ones(16))
     b, _ = L.simulate_laminar_v2(T_s=5.0, seed=1, ripple_amp=0, noise_rel=0, gains=np.ones(16), w_ca3=1.3, w_ec=1.3)
     assert np.allclose(b, 1.3 * a)
+
+
+def test_pair_score_matches_explicit_qr():
+    """Board 2026-11-09 (Novak): the closed-form subspace score equals ||Q^H S Q||_F^2 for a complex S."""
+    import numpy as np
+    from resonet_sync import laminar as L
+    rng = np.random.default_rng(0)
+    A = rng.standard_normal((16, 4)) + 1j * rng.standard_normal((16, 4))
+    S = A @ A.conj().T
+    T = rng.standard_normal((16, 30)); T /= np.linalg.norm(T, axis=0)
+    sc = L._pair_score(S, T[:, 0], T)
+    for j in range(1, 30):
+        Q, _ = np.linalg.qr(np.c_[T[:, 0], T[:, j]])
+        assert np.isclose(sc[j], np.linalg.norm(Q.conj().T @ S @ Q) ** 2, rtol=1e-8)
+    (i, j), _ = L.fit_generators(S, T, np.c_[np.arange(30) * 1e-3, np.zeros(30)], min_sep=0)
+    Q, _ = np.linalg.qr(T[:, [i, j]])
+    best = max(np.linalg.norm(np.linalg.qr(T[:, [p, q]])[0].conj().T @ S @ np.linalg.qr(T[:, [p, q]])[0]) ** 2
+               for p in range(30) for q in range(p + 1, 30))
+    assert np.isclose(np.linalg.norm(Q.conj().T @ S @ Q) ** 2, best, rtol=1e-8)

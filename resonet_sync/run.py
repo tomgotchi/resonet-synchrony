@@ -52,7 +52,8 @@ def git_hash():
 def provenance(device):
     """What produced an arm's result (stored per arm; board 2026-11-09: a resume used to overwrite this)."""
     try:
-        dirty = subprocess.run(["git", "diff", "--quiet", "HEAD", "--", "resonet_sync", "vendor"], cwd=ROOT).returncode != 0
+        dirty = subprocess.run(["git", "diff", "--quiet", "HEAD", "--", "resonet_sync", "vendor", "scripts"],
+                               cwd=ROOT).returncode != 0
     except Exception:
         dirty = None
     import scipy
@@ -96,9 +97,13 @@ def build(arm, C, T, fs, cfg):
 
 def bank_regime(bank):
     """Board 2026-11-09 (Volkov): is the trained nl_coupled bank anywhere near self-sustained / locked dynamics?
-    max_re_eig of the linear operator diag(lambda) + W (> 0 would mean a self-sustained mode); coupling over
-    detuning h|W| / |delta omega| (median over pairs; >~ 1 needed for locking). Descriptive; no RNG, no effect on
-    results."""
+    Descriptive; no RNG, no effect on results.
+      max_re_eig: max real eigenvalue of diag(lambda) + W in 1 / model time (model time unit = h = 0.01, so x100 for
+        1/s); continuous-time sign only.
+      max_rk4_gain: max |R_RK4(h * eig)| per sample of the linear operator, R(x) = 1 + x + x^2/2 + x^3/6 + x^4/24
+        (> 1 = a growing mode in the simulator actually used, one RK4 step per sample).
+      coupling_over_detuning: h|W_ij| / (|d omega_ij| + |mu_i| + |mu_j|) per sample, median and max over pairs
+        (>~ 1 needed for locking)."""
     with torch.no_grad():
         mu_s, om_s = bank.per_sample()
         lam = torch.complex(mu_s, om_s).to(torch.complex64) / bank.h
@@ -108,9 +113,14 @@ def bank_regime(bank):
         om = om_s.cpu().numpy()
         dom = np.abs(om[:, None] - om[None, :])
         iu = np.triu_indices(len(om), 1)
-        return dict(max_re_eig=float(ev.real.max()), min_abs_re_lambda=float(lam.real.abs().min()),
-                    h_absW_mean=float(hW[iu].mean()),
-                    coupling_over_detuning_median=float(np.median(hW[iu] / np.maximum(dom[iu], 1e-9))))
+        x = bank.h * ev.numpy() / getattr(bank, "substeps", 1)
+        R = np.abs(1 + x + x ** 2 / 2 + x ** 3 / 6 + x ** 4 / 24) ** getattr(bank, "substeps", 1)
+        mu = np.abs(mu_s.cpu().numpy())
+        ratio = hW[iu] / (dom[iu] + mu[:, None][iu[0], 0] + mu[iu[1]] + 1e-12)
+        return dict(max_re_eig=float(ev.real.max()), max_re_eig_unit="1/model-time (h = model time per sample)",
+                    max_rk4_gain=float(R.max()), min_abs_re_lambda=float(lam.real.abs().min()),
+                    h_absW_mean=float(hW[iu].mean()), coupling_over_detuning_median=float(np.median(ratio)),
+                    coupling_over_detuning_max=float(ratio.max()))
 
 
 def run_subject(Xtr, ytr, Xte, yte, arms, cfg, fs, device, log=print, done=None, prov=None, weights_dir=None):
@@ -178,6 +188,24 @@ def contrasts_phase1(per_subject_acc, min_n=None):
                                     + [(f"{b}: sync-surrogate", f"{b}:sync", f"{b}:surrogate") for b in others]),
     }
     return {k: contrast_table(per_subject_acc, v, min_n=min_n, phase1=True) for k, v in fam.items()}
+
+
+def decision_rules(contrasts, acc, min_n):
+    """DEVIATION 23 rules in code (board round 3): per bank, the intersection-union rule (F2 superior AND F3 superior),
+    its pre-committed wording (DEVIATION 24 outcome), and the dilution check D3 = (power+surrogate) - power."""
+    out = {}
+    d3 = {r["contrast"].split(":")[0]: r for r in contrast_table(
+        acc, [(f"{b}: (power+surrogate)-power", f"{b}:power+surrogate", f"{b}:power") for b in CONFIRMATORY_BANKS],
+        min_n=min_n)}
+    for i, b in enumerate(CONFIRMATORY_BANKS):
+        f2, f3 = contrasts["incremental_capacity_matched"][i], contrasts["incremental_sync_over_power"][i]
+        done = not (f2.get("incomplete") or f3.get("incomplete")) and f2.get("outcome") and f3.get("outcome")
+        iut = bool(done and f2["outcome"].startswith("superior") and f3["outcome"].startswith("superior"))
+        out[b] = dict(complete=bool(done), iut_beyond_bank_log_powers=iut if done else None,
+                      wording=("zero-lag cross-oscillator structure beyond the bank's 16 log-powers" if iut else None),
+                      D3_mean=d3[b]["mean_diff"], D3_n=d3[b]["n"],
+                      F2_inflated_by_dilution=bool(d3[b]["n"] and d3[b]["mean_diff"] < -0.05))
+    return out
 
 
 def phase1(args):
@@ -293,13 +321,15 @@ def summarize(out_dir, min_n=N_SUBJECTS):
     n_per_arm = {a: int(sum(a in u for u in acc)) for a in arms}
     summ = dict(n_subjects=len(per), subjects=[p["subject"] for p in per], metric="test balanced accuracy",
                 means=means, n_per_arm=n_per_arm, inference_min_n=min_n,
-                complete=bool(min_n is not None and len(per) >= min_n),
+                complete=bool(min_n is not None and all(n_per_arm.get(f"{b}:{r}", 0) >= min_n for b in CONFIRMATORY_BANKS
+                                                        for r in ("sync", "surrogate", "power", "sync+power", "power+surrogate"))),
                 contrasts=contrasts_phase1(acc, min_n=min_n),
                 git_per_subject={p["subject"]: sorted({r.get("provenance", {}).get("git") or p.get("git")
                                                        for r in p["arms"].values()} - {None}) for p in per},
                 config=per[-1]["config"], evoked_induced=summarize_decomposition(per, min_n=min_n))
     pub_dir = load_config().get("paths", {}).get("published_results_hg") or str(ROOT.parent / "results_hg")
     summ["vs_published"] = compare_published(per, pub_dir, min_n=min_n)
+    summ["decision_rules"] = decision_rules(summ["contrasts"], acc, min_n)
     write_json_atomic(Path(out_dir) / "summary.json", json.loads(json.dumps(summ, default=float)))
     print(json.dumps({a: f"{m:.4f} (n={n_per_arm[a]})" for a, m in means.items()}, indent=1))
     fams = dict(summ["contrasts"])
@@ -307,6 +337,9 @@ def summarize(out_dir, min_n=N_SUBJECTS):
         fams.update(summ["vs_published"]["hz_minus_published"] and
                     {"vs_published": summ["vs_published"]["hz_minus_published"],
                      "phase_effect_published_vs_hz": summ["vs_published"]["phase_effect_both"]})
+    for b, rule in summ["decision_rules"].items():
+        print(f"-- rule {b}: complete={rule['complete']} IUT={rule['iut_beyond_bank_log_powers']} "
+              f"D3={rule['D3_mean']:+.3f} (n={rule['D3_n']}) dilution={rule['F2_inflated_by_dilution']}")
     for fam, rows in fams.items():
         print(f"-- {fam}")
         for r in rows:

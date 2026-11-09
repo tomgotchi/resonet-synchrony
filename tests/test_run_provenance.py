@@ -131,3 +131,25 @@ def test_phase1_rows_outcomes():
     assert short["incomplete"] and short["outcome"] is None and np.isnan(short["p"])
     # an older notebook copy formats these fields; NaN must not crash it
     f"{short['ci95'][0]:+.3f} {short['dz']:+.2f} {short['p_holm']:.4f}"
+
+
+def test_declared_family_never_shrinks_and_rules_computed():
+    """Board round 3 (Halvorsen): a declared row that is incomplete enters Holm as p = 1 (m stays 2); the
+    intersection-union rule and D3 are computed in code."""
+    rng = np.random.default_rng(5)
+    per = []
+    for i in range(14):
+        u = {f"{b}:{r}": 0.5 + 0.01 * rng.standard_normal() for b in R.CONFIRMATORY_BANKS
+             for r in ("sync", "surrogate", "power", "power+surrogate")}
+        u["lin:sync+power"] = u["lin:power"] + 0.08 + 0.01 * rng.standard_normal()
+        u["lin:power+surrogate"] = u["lin:power"] - 0.02
+        if i < 13:
+            u["nl_coupled:sync+power"] = 0.6
+        per.append(u)
+    fam = R.contrasts_phase1(per, min_n=14)
+    cm = fam["incremental_capacity_matched"]
+    assert cm[1]["incomplete"] and cm[0]["holm_m"] == 2
+    assert cm[0]["p_holm"] == pytest.approx(min(1.0, 2 * cm[0]["p"]))
+    rules = R.decision_rules(fam, per, 14)
+    assert rules["lin"]["iut_beyond_bank_log_powers"] is True and rules["nl_coupled"]["complete"] is False
+    assert rules["lin"]["D3_mean"] == pytest.approx(-0.02)

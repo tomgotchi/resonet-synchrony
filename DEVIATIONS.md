@@ -576,3 +576,56 @@ input: P(fire) 1.00 / 1.00 / 0.94). **The TE/LDS rule is retired from real-data 
 - D2 on the frozen banks: the fixed-roll surrogate features decode 0.32-0.39 with a probe against 0.27-0.30 for
   the trained surrogate readout (partly a training failure, partly a weak signal); the fresh-roll surrogate is at
   chance (0.24-0.27).
+
+#### DEVIATION 24, outcome addendum (board 2026-11-09, round 3; append-only corrections)
+- **The "about 14%" false-invalid figure was wrong.** With n = 10, a 90% t-CI and margin 0.05, a contrast with zero
+  bias passes all three validity checks only about 50% of the time at a paired SD of 0.05, and 26% at F5b's SD on
+  G0 (Halvorsen, Asante simulations). The two narrow F5 misses therefore say nothing about F5's bias.
+- **The misses go in opposite directions.**
+  - F5b's miss is on G0 (permuted labels), where its expected difference is exactly 0: it is noise.
+  - F5a's miss on G1r (+0.027, 7/10) is weak evidence of a liberal bias. On G1r FBCSP (0.57) is weaker than FBLV
+    (0.65), so sync can pick up power that FBCSP misses. A future F5 should use the strongest power baseline
+    (FBLV and FBCSP together, or a baseline chosen on the validation carve).
+- **G2 is "coupling only" at the source level only.** The class lag's cosine enters the zero-lag channel covariance
+  (FBLV 0.60, FBCSP 0.58 on G2). F5's G2 sensitivity is to quadrature (lagged) coupling beyond the zero-lag
+  covariance the baseline already sees. A cleaner sensitivity generator (lags of +/-90 deg only, so the class
+  lives in the imaginary cross-spectrum) is the design for any future calibration.
+- **D2 wording.** DEVIATION 23 says the D2 probes are "train-CV". As implemented (here and in
+  `scripts/phase1_posthoc.py`) they are fitted on train minus the carve and scored on test, like every other arm.
+- **Not re-run, by design.** The Phase 1 wording stays as pre-committed. Any future "phase" claim needs a new,
+  pre-registered calibration with >= 20 datasets per generator, so that its validity check has power.
+
+| # | date | where | decision | reason |
+|---|---|---|---|---|
+| 26 | 2026-11-09 | **Gate 1 v2 status revised to FAIL** (review board round 3). The radiatum-depth-shift cell is gating again (it was made non-gating on dev seeds after failing: a forking path). Gate 1 v2 also fails with depth-extended generators and a strong CA3-EC coherence change. `laminar._pair_score` closed form corrected (wrong conjugation). The hc-5 documentation gives 8 sites per shank (16 anatomical groups, 128 channels). Gate 1 v3 is deferred until Gate 0 (probe geometry, from the hc-5 QC) is known. | Halvorsen, Echeverria, Volkov and Novak independently; the judge re-ran the failing cells. |
+
+### DEVIATION 26: details
+- **Validation seeds 2200-2209, 16 x 50 um, under the original rule (radiatum shift gating): FAIL.**
+  - The radiatum shift moves Delta by +0.27 [-0.23, +0.78] (paired against the null cell: +0.23), about 75% of the
+    target. The depth-shift QC detected it in 3/10 sessions (6/10 on dev).
+- **New failing cells** (judge re-runs):
+  - CA3-EC coherence PLV 0.95 -> 0.3: Delta -0.236 [-0.315, -0.157], 1/10 positive (PLV 0.75 gave -0.02).
+  - Depth-extended generators (Gaussian sinks, SD 40-80 um; Echeverria): EC +20% falls to +0.208 (ideal 0.365) with
+    identification 0.7; a CA3 sink spread of 40 vs 80 um gives -0.080 [-0.243, +0.084]. Because the simulator and
+    the fitted templates share one point-depth family, v2 was only tested on shapes it can represent exactly
+    (an "inverse crime").
+  - The EC-asymmetry cell (fundamental fixed) and five other cells reproduce the null cell's draw within 0.002 under
+    common random numbers; they test nothing.
+- **Null bias claim rejected.** The null cell's +0.04-0.05 on dev and validation was seed luck: 40 fresh null
+  sessions give -0.012 [-0.031, +0.007], and n = 7 subsets reject at 0.034. The A/B processing is exactly
+  antisymmetric under a seed swap.
+- **`_pair_score` bug** (Novak): the refinement score had the wrong conjugation (up to 64% error for a complex S;
+  test against explicit QR added). At 16 x 50 um it moved only the lag cells (225 deg: per session up to 0.077); the
+  coarse search was correct.
+- **Requirements for a Gate 1 v3** (not built; only worth building if a dataset passes Gate 0):
+  - generators with depth extent and distributed returns; templates from the data (slow-gamma CSD for the CA3 /
+    radiatum profile, mid-gamma CSD for the EC3 / l-m profile) or with a width parameter;
+  - graded CA3-EC coherence (0.9 to 0.3) plus a fitted-coherence QC;
+  - graded DG weight and phase;
+  - nuisance criteria on paired effects (cell - null, same seeds), with the bound fixed at ln(1.44)/3;
+  - the radiatum shift gating, or a positive result pre-registered as "EC/CA3 ratio OR CA3 sink-depth change";
+  - fresh validation seeds (2300+), disclosing that 2200-2209 have been seen.
+- **hc-5 geometry.** The data description lists 16 anatomical groups over 128 channels, i.e. 8 sites per shank.
+  Site spacing is not given. Buzsaki-type probes are 20 um, which would give 140 um, far short of the >= 400-500 um
+  the generator-mix statistic needs; 8 x 20 um failed every cell in the (stopped) pass map. Gate 0 must still be
+  run on the QC output, but the expected outcome is FAIL, i.e. the CSD route is infeasible on hc-5.

@@ -646,7 +646,7 @@ Full record: `docs/REVIEW_BOARD.md`. The judge re-ran the decisive checks; the s
   - Consequences, frozen in DEVIATION 23 before subjects 7-14: wording limits, an intersection-union rule, and a
     frozen-bank family F5 (band power + sync vs band power + fresh-roll surrogate). The calibration screen
     (DEVIATION 24, `results/calib_p1/`) decides which wording Phase 1 may use.
-- **Phase 2's emergent data are purely second order.** A Whittle (Gaussian spectral) classifier scores 0.999
+- **Phase 2's emergent data leave no headroom for non-Gaussian information** (wording corrected in round 3). A Whittle (Gaussian spectral) classifier scores 0.999
   (emergent) and 0.78 (driven), averaged over all 10 seeds (`results/phase2/whittle_oracle.json`); the trained banks
   score 0.86-0.89 and 0.76-0.77. There was no non-Gaussian structure for the nonlinear bank to exploit.
 - **Coupling vs rhythmic common input is not identifiable** in the linear-Gaussian regime (two constructions,
@@ -695,7 +695,7 @@ Bold: the contrast fires where the classes carry no phase information.
 ## hc-5 Gate 1 v2, validation seeds 2200-2209 (16 x 50 um, first site 150 um above the pyramidal layer; DRY RUN)
 `results/gate1_v2/gate1v2_16x50um_top-150_val_DRYRUN.json`. Frozen code (DEVIATION 25); seeds never used in
 development.
-- **PASS.** EC drive +20%: +0.365 [90% CI +0.289, +0.441] (the ideal is ln 1.44 = 0.365), 10/10, resampled power
+- **PASS as run, later revised to FAIL (round 3, DEVIATION 26; see the next section).** EC drive +20%: +0.365 [90% CI +0.289, +0.441] (the ideal is ln 1.44 = 0.365), 10/10, resampled power
   at n = 7 of 1.00; identification 0.9.
 - **Must-not-move cells:** all inside the bound +/-0.122, with identification 0.9-1.0. They include CA3-EC
   coherence 0.75, EC lags 200 and 225 deg, perisomatic and DG theta x1.3, all theta x1.3 with absolute noise,
@@ -708,3 +708,20 @@ development.
   The depth-shift QC flagged only 3/10 such sessions here (6/10 on dev), so it is a weak guard; this is a stated
   limit of the plan.
 - The geometry pass map (validation seeds) is running; it will replace the guessed 300 um span in Gate 0.
+
+## Board round 3 (2026-11-09): corrections to the above
+- **Gate 1 v2 FAILS** (DEVIATION 26):
+  - the radiatum depth shift is gating again (+0.27, QC detection 3/10);
+  - CA3-EC coherence 0.95 -> 0.3 gives -0.236 [-0.315, -0.157];
+  - with depth-extended generators the EC +20% target falls to +0.208 and identification to 0.7.
+  The template-fit statistic was only tested on generators of its own shape.
+- **Null bias rejected.** The +0.04 of the validation null cell was seed luck: 40 fresh null sessions give -0.012
+  [-0.031, +0.007], and n = 7 subsets reject at 0.034.
+- **`_pair_score` fixed** (wrong conjugation; QR test). Only the lag cells moved at 16 x 50 um.
+- **hc-5 geometry:** 8 sites per shank (data description: 16 anatomical groups over 128 channels). Gate 0 is
+  expected to fail, so Gate 1 v3 is deferred.
+- **Calibration (DEVIATION 24):**
+  - The validity check had about 50% false-invalid probability for a calibrated contrast, so F5's two narrow misses
+    are uninformative about bias. F5b's miss is pure noise (G0); F5a's leans liberal on G1r.
+  - G2 is coupling-only at the source level only: F5's sensitivity is to lagged coupling beyond zero-lag covariance.
+  - The Phase 1 wording stays as pre-committed.

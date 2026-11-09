@@ -3,21 +3,22 @@
 ResoNet follow-up "Pitch 1": does nonlinear coupling between oscillators earn its cost where the rhythm is
 generated internally (hippocampal wheel running), and not where it is stimulus-driven?
 
-**Where things stand (2026-11-09):**
-- **Phase 1** (HGD replication) is stopped at 6/14 subjects on Colab; re-running the notebook resumes it. The
-  interim is descriptive only.
-- **Review board 2026-11-09** (six agents, two rounds; [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md)):
-  - The Phase 1 "phase" contrasts are not phase-specific: they fire on source-power-only data, are inflated by
-    dilution, and the fixed-roll surrogate leaks phase.
-  - **DEVIATION 23** freezes the Phase 1 analysis rules before subjects 7-14: exact sign-flip test, TOST margin
-    0.05, an intersection-union rule, wording limits, and a frozen-bank "phase beyond band power" family F5.
-  - **DEVIATION 24**, a calibration screen with known ground truth, is running and decides that wording.
-- **Synthetic mechanism programme (screens 1-11) is closed.** The formal reason is in
-  [docs/NONIDENTIFIABILITY.md](docs/NONIDENTIFIABILITY.md): in the linear-Gaussian regime, coupling and rhythmic
-  common input have identical laws. The Phase 2 emergent data are purely second order (Whittle oracle 0.999).
-- **hc-5:** the generator-mix plan now uses **Gate 1 v2** (DEVIATION 25). It fits generator templates instead of
-  picking sites, because the v1 site picker never found the radiatum sink. The dev dry run passes every cell
-  except DG crosstalk (marginal). The validation run and the geometry pass map follow. Gate 0 needs the hc-5 QC.
+**Where things stand (2026-11-09, after review board rounds 1-3):**
+- **Phase 1** (HGD replication) is stopped at 6/14 subjects on Colab; re-running the notebook resumes it, now with
+  per-arm provenance, learning curves and saved weights. The interim is descriptive only.
+- **Phase 1 wording is settled before the data** (DEVIATIONS 23-24):
+  - The calibration screen showed that the Phase 1 "phase" contrasts fire on source-power-only data (F2 +0.18)
+    and on a dilution null.
+  - So the Phase 1 capacity-matched result can only be worded "zero-lag cross-oscillator structure beyond the
+    bank's 16 log-powers".
+  - No Phase 1 result is called "phase". The frozen-bank band-power + sync contrasts (F5) were sensitive to
+    coupling but not validated, so they stay descriptive.
+- **Synthetic mechanism programme (screens 1-11) is closed.** [docs/NONIDENTIFIABILITY.md](docs/NONIDENTIFIABILITY.md)
+  shows that the linear-Gaussian model class contains exact common-input equivalents of coupling. The rule itself
+  was retired on its pre-committed criterion.
+- **hc-5:** the generator-mix plan's Gate 1 v2 **fails** (DEVIATION 26): template mismatch, a strong coherence
+  change, and a depth shift between regimes. The hc-5 documentation gives 8 sites per shank, so Gate 0 is expected
+  to fail and the CSD route is likely infeasible on hc-5. The hc-5 QC (notebook §7) decides.
 
 ## Start here
 

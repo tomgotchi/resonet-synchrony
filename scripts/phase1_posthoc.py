@@ -17,7 +17,8 @@ import torch
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from resonet_sync import baselines as BL, data_hgd  # noqa: E402
-from resonet_sync.run import CONFIRMATORY_BANKS, N_SUBJECTS, P1, build, load_config, write_json_atomic  # noqa: E402
+from resonet_sync.run import (CONFIRMATORY_BANKS, N_SUBJECTS, P1, build, load_config, provenance,  # noqa: E402
+                              write_json_atomic)
 from resonet_sync.stats import contrast_table  # noqa: E402
 
 
@@ -44,14 +45,17 @@ def main(argv=None):
         vmask = data_hgd.train_val_split(ytr, cfg["val_frac"], cfg["seed"])
         if "baselines" not in rec:
             rec["baselines"] = BL.baselines(Xtr, ytr, Xte, yte, vmask, fs, tangent=not a.no_tangent)
+        rec.setdefault("provenance", []).append(provenance(torch.device("cpu")))
         for b in todo:
+            wf = wdir / f"{b}__sync_plus_power.pt"
             m = build(f"{b}:sync+power", Xtr.shape[1], Xtr.shape[2], fs, cfg)
-            m.load_state_dict(torch.load(wdir / f"{b}__sync_plus_power.pt"))
+            m.load_state_dict(torch.load(wf))
             rec["banks"][b] = BL.frozen_bank_analyses(m, Xtr, ytr, Xte, yte, vmask, fs, cfg["n_osc"], cfg["seed"])
+            rec["banks"][b]["weights_sha256"] = data_hgd.sha256(wf)        # traceable to the exact trained bank
         write_json_atomic(f, rec)
         print(s, json.dumps(rec)[:400], flush=True)
     per = [json.loads(p.read_text()) for p in sorted(out.glob("subj_[0-9]*.json"))]
-    rows = [{f"{b}:{k}": v for b, r in p["banks"].items() for k, v in r.items()} for p in per]
+    rows = [{f"{b}:{k}": v for b, r in p["banks"].items() for k, v in r.items() if k != "weights_sha256"} for p in per]
     fam = {B: contrast_table(rows, [(f"{b}: ({B}+sync)-({B}+surrogate_random)", f"{b}:{B}+sync",
                                      f"{b}:{B}+surrogate_random") for b in CONFIRMATORY_BANKS],
                              min_n=N_SUBJECTS, phase1=True) for B in ("FBCSP", "FBLV")}
@@ -61,6 +65,8 @@ def main(argv=None):
                 F5_confirmatory=fam.get(chosen) if chosen else None, F5_both_candidates=fam,
                 baselines_mean={k: float(np.mean([p["baselines"][k] for p in per if p["baselines"].get(k) is not None]))
                                 for k in per[0]["baselines"]} if per else {},
+                note_D2="D2 probes are fitted on train minus the carve and scored on TEST (DEVIATION 23 says train-CV; "
+                        "corrected wording in DEVIATIONS, board round 3)",
                 D2_probe_means={f"{b}:{k}": float(np.mean([p["banks"][b][k] for p in per if b in p["banks"]]))
                                 for b in CONFIRMATORY_BANKS for k in ("probe:sync", "probe:surrogate", "probe:surrogate_random")
                                 if any(b in p["banks"] for p in per)})

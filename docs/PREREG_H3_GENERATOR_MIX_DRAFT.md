@@ -61,6 +61,11 @@ below if larger:
 Gate 1 passes only if both hold. If a nuisance moves Delta, that nuisance is matched by window selection before
 freezing, and Gate 1 is re-run. Each re-run is logged in DEVIATIONS.
 
+> **Status (board round 3, DEVIATION 26): Gate 1 v2 FAILS.** The radiatum-shift cell is gating again; v2 also fails
+> with depth-extended generators and a CA3-EC coherence change to PLV 0.3. A Gate 1 v3 (requirements in DEVIATION 26)
+> is deferred until Gate 0 is known. The hc-5 documentation gives 8 sites per shank, so Gate 0 is expected to fail.
+> The "Layer and sink sites" rule under "Data and preprocessing" below is the superseded v1 rule.
+
 ### Gate 1 v2 (review board 2026-11-09; replaces the analysis path above; recorded edit, DEVIATION 25)
 The board found the v1 path broken: the ripple dipole has a potential null at the pyramidal layer, the
 "radiatum" site was the reversal or the CA3 return source (never the sink), a 10 um probe offset reversed the

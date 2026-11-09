@@ -381,3 +381,45 @@ VERIFIED = re-run or found by the judge; ACCEPTED = plausible, not reproduced.
 4. **Baselines module** (FBLV + shrinkage LDA, FBCSP, tangent space) and the F5/D2 frozen-bank analyses, ready for
    Colab.
 5. Tom: resume the Colab run (the code now stores weights and curves); run the hc-5 QC.
+
+## Round 3 (2026-11-09): review of what the judge built
+**Mode:** agent mode; the six members were resumed with their context, one round. **Target:** commits b0f24b4..9dd30fd.
+
+| sev | member | finding | verdict | evidence |
+|---|---|---|---|---|
+| crit | Halvorsen | Gate 1 v2 null cell biased (+0.049 pooled, n = 20); effective alpha 0.25 at n = 7 | REJECTED | 40 fresh null sessions: -0.012 [-0.031, +0.007]; n = 7 subsets reject 0.034; A/B swap exactly antisymmetric |
+| crit | Echeverria | "Inverse crime": with depth-extended generators the target falls to +0.208, identification 0.7; sink spread moves Delta | VERIFIED | r3_extended.py re-run |
+| crit | Volkov | CA3-EC coherence 0.95 -> 0.3 moves Delta by -0.236 | VERIFIED | judge re-run on validation seeds: -0.236 [-0.315, -0.157], 1/10 |
+| major | Halvorsen, Echeverria, Volkov, Novak | Making the radiatum shift non-gating after it failed on dev is a forking path | ACCEPTED; reverted | DEVIATION 26: gating again -> Gate 1 v2 FAIL |
+| major | Novak | `_pair_score` closed form wrong (conjugation) | VERIFIED; fixed | up to 64% error vs explicit QR; regression test |
+| major | Novak | Null criterion on raw Delta with common random numbers; paired effects show real nuisances (coherence 0.75: -0.060) | ACCEPTED | requirement for v3 |
+| major | Volkov | Asymmetry cell (fundamental fixed) and five others reproduce the null draw: test nothing | ACCEPTED | requirement for v3 |
+| major | Zhao | G2 carries class information in zero-lag band power (FBLV 0.56-0.60) | VERIFIED | results/calib_p1: FBLV 0.60, FBCSP 0.58 on G2 |
+| major | Zhao, Volkov | The note overclaims: screen 11's units were detuned with complex loadings, so construction 1 does not cover its R cells; "what breaks it" is not an identification result | VERIFIED (synth.py:56); fixed | NONIDENTIFIABILITY.md corrected |
+| major | Halvorsen, Asante | The DEVIATION 24 validity check had about 50% false-invalid probability (not 14%) | ACCEPTED (simulations not re-run); corrected | DEVIATION 24 addendum |
+| major | Halvorsen | Holm family shrinks when a declared row is incomplete; intersection-union rule and D3 not in code | VERIFIED; fixed | stats.phase1_rows (m = declared rows); run.decision_rules; test |
+| major | Novak | Notebook not pinned to a commit; resume does not refuse code changes | DECLINED (proportion) | a code-hash refusal would block the legitimate resume (training code unchanged, golden run identical); per-arm git recorded |
+| minor | Novak | p_wilcoxon_exact not exact under ties; complete flag true with missing arms; code_dirty ignores scripts; post-hoc not traceable; D2 wording | VERIFIED; fixed | stats.py, run.py, phase1_posthoc.py (weights sha256), DEVIATION 24 addendum |
+| minor | Volkov | bank_regime units and criterion (RK4 gain, max coupling/detuning) | ACCEPTED; fixed | run.bank_regime |
+| minor | Asante | 40-60 Hz band contains 50 Hz mains | ACCEPTED; fixed | HG_BANDS skip 48-52 Hz |
+| minor | Asante | Baseline memory about 5-6 GB on 128 channels | ACCEPTED, not changed | fits Colab |
+| - | Asante | Baselines match the P6 spec; calibration honestly reported apart from the 14% figure | ACCEPTED | |
+
+**Overturned or corrected judge decisions:** the Gate 1 v2 PASS (now FAIL); the radiatum cell's non-gating status;
+the "14%" figure; three sentences of the non-identifiability note.
+
+**Positions.**
+- **Halvorsen:** never cite the v2 pass; future calibrations need about 25 datasets per generator.
+- **Echeverria:** templates must come from the data (gamma-band CSD profiles); expect hc-5 to fail Gate 0.
+- **Zhao:** any future "phase beyond band power" claim needs a +/-90 deg (imaginary-only) sensitivity generator.
+- **Volkov:** a supercritical oracle check only if Pitch 1's decoder question stays open.
+- **Asante:** resume Phase 1 as frozen; nothing in his lane blocks it.
+- **Novak:** pin the code before any further run.
+
+**Judge's plan.**
+1. Tom resumes Phase 1 (subjects 7-14, then the capacity-matched arms), then runs notebook §6b (post hoc) and §7
+   (hc-5 QC).
+2. hc-5 QC -> Gate 0. If Gate 0 fails as expected, the hc-5 CSD route is reported infeasible, and a laminar dataset
+   is chosen by documented geometry before any of its data are opened.
+3. Gate 1 v3 only for a dataset that passes Gate 0.
+4. Phase 1 analysis at n = 14 exactly as frozen (DEVIATIONS 23-24).
