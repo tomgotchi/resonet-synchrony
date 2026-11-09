@@ -21,7 +21,8 @@ generated internally (hippocampal wheel running), and not where it is stimulus-d
 | [DEVIATIONS.md](DEVIATIONS.md) | every departure and judgement call; **frozen protocols** for each screen (append-only) |
 | [results/README_results.md](results/README_results.md) | all results, phase by phase and screen by screen |
 | [results/figures/](results/figures/) | figures (regenerate: `scripts/make_figures.py`) |
-| [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md) | review board rounds 1-2: findings, verdicts, revised plan |
+| [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md) | review board sessions: findings, verdicts, overturns, plans (latest 2026-11-09) |
+| [docs/NONIDENTIFIABILITY.md](docs/NONIDENTIFIABILITY.md) | why passive phase statistics cannot separate coupling from rhythmic common input (two constructions, checked by `scripts/nonident_check.py`) |
 | [docs/PREREG_H3_GENERATOR_MIX_DRAFT.md](docs/PREREG_H3_GENERATOR_MIX_DRAFT.md) | **adopted** hc-5 plan: generator mix (CA3 radiatum vs EC3 l-m CSD), frozen after Gate 0 (laminar coverage) + Gate 1 (forward-model null) |
 | [docs/PREREG_H3_REDESIGN_DRAFT.md](docs/PREREG_H3_REDESIGN_DRAFT.md) | superseded H3' draft (coupling between sites) |
 | [docs/RUN_PHASE1_LOCAL.md](docs/RUN_PHASE1_LOCAL.md) | exact commands for the Phase 1 GPU run |

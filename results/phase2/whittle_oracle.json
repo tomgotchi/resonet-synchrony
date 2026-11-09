@@ -1,0 +1,179 @@
+{
+ "note": "Gaussian spectral plug-in classifier (multitaper K=3, NW=2, 0-40 Hz, 5% shrinkage); balanced accuracy",
+ "means": {
+  "emergent": {
+   "whittle_bal_acc": 0.999375,
+   "lin:sync": 0.86,
+   "nl_coupled:sync": 0.8787499999999999,
+   "nl_uncoupled_wide:sync": 0.8899999999999999
+  },
+  "driven": {
+   "whittle_bal_acc": 0.78,
+   "lin:sync": 0.7593749999999999,
+   "nl_coupled:sync": 0.77125,
+   "nl_uncoupled_wide:sync": 0.7675000000000001
+  }
+ },
+ "rows": [
+  {
+   "kind": "emergent",
+   "seed": 0,
+   "whittle_bal_acc": 1.0,
+   "lin:sync": 0.8937499999999999,
+   "nl_coupled:sync": 0.925,
+   "nl_uncoupled_wide:sync": 0.95
+  },
+  {
+   "kind": "emergent",
+   "seed": 1,
+   "whittle_bal_acc": 1.0,
+   "lin:sync": 0.81875,
+   "nl_coupled:sync": 0.875,
+   "nl_uncoupled_wide:sync": 0.85
+  },
+  {
+   "kind": "emergent",
+   "seed": 2,
+   "whittle_bal_acc": 1.0,
+   "lin:sync": 0.94375,
+   "nl_coupled:sync": 0.94375,
+   "nl_uncoupled_wide:sync": 0.95
+  },
+  {
+   "kind": "emergent",
+   "seed": 3,
+   "whittle_bal_acc": 0.99375,
+   "lin:sync": 0.85625,
+   "nl_coupled:sync": 0.8687499999999999,
+   "nl_uncoupled_wide:sync": 0.9187500000000001
+  },
+  {
+   "kind": "emergent",
+   "seed": 4,
+   "whittle_bal_acc": 1.0,
+   "lin:sync": 0.9125000000000001,
+   "nl_coupled:sync": 0.925,
+   "nl_uncoupled_wide:sync": 0.95
+  },
+  {
+   "kind": "emergent",
+   "seed": 5,
+   "whittle_bal_acc": 1.0,
+   "lin:sync": 0.8187500000000001,
+   "nl_coupled:sync": 0.8,
+   "nl_uncoupled_wide:sync": 0.825
+  },
+  {
+   "kind": "emergent",
+   "seed": 6,
+   "whittle_bal_acc": 1.0,
+   "lin:sync": 0.8375,
+   "nl_coupled:sync": 0.85625,
+   "nl_uncoupled_wide:sync": 0.8875
+  },
+  {
+   "kind": "emergent",
+   "seed": 7,
+   "whittle_bal_acc": 1.0,
+   "lin:sync": 0.8562500000000001,
+   "nl_coupled:sync": 0.88125,
+   "nl_uncoupled_wide:sync": 0.88125
+  },
+  {
+   "kind": "emergent",
+   "seed": 8,
+   "whittle_bal_acc": 1.0,
+   "lin:sync": 0.8374999999999999,
+   "nl_coupled:sync": 0.86875,
+   "nl_uncoupled_wide:sync": 0.8625
+  },
+  {
+   "kind": "emergent",
+   "seed": 9,
+   "whittle_bal_acc": 1.0,
+   "lin:sync": 0.8250000000000001,
+   "nl_coupled:sync": 0.84375,
+   "nl_uncoupled_wide:sync": 0.8250000000000001
+  },
+  {
+   "kind": "driven",
+   "seed": 0,
+   "whittle_bal_acc": 0.775,
+   "lin:sync": 0.7312500000000001,
+   "nl_coupled:sync": 0.7625,
+   "nl_uncoupled_wide:sync": 0.7625000000000001
+  },
+  {
+   "kind": "driven",
+   "seed": 1,
+   "whittle_bal_acc": 0.73125,
+   "lin:sync": 0.7124999999999999,
+   "nl_coupled:sync": 0.7375,
+   "nl_uncoupled_wide:sync": 0.7125
+  },
+  {
+   "kind": "driven",
+   "seed": 2,
+   "whittle_bal_acc": 0.8062499999999999,
+   "lin:sync": 0.7499999999999999,
+   "nl_coupled:sync": 0.7437499999999999,
+   "nl_uncoupled_wide:sync": 0.78125
+  },
+  {
+   "kind": "driven",
+   "seed": 3,
+   "whittle_bal_acc": 0.8,
+   "lin:sync": 0.78125,
+   "nl_coupled:sync": 0.7875,
+   "nl_uncoupled_wide:sync": 0.7875
+  },
+  {
+   "kind": "driven",
+   "seed": 4,
+   "whittle_bal_acc": 0.8,
+   "lin:sync": 0.7937500000000001,
+   "nl_coupled:sync": 0.8125,
+   "nl_uncoupled_wide:sync": 0.8125000000000001
+  },
+  {
+   "kind": "driven",
+   "seed": 5,
+   "whittle_bal_acc": 0.78125,
+   "lin:sync": 0.75,
+   "nl_coupled:sync": 0.7625000000000001,
+   "nl_uncoupled_wide:sync": 0.7562500000000001
+  },
+  {
+   "kind": "driven",
+   "seed": 6,
+   "whittle_bal_acc": 0.7625,
+   "lin:sync": 0.78125,
+   "nl_coupled:sync": 0.78125,
+   "nl_uncoupled_wide:sync": 0.78125
+  },
+  {
+   "kind": "driven",
+   "seed": 7,
+   "whittle_bal_acc": 0.79375,
+   "lin:sync": 0.7687499999999999,
+   "nl_coupled:sync": 0.7625,
+   "nl_uncoupled_wide:sync": 0.7375
+  },
+  {
+   "kind": "driven",
+   "seed": 8,
+   "whittle_bal_acc": 0.78125,
+   "lin:sync": 0.75625,
+   "nl_coupled:sync": 0.75625,
+   "nl_uncoupled_wide:sync": 0.7374999999999999
+  },
+  {
+   "kind": "driven",
+   "seed": 9,
+   "whittle_bal_acc": 0.76875,
+   "lin:sync": 0.76875,
+   "nl_coupled:sync": 0.8062499999999999,
+   "nl_uncoupled_wide:sync": 0.80625
+  }
+ ]
+}
