@@ -662,3 +662,32 @@ Full record: `docs/REVIEW_BOARD.md`. The judge re-ran the decisive checks; the s
     below the pyramidal layer.
   - A radiatum sink that moves 50 um between regimes is a limitation of the method; the depth-shift QC flagged
     6/10 such sessions and no null-cell session.
+
+## Calibration of the Phase 1 contrasts (DEVIATION 24; `results/calib_p1/results.json`; fig 9)
+Synthetic HGD-like trials (16 channels, 4.5 s, 4 classes, 80 + 40 trials per class), the Phase 1 training loop with
+the lin bank, 10 fresh datasets per generator (seeds 3000-3009). Mean difference in test balanced accuracy, 90% CI:
+
+| contrast | G0 nothing | G1 source power | G1r one source's power | G2 coupling only |
+|---|---|---|---|---|
+| F1 sync - surrogate | -0.009 | **+0.241** | **+0.228** | +0.370 |
+| F2 (sync+power) - (power+surrogate) (DEVIATION 22) | -0.003 | **+0.181** | **+0.117** | +0.269 |
+| F3 (sync+power) - power | -0.014 | **+0.094** | +0.011 | +0.089 |
+| D3 (power+surrogate) - power (dilution) | -0.011 | -0.087 | -0.106 | -0.181 |
+| F5a (FBCSP+sync) - (FBCSP+fresh-roll surrogate), frozen bank | -0.016 | -0.020 | +0.027 (CI to +0.053) | +0.136 |
+| F5b (FBLV+sync) - (FBLV+fresh-roll surrogate), frozen bank | -0.019 (CI to -0.052) | -0.026 | +0.014 | +0.118 |
+
+Bold: the contrast fires where the classes carry no phase information.
+
+- **Pre-committed outcome:**
+  - The Phase 1 F2/F3 result is worded "zero-lag cross-oscillator structure beyond the bank's 16 log-powers".
+  - F5 is descriptive; no Phase 1 result is called "phase".
+- **The trained-readout contrasts measure source power as well as phase.**
+  - On source-power-only data, sync (0.51) beats the bank's own power readout (0.40).
+  - FBCSP (0.70) beats every trained arm.
+  - The surrogate and power+surrogate arms lose 0.09-0.18 to dilution.
+- **The frozen-bank hybrids nearly work.** They are flat on power-only data (-0.02 to +0.03) and strongly
+  positive on pure coupling (+0.12 to +0.14). Each misses one validity bound by 0.002-0.003. This is the design to
+  pre-register for any future "phase" claim, with more datasets so the equivalence bound has power.
+- **Context for HGD.** ResoNet's trained readouts are a weak decoder of band power. A positive Phase 1 F2 is
+  expected from source-power differences alone (movement EEG classes differ mainly in mu/beta/high-gamma
+  power), so it cannot support a phase interpretation.

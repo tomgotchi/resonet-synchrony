@@ -309,6 +309,43 @@ def fig_screen11():
     plt.close(fig)
 
 
+def fig_calib_p1():
+    rp = ROOT / "results" / "calib_p1" / "results.json"
+    if not rp.exists():
+        return
+    R = json.loads(rp.read_text())
+    summ, dec = R["summary"], R.get("decisions", {})
+    gens = [("G0", "G0: no information"), ("G1", "G1: source power only"), ("G1r", "G1r: one source's power"),
+            ("G2", "G2: coupling only")]
+    names = list(summ["G0"]["contrasts"])
+    fig, axes = plt.subplots(1, 4, figsize=(13.5, 4.9), sharey=True)
+    fig.subplots_adjust(left=0.25, right=0.975, top=0.76, bottom=0.2, wspace=0.12)
+    _title(fig, "Calibration of the Phase 1 contrasts (DEVIATION 24): which contrast measures phase?",
+           "Mean over 10 synthetic datasets with 90% t-CI; grey band +/-0.05. "
+           f"Pre-committed outcome: no contrast passes all four panels -> no Phase 1 result is called 'phase'.")
+    for ax, (g, label) in zip(axes, gens):
+        ax.axvspan(-0.05, 0.05, color=GRID, alpha=0.7, lw=0)
+        ax.axvline(0, color=MUTED, lw=0.8)
+        for i, c in enumerate(names):
+            v = summ[g]["contrasts"][c]; y = len(names) - 1 - i
+            if g == "G2":
+                ok = v["sensitive"]; col = GOOD if ok else CRIT
+            else:
+                ok = v["valid"]; col = GOOD if ok else CRIT
+            ax.plot(v["ci90"], [y, y], color=col, lw=2.2, solid_capstyle="round")
+            ax.plot(v["mean"], y, "o", color=col, ms=5)
+            ax.text(1.02, y, "✓" if ok else "✗", transform=ax.get_yaxis_transform(), ha="left", va="center",
+                    color=col, fontsize=10, clip_on=False)
+        ax.set_title(label, fontsize=9.5, loc="left")
+        ax.set_xlim(-0.25, 0.45); ax.grid(axis="y", visible=False)
+        ax.set_xlabel("difference in balanced accuracy")
+    axes[0].set_yticks(range(len(names)), names[::-1], fontsize=8.5)
+    fig.text(0.25, 0.025, "✓ = valid (G0, G1, G1r: CI inside +/-0.05) or sensitive (G2: p < 0.05 and mean >= 0.05).  "
+             "A contrast may be called 'phase' only with ✓ in all four panels.", fontsize=8.5, color=INK2)
+    fig.savefig(OUT / "fig9_calibration_phase1_contrasts.png", dpi=150)
+    plt.close(fig)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(); ap.add_argument("--diag", default=None, help="dir with diag10.json, diag10b.json")
     a = ap.parse_args(argv)
@@ -338,6 +375,7 @@ def main(argv=None):
     fig_board()
     fig_drift()
     fig_screen11()
+    fig_calib_p1()
     print("wrote", sorted(p.name for p in OUT.glob("*.png")))
 
 

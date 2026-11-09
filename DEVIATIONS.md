@@ -563,3 +563,16 @@ input: P(fire) 1.00 / 1.00 / 0.94). **The TE/LDS rule is retired from real-data 
 | # | date | where | decision | reason |
 |---|---|---|---|---|
 | 25 | 2026-11-09 | **hc-5 Gate 1 v2** (`laminar.simulate_laminar_v2`, `generator_mix_fit`, `screens/gate1_v2.py`; recorded edit of `docs/PREREG_H3_GENERATOR_MIX_DRAFT.md`, section "Gate 1 v2"). The generator-mix statistic is computed from two fitted sink/source CSD templates (generator powers by projection), not from two picked sites. Forward model with disc sources, shared septal drift, CA3-EC coherence, perisomatic/DG theta, absolute noise, per-session probe offset, thickness and gains. Criteria: equivalence relative to the target effect, n = 7 resampled power, identification within one site, a depth-shift QC. | Review board 2026-11-09 (Echeverria, Novak, Volkov; verified by the judge): the v1 site picker never found the radiatum sink, a 10 um probe offset reversed the must-move response, and the replacement site rule also failed. Designed on dev seeds 2100-2109; the validation seeds 2200-2209 and the geometry pass map run on the frozen code. The v1 runner and its dry runs are kept unchanged. |
+
+#### DEVIATION 24, outcome (2026-11-09; `results/calib_p1/results.json`, git af002bd; fig 9)
+- **Pre-committed mapping applied:** F2/F3 are worded "zero-lag cross-oscillator structure beyond the bank's 16
+  log-powers"; F5 has no baseline that passes, so **F5 is descriptive and no Phase 1 result is called "phase".**
+- F2 fires on source-power-only data (G1: +0.181, 10/10) and on the dilution null (G1r: +0.117, while F3 =
+  +0.011). D3 = (power+surrogate) - power is -0.09 to -0.18 on informative data, so F2 is inflated by dilution
+  whenever classes are decodable. The intersection-union rule (F2 and F3) also fires on G1 (F3 +0.094).
+- F5 (frozen bank) is sensitive to pure coupling (G2: FBCSP +0.136, FBLV +0.118; 10/10 each) and close to
+  calibrated, but each misses one validity check narrowly: FBCSP on G1r (90% CI upper bound +0.053) and FBLV on
+  G0 (lower bound -0.052). The criteria are not revisited.
+- D2 on the frozen banks: the fixed-roll surrogate features decode 0.32-0.39 with a probe against 0.27-0.30 for
+  the trained surrogate readout (partly a training failure, partly a weak signal); the fresh-roll surrogate is at
+  chance (0.24-0.27).
