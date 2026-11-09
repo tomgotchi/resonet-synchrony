@@ -166,3 +166,23 @@ def test_power_surrogate_is_exact_concatenation():
     ps, p, s, sp = (Readout(6, 4, kind=k, seed=5) for k in ("power+surrogate", "power", "surrogate", "sync+power"))
     assert ps.dim == sp.dim
     assert torch.allclose(ps.features(z), torch.cat([p.features(z), s.features(z)], dim=1))
+
+
+def test_surrogate_random_rolls_each_trial_independently():
+    """DEVIATION 24: roll_each equals torch.roll per (trial, oscillator); the random surrogate keeps power and
+    each oscillator's |u| exactly, and draws different shifts for different trials."""
+    from resonet_sync.readouts import roll_each, unit
+    torch.manual_seed(0)
+    u = unit(torch.randn(3, 50, 4, dtype=torch.complex64))
+    sh = torch.randint(0, 50, (3, 4))
+    out = roll_each(u, sh)
+    for b in range(3):
+        for n in range(4):
+            assert torch.equal(out[b, :, n], torch.roll(u[b, :, n], int(sh[b, n])))
+    z = torch.randn(6, 80, 5, dtype=torch.complex64)
+    ps = Readout(5, 4, kind="power+surrogate_random", seed=1)
+    p = Readout(5, 4, kind="power", seed=1)
+    assert torch.allclose(ps.features(z)[:, :5], p.features(z))
+    torch.manual_seed(1); a = Readout(5, 4, kind="surrogate_random", seed=1).features(z)
+    torch.manual_seed(2); b = Readout(5, 4, kind="surrogate_random", seed=1).features(z)
+    assert not torch.allclose(a, b)

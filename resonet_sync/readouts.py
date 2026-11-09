@@ -8,6 +8,9 @@ sync / power / surrogate are the published formulas (vendor/resonance_network.py
 New:
   sync+power    : concatenation                                           (N + 2P dims)
   power+surrogate: power + surrogate coherence (capacity-matched control for sync+power; DEVIATIONS 22)
+  surrogate_random, power+surrogate_random (DEVIATION 24): like surrogate / power+surrogate, but the roll is
+                  drawn afresh, uniformly over T, for every trial and oscillator (torch's global RNG), so no
+                  fixed lag survives across trials (the fixed roll leaks cross-oscillator phase; board 2026-11-09)
   trial_shuffle : C_ij = <u_i^(n) conj(u_j^(m))>_t with m a different trial of the SAME class
                   (shift-predictor logic: keeps class-locked/evoked phase structure, destroys
                   trial-specific coupling). Partner selection needs the label, including at test
@@ -21,11 +24,19 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-READOUTS = ("sync", "power", "surrogate", "sync+power", "power+surrogate", "trial_shuffle")
+READOUTS = ("sync", "power", "surrogate", "sync+power", "power+surrogate", "trial_shuffle", "surrogate_random",
+            "power+surrogate_random")
 
 
 def unit(z):
     return z / (z.abs() + 1e-6)
+
+
+def roll_each(u, shifts):
+    """u (B, T, N); shifts (B, N) ints: out[b, t, n] = u[b, (t - shifts[b, n]) mod T, n] (torch.roll per series)."""
+    T = u.shape[1]
+    idx = (torch.arange(T, device=u.device)[None, :, None] - shifts[:, None, :].to(u.device)) % T
+    return torch.gather(u, 1, idx)
 
 
 def coherence_upper(u_a, u_b, iu, ju):
@@ -45,7 +56,8 @@ class Readout(nn.Module):
         self.register_buffer("ju", ju)
         P = iu.numel()
         dim = {"power": n_osc, "sync": 2 * P, "surrogate": 2 * P, "sync+power": n_osc + 2 * P,
-               "power+surrogate": n_osc + 2 * P, "trial_shuffle": 2 * P}[kind]
+               "power+surrogate": n_osc + 2 * P, "trial_shuffle": 2 * P, "surrogate_random": 2 * P,
+               "power+surrogate_random": n_osc + 2 * P}[kind]
         self.register_buffer("surr_frac",
                              torch.rand(n_osc, generator=torch.Generator().manual_seed(seed + 1)))
         drop = dropout if dropout is not None else (0.2 if kind == "power" else 0.5)
@@ -69,8 +81,10 @@ class Readout(nn.Module):
             T = u.shape[1]
             sh = (self.surr_frac * T).long()
             u = torch.stack([torch.roll(u[:, :, i], int(sh[i]), dims=1) for i in range(self.N)], dim=2)
+        if self.kind in ("surrogate_random", "power+surrogate_random"):
+            u = roll_each(u, torch.randint(0, u.shape[1], (u.shape[0], self.N)))
         f = coherence_upper(u, u, self.iu, self.ju)
-        if self.kind in ("sync+power", "power+surrogate"):     # power+surrogate: capacity-matched control (DEVIATIONS 22)
+        if self.kind in ("sync+power", "power+surrogate", "power+surrogate_random"):     # power+surrogate: capacity-matched control (DEVIATIONS 22)
             f = torch.cat([torch.log((z.abs() ** 2).mean(dim=1) + 1e-6), f], dim=1)
         return f
 

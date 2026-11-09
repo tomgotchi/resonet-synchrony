@@ -512,3 +512,50 @@ input: P(fire) 1.00 / 1.00 / 0.94). **The TE/LDS rule is retired from real-data 
   6 of 16 oscillators (1.0-3.4 Hz) sit at or below the high-pass, and none covers high gamma. Phase 1 keeps the
   spec; a 4-112 Hz sensitivity run (rk4 sub-steps >= 3) is exploratory, after Phase 1. (The published bank,
   omega ~ U(0.5, 4) with h = 0.01, sat at about 0.2-1.6 Hz.)
+
+| # | date | where | decision | reason |
+|---|---|---|---|---|
+| 24 | 2026-11-09 | **Calibration screen of the Phase 1 contrasts** (`resonet_sync/screens/calib_p1.py`; review board 2026-11-09). Synthetic only, CPU, lin bank. Decides what the Phase 1 contrasts may be called (DEVIATION 23); it changes no Phase 1 test, margin or analysis set. | The board showed the Phase 1 "phase" contrasts fire on source-power-only data and are inflated by dilution, and that the fixed-roll surrogate leaks. None of the contrasts has been checked against generators with known ground truth. Frozen after the difficulty pilot (seed 999) and before any evaluation seed. |
+
+### DEVIATION 24: protocol (frozen 2026-11-09, after the seed-999 pilot, before any evaluation seed)
+- **Data.** 16 channels, 4.5 s at 250 Hz, 4 classes; 80 train trials per class (the Phase 1 seed-42 15%
+  validation carve inside them) and 40 test trials per class. Four narrowband Gaussian sources (10, 12, 20,
+  24 Hz; 3 Hz wide; fixed normalising constant, so per-trial power varies) mixed by a fixed random matrix, plus
+  white sensor noise and a 4 Hz high-passed brownian background. Channels standardised with train statistics.
+- **Generators.**
+  - G0, nothing: labels permuted independently of the data.
+  - G1, source power only: class k = amplitude drop (ERD) of source k by 0.15.
+  - G1r, rank-1 power only (Halvorsen's dilution null): class = amplitude of the 10 Hz source, 1 - 0.15 y.
+  - G2, coupling only: source 2 = rho x (source 1 rotated by the class lag {0, 45, 90, 135} deg) +
+    sqrt(1 - rho^2) x independent 10 Hz noise, rho = 0.4. Every source's spectrum is identical in every class.
+  - Difficulty was set on pilot seed 999 only, so that the generator-truth oracle (source log-power, or the
+    source 1-2 coherency) scores about 0.75 (`results/calib_p1/difficulty.json`: G1 0.68, G1r 0.73, G2 0.74).
+- **Seeds.** Evaluation seeds 3000-3009 (never used before), one dataset per generator and seed.
+- **Arms** (the Phase 1 training loop and config, lin bank, n_channels = 16): power, sync, surrogate,
+  surrogate_random, sync+power, power+surrogate, power+surrogate_random. `surrogate_random` draws a fresh
+  uniform circular roll per trial and oscillator (`readouts.py`, test `test_surrogate_random_rolls_each_trial_independently`).
+- **Post hoc on the trained sync+power bank (frozen):** features sync, fixed-roll surrogate, fresh-roll
+  surrogate, power; baselines FBLV (log-variance in 9 causal 4th-order Butterworth bands, 4-40 Hz, first 0.5 s
+  dropped) and FBCSP (one-vs-rest CSP per band, 2 filter pairs per class, 10% shrinkage, fitted on train minus
+  the carve). Head: L2 logistic regression, C chosen on the carve. Also the generator-truth oracle and the D2
+  probes.
+- **Contrasts** (paired over the 10 seeds): F1 sync - surrogate; F1r sync - surrogate_random; F2 (sync+power)
+  - (power+surrogate); F2r (sync+power) - (power+surrogate_random); F3 (sync+power) - power; D3
+  (power+surrogate) - power; F5a (FBCSP+sync) - (FBCSP+surrogate_random); F5b (FBLV+sync) -
+  (FBLV+surrogate_random).
+- **Criteria** (margin 0.05, as in DEVIATION 23). *Valid* on a generator: the 90% t-CI lies inside +/-0.05.
+  *Sensitive* on G2: exact sign-flip p < 0.05 and mean >= 0.05. A contrast *passes* if valid on G0, G1 and G1r
+  and sensitive on G2. (Conservative: with n = 10 and an arm-difference SD of about 0.05, a perfectly calibrated
+  contrast fails the validity check on one generator about 14% of the time; failing restricts wording, never
+  adds a claim.)
+- **Pre-committed mapping to Phase 1 (DEVIATION 23).**
+  - F2 and F3 both pass: the Phase 1 F2/F3 rule may be called "phase synchrony beyond the bank's log-powers".
+    Otherwise it is worded "zero-lag cross-oscillator structure beyond the bank's 16 log-powers".
+  - F5 uses B = FBCSP if F5a passes, else FBLV if F5b passes; if neither, F5 is descriptive and no Phase 1
+    result is called "phase".
+  - F1 is worded "sync vs the published fixed-roll surrogate" whatever happens here.
+- **Excluded (proportion).** nl_coupled: its coupling is linear and far below locking (board, Volkov), and its
+  RK4 loop costs about 5x on CPU. A 3-seed transfer check on Tom's GPU is optional.
+- **Disclosure.** One timing job ran G1 on pilot seed 999 with the final settings before this freeze. It showed
+  F2 = +0.19 and F5a = -0.05 (FBCSP + sync scored below FBCSP + fresh-roll surrogate). Pilot data only; the
+  criteria above were set from the board's round-2 proposals, not from it.
