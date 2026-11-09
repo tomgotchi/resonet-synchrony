@@ -3,15 +3,21 @@
 ResoNet follow-up "Pitch 1": does nonlinear coupling between oscillators earn its cost where the rhythm is
 generated internally (hippocampal wheel running), and not where it is stimulus-driven?
 
-**Where things stand (2026-11-03):**
-- **Phase 1** (HGD replication) is written and smoke-tested. It runs on Tom's GPU.
-- **Phase 2** (synthetic H0) hit its stop rule.
-- **Synthetic mechanism-statistic screens 1-10** are documented in DEVIATIONS 11-20. Screen 10 stage C is
-  running.
-- **A six-persona review board** sent the TE/LDS within-session rule to a final calibration (screen 11). **It
-  failed and is retired** (2026-11-04): it reads rhythmic common input as coupling (P(fire) 0.94-1.00). See
-  [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md) and results "Screen 11".
-- **hc-5** now follows the generator-mix plan (CSD of the CA3 vs EC3 theta sinks), gated by laminar coverage.
+**Where things stand (2026-11-09):**
+- **Phase 1** (HGD replication) is stopped at 6/14 subjects on Colab; re-running the notebook resumes it. The
+  interim is descriptive only.
+- **Review board 2026-11-09** (six agents, two rounds; [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md)):
+  - The Phase 1 "phase" contrasts are not phase-specific: they fire on source-power-only data, are inflated by
+    dilution, and the fixed-roll surrogate leaks phase.
+  - **DEVIATION 23** freezes the Phase 1 analysis rules before subjects 7-14: exact sign-flip test, TOST margin
+    0.05, an intersection-union rule, wording limits, and a frozen-bank "phase beyond band power" family F5.
+  - **DEVIATION 24**, a calibration screen with known ground truth, is running and decides that wording.
+- **Synthetic mechanism programme (screens 1-11) is closed.** The formal reason is in
+  [docs/NONIDENTIFIABILITY.md](docs/NONIDENTIFIABILITY.md): in the linear-Gaussian regime, coupling and rhythmic
+  common input have identical laws. The Phase 2 emergent data are purely second order (Whittle oracle 0.999).
+- **hc-5:** the generator-mix plan now uses **Gate 1 v2** (DEVIATION 25). It fits generator templates instead of
+  picking sites, because the v1 site picker never found the radiatum sink. The dev dry run passes every cell
+  except DG crosstalk (marginal). The validation run and the geometry pass map follow. Gate 0 needs the hc-5 QC.
 
 ## Start here
 
@@ -33,7 +39,7 @@ generated internally (hippocampal wheel running), and not where it is stimulus-d
 ```
 resonet_sync/            library
   banks.py               oscillator banks: lin, nl_uncoupled, nl_coupled, nl_uncoupled_wide (Hz-parameterised)
-  readouts.py            sync, power, surrogate, sync+power, trial_shuffle readouts
+  readouts.py            sync, power, surrogate (fixed roll), surrogate_random (fresh roll), sync+power, power+surrogate[_random]
   train.py               published training loop + same-split shuffle partners
   decomposition.py       evoked-vs-induced decomposition (analysis control, not a decoder arm)
   run.py                 Phase 1 (HGD) and Phase 2 (synthetic) runners
@@ -41,17 +47,19 @@ resonet_sync/            library
   mechanism.py           phase TE, Granger, residual correlation
   lds.py                 latent linear dynamical system (EM) and denoised statistics
   nuisance.py            rule v3/v3r adjustments: centred band, phase rotation, LDS noise matching
-  laminar.py             CA1 laminar forward model (CA3/EC3 generators), CSD, layer localisation, generator mix
-  stats.py               paired tests, Holm, bootstrap CI
+  laminar.py             CA1 laminar forward model v1 and v2 (disc sources), CSD, layer localisation, generator-template fit
+  stats.py               paired tests, Holm, bootstrap CI, exact sign-flip, TOST (DEVIATION 23)
+  baselines.py           FBLV / FBCSP / tangent-space baselines and frozen-bank analyses (DEVIATION 23)
   data_hgd.py            HGD cache loader;   data_hc5.py, qc_hc5.py: hc-5 loading and QC (no hypothesis test)
   sanitize.py            shared with phasetrack;   _vendor.py: imports vendor/ unmodified
-resonet_sync/screens/    frozen synthetic screen runners screen1..screen10 + diagnostics diag10, diag10b
+resonet_sync/screens/    frozen synthetic screen runners screen1..11, diag10*, calib_p1 (DEVIATION 24), gate1_laminar (v1), gate1_v2
 scripts/make_figures.py  all figures in results/figures/
+scripts/                 phase1_posthoc.py (F5, D2, baselines), nonident_check.py, whittle_phase2.py
 notebooks/               Colab: full pipeline (resonet_synchrony_full_colab) and hc-5 QC only
 vendor/                  unmodified published code (hashes checked by tests)
 tests/                   pytest suite
 docs/                    spec, review board, drafts, run instructions
-results/                 phase2/, screen1..screen10/ (one folder per frozen screen), figures/
+results/                 phase1/, phase2/, screen1..11/, calib_p1/, gate1_laminar/, gate1_v2/, figures/
 ```
 
 ## Commands

@@ -629,3 +629,36 @@ the synchrony increase of K 25 -> 40 (Delta PLV 0.055).
 - **Coupling:** nl_coupled - lin (sync) is +0.023 (4/6), small.
 - **Hz-parameterised vs published:** no systematic shift in sync or power (|mean| <= 0.04). Surrogate is lower,
   as above.
+
+
+## Review board 2026-11-09: checks on the Phase 1 contrasts, the hc-5 Gate 1 and Phase 2 (synthetic only)
+Full record: `docs/REVIEW_BOARD.md`. The judge re-ran the decisive checks; the scripts are the board members' own.
+- **The Phase 1 "phase" contrasts are not phase-specific.** On 4.5 s synthetic trials (untrained lin bank,
+  logistic head):
+  - data whose classes differ only in **source power** (ERD of one of four sources, random phases): sync 0.98,
+    power 0.79, fixed-roll surrogate 0.52, so sync - surrogate = +0.46 and (sync+power) - (power+surrogate) =
+    +0.25;
+  - the **fixed-roll surrogate leaks** cross-oscillator phase: on phase-only data it decodes 0.42-0.51 (with
+    noise and broad rhythms) and up to 0.90-1.00 (stationary narrowband), while a fresh roll per trial is at
+    chance;
+  - **dilution:** in a toy where the "sync" dimensions are redundant with power, the capacity-matched contrast is
+    +0.13 (40/40).
+  - Consequences, frozen in DEVIATION 23 before subjects 7-14: wording limits, an intersection-union rule, and a
+    frozen-bank family F5 (band power + sync vs band power + fresh-roll surrogate). The calibration screen
+    (DEVIATION 24, `results/calib_p1/`) decides which wording Phase 1 may use.
+- **Phase 2's emergent data are purely second order.** A Whittle (Gaussian spectral) classifier scores 0.999
+  (emergent) and 0.78 (driven), averaged over all 10 seeds (`results/phase2/whittle_oracle.json`); the trained banks
+  score 0.86-0.89 and 0.76-0.77. There was no non-Gaussian structure for the nonlinear bank to exploit.
+- **Coupling vs rhythmic common input is not identifiable** in the linear-Gaussian regime (two constructions,
+  `docs/NONIDENTIFIABILITY.md`, `scripts/nonident_check.py`: spectra equal to about 1e-15).
+- **hc-5 Gate 1 v1 was broken.** The site picker never found the radiatum sink (it picked the reversal or the
+  CA3 return source), and a 10 um probe offset reversed the must-move response (z0 = -10 um: EC +20% gives
+  -0.185, 0/10). At the true sites the response is +0.369 (10/10).
+- **Gate 1 v2 (DEVIATION 25), dev seeds 2100-2109, 16 x 50 um, DRY RUN** (`results/gate1_v2/`):
+  - EC drive +20% gives +0.375 [90% CI +0.30, +0.45], 10/10, resampled power at n = 7 of 1.00; the null bound is
+    +/-0.125.
+  - Every must-not-move cell passes with identification 0.9-1.0, except DG theta x1.3 (CI up to +0.136,
+    identification 0.7): a DG molecular-layer generator leaks into the EC estimate on a shank that ends 600 um
+    below the pyramidal layer.
+  - A radiatum sink that moves 50 um between regimes is a limitation of the method; the depth-shift QC flagged
+    6/10 such sessions and no null-cell session.
