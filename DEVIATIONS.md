@@ -629,3 +629,37 @@ input: P(fire) 1.00 / 1.00 / 0.94). **The TE/LDS rule is retired from real-data 
   Site spacing is not given. Buzsaki-type probes are 20 um, which would give 140 um, far short of the >= 400-500 um
   the generator-mix statistic needs; 8 x 20 um failed every cell in the (stopped) pass map. Gate 0 must still be
   run on the QC output, but the expected outcome is FAIL, i.e. the CSD route is infeasible on hc-5.
+
+| # | date | where | decision | reason |
+|---|---|---|---|---|
+| 27 | 2026-11-09 | **ResoNet v2 design study** (`resonet_sync/v2.py`, `screens/v2_study.py`, `scripts/v2_hgd_dev.py`; `docs/CRITIQUE_AND_V2.md`). Exploratory, outside the frozen Phase 1: v2 arms are never in `CORE`/`ALL`, write to their own folders, and change nothing in DEVIATIONS 23-24. | Forensics on the published checkpoints (`scripts/published_forensics.py`): the trained oscillators sit at 0.36-1.55 Hz on 4-125 Hz data, so the published model does not resonate and its sync readout is a covariance-type feature of spatial projections. The Hz bank kept 0.16-0.40 Hz bandwidths. v2 is a redesign in which lagged coupling is separable from source power by construction. Criteria below frozen before the final synthetic run. |
+
+### DEVIATION 27: v2 synthetic study, protocol (frozen 2026-11-09, before any evaluation seed 3600-3609)
+- **Model** (defaults of `v2.py`, no tuning): 8 resonators log-spaced 4-40 Hz with constant-Q bandwidths; 4 real
+  spatial filters per band, no tanh; within-band cross-spectral readout split into power, Re coherency (zero-lag)
+  and Im coherency (lagged); first 0.5 s of each trial dropped; BatchNorm, dropout 0.25, linear head. Phase 1
+  training loop unchanged.
+- **Data.** Generators G0, G1, G1r, G2 of DEVIATION 24 (same frozen difficulty) plus **G2i** (lagged coupling
+  only: two source pairs at 10 and 20 Hz; the class is which pair is coupled and the sign of its +/-90 deg lag;
+  rho = 0.25 set on pilot seed 999 so the oracle scores about 0.75). Evaluation seeds 3600-3609, never used.
+- **What was seen before this freeze.** Development seeds 3500-3502, stopped early
+  (`results/v2_study/dev_partial_STOPPED.json`: G0 x2, G1 x3, G2i x2), and untrained-feature probes on seed 3500.
+  No design or hyperparameter was changed after the first implementation. One change was made before the final
+  run: the null arm draws its shifts from a private generator, so both arms of L share augmentation and dropout
+  streams (variance reduction only).
+- **Primary contrast.** L = (cov+lag) - (cov+lag_null): what the lagged block adds beyond band covariance, against a
+  dimension-matched block whose lag information is destroyed by a fresh circular shift per trial and projection.
+- **Criteria** (margin 0.05; n = 10 datasets per generator).
+  - *Valid* on G0, G1 and G1r: the 90% t-CI of L lies inside +/-0.05.
+  - *Sensitive* on G2i (primary) and G2: exact sign-flip p < 0.05 and mean >= 0.05.
+  - L **passes** if all five hold. (Power: with the paired SD of about 0.03 seen in development, an unbiased
+    contrast passes one validity check with probability above 0.99.)
+- **Descriptive.** R = cov - power; D = (cov+lag_null) - cov (cost of null dimensions); Q = v2 cov+lag - v1
+  `lin:sync+power` on G1, G1r, G2, G2i; v2 against FBLV and FBCSP with shrinkage LDA and against the oracle.
+- **Mapping.** If L passes, L is the contrast to pre-register for a real-data test of "time-lagged coupling
+  beyond band covariance" (with v2 tuned only by train-split cross-validation on development subjects,
+  `scripts/v2_hgd_dev.py`). If L fails, v2 is reported as a decoder redesign only.
+- **Scope of the claim.** Im coherency of real spatial projections is zero for instantaneous mixing of independent
+  sources whatever their powers. A non-zero value means time-lagged structure between spatial components. That
+  includes stimulus-locked sequences and lagged common input; it is not, by itself, coupling between oscillators
+  (`docs/NONIDENTIFIABILITY.md`).

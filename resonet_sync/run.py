@@ -89,6 +89,9 @@ def build(arm, C, T, fs, cfg):
     if arm == "shallow":
         return R.ShallowConvNet(n_channels=C, n_samples=T)
     bank, ro = arm.split(":")
+    if bank == "v2":                                 # ResoNet v2 design study (resonet_sync/v2.py); never in CORE/ALL
+        from .v2 import build_v2
+        return build_v2(ro, C, fs, cfg.get("v2"), seed=cfg["seed"])
     assert bank in BANKS and ro in READOUTS, arm
     b = HzOscBank(n_channels=C, n_osc=cfg["n_osc"], fs=fs, band=tuple(cfg["band"]), kind=bank, seed=cfg["seed"],
                    rk4_substeps=cfg.get("rk4_substeps", 1))
@@ -150,7 +153,7 @@ def run_subject(Xtr, ytr, Xte, yte, arms, cfg, fs, device, log=print, done=None,
         if isinstance(m, RNModel):
             rec["f0_hz_learned"] = m.bank.f0_hz().detach().cpu().numpy().round(3).tolist()
             rec["bw_hz_learned"] = m.bank.bw_hz().detach().cpu().numpy().round(4).tolist()
-        if isinstance(m, RNModel) and m.bank.kind == "nl_coupled":
+        if isinstance(m, RNModel) and getattr(m.bank, "kind", None) == "nl_coupled":
             rec["regime"] = bank_regime(m.bank)
         if weights_dir is not None:      # DEVIATION 23: trained weights kept (not in git) for the frozen-bank analyses
             Path(weights_dir).mkdir(parents=True, exist_ok=True)
@@ -167,6 +170,8 @@ def run_subject(Xtr, ytr, Xte, yte, arms, cfg, fs, device, log=print, done=None,
         del m; gc.collect()
 
 
+# ResoNet v2 on HGD (exploratory; docs/CRITIQUE_AND_V2.md): 12 constant-Q bands over the cache's 4-100 Hz at 250 Hz
+V2_HGD = dict(n_bands=12, n_spatial=4, band=[4.0, 100.0], skip_s=0.5)
 CONFIRMATORY_BANKS = ("lin", "nl_coupled")   # DEVIATIONS 23: the banks every confirmatory family is declared over
 
 
@@ -182,6 +187,10 @@ def contrasts_phase1(per_subject_acc, min_n=None):
         # DEVIATIONS 22: capacity-matched test of "zero-lag cross-oscillator structure beyond the bank's log-powers"
         "incremental_capacity_matched": [(f"{b}: (sync+power)-(power+surrogate)", f"{b}:sync+power",
                                           f"{b}:power+surrogate") for b in B],
+        # ResoNet v2 (exploratory): L = lagged coupling beyond band covariance; R = zero-lag covariance beyond power
+        "v2_exploratory": [("v2 L: (cov+lag)-(cov+lag_null)", "v2:cov+lag", "v2:cov+lag_null"),
+                           ("v2 R: cov-power", "v2:cov", "v2:power"),
+                           ("v2 D: (cov+lag_null)-cov", "v2:cov+lag_null", "v2:cov")],
         "exploratory_other_banks": ([("nl_coupled-nl_uncoupled (sync)", "nl_coupled:sync", "nl_uncoupled:sync"),
                                      ("nl_coupled-nl_uncoupled_wide (sync)", "nl_coupled:sync", "nl_uncoupled_wide:sync"),
                                      ("nl_uncoupled-lin (sync)", "nl_uncoupled:sync", "lin:sync")]
@@ -215,9 +224,15 @@ def phase1(args):
     cfg["rk4_substeps"] = args.rk4_substeps
     conf = load_config()
     cache = args.cache or conf.get("paths", {}).get("hgd_cache_hg")
-    out_dir = ROOT / "results" / ("phase1" if args.rk4_substeps == 1 else f"phase1_rk4x{args.rk4_substeps}")
-    out_dir.mkdir(parents=True, exist_ok=True)
     arms = CORE if args.arms == "core" else ALL if args.arms == "all" else args.arms.split(",")
+    is_v2 = [a.startswith("v2:") for a in arms]
+    if any(is_v2) and not all(is_v2):
+        raise SystemExit("v2 arms are an exploratory design study: run them alone (they write to results/v2_hgd)")
+    out_dir = ROOT / "results" / ("phase1" if args.rk4_substeps == 1 else f"phase1_rk4x{args.rk4_substeps}")
+    if all(is_v2):                                   # kept apart from the frozen Phase 1 files and config
+        out_dir = ROOT / "results" / "v2_hgd"
+        cfg["v2"] = dict(V2_HGD)
+    out_dir.mkdir(parents=True, exist_ok=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if args.smoke:
         return smoke(arms, cfg, device)
