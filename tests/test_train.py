@@ -21,6 +21,8 @@ def test_smoke_end_to_end():
     ei = res["nl_coupled:sync"]["evoked_induced"]
     assert {"train", "test_descriptive"} <= set(ei) and "cv_bal_acc_induced" in ei["train"]
     assert "evoked_induced" not in res["eegnet"]
+    reg = res["nl_coupled:sync"]["regime"]          # board 2026-11-09: descriptive dynamical regime of the bank
+    assert reg["max_re_eig"] < 0 and reg["coupling_over_detuning_median"] < 1 and "regime" not in res["lin:sync"]
 
 
 def test_no_trial_shuffle_decoder_arm():

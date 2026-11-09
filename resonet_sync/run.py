@@ -94,6 +94,25 @@ def build(arm, C, T, fs, cfg):
     return RNModel(b, Readout(cfg["n_osc"], n_classes=4, kind=ro, seed=cfg["seed"]))
 
 
+def bank_regime(bank):
+    """Board 2026-11-09 (Volkov): is the trained nl_coupled bank anywhere near self-sustained / locked dynamics?
+    max_re_eig of the linear operator diag(lambda) + W (> 0 would mean a self-sustained mode); coupling over
+    detuning h|W| / |delta omega| (median over pairs; >~ 1 needed for locking). Descriptive; no RNG, no effect on
+    results."""
+    with torch.no_grad():
+        mu_s, om_s = bank.per_sample()
+        lam = torch.complex(mu_s, om_s).to(torch.complex64) / bank.h
+        W = bank.W.detach().cpu()
+        ev = torch.linalg.eigvals(torch.diag(lam.cpu()) + W)
+        hW = (bank.h * W.abs()).numpy()
+        om = om_s.cpu().numpy()
+        dom = np.abs(om[:, None] - om[None, :])
+        iu = np.triu_indices(len(om), 1)
+        return dict(max_re_eig=float(ev.real.max()), min_abs_re_lambda=float(lam.real.abs().min()),
+                    h_absW_mean=float(hW[iu].mean()),
+                    coupling_over_detuning_median=float(np.median(hW[iu] / np.maximum(dom[iu], 1e-9))))
+
+
 def run_subject(Xtr, ytr, Xte, yte, arms, cfg, fs, device, log=print, done=None, prov=None, weights_dir=None):
     vmask = data_hgd.train_val_split(ytr, cfg["val_frac"], cfg["seed"])
     tr = Split(Xtr[~vmask], ytr[~vmask], cfg["seed"])
@@ -121,7 +140,9 @@ def run_subject(Xtr, ytr, Xte, yte, arms, cfg, fs, device, log=print, done=None,
         if isinstance(m, RNModel):
             rec["f0_hz_learned"] = m.bank.f0_hz().detach().cpu().numpy().round(3).tolist()
             rec["bw_hz_learned"] = m.bank.bw_hz().detach().cpu().numpy().round(4).tolist()
-        if weights_dir is not None:      # DEVIATIONS 23: trained weights kept (not in git) for the frozen-bank analyses
+        if isinstance(m, RNModel) and m.bank.kind == "nl_coupled":
+            rec["regime"] = bank_regime(m.bank)
+        if weights_dir is not None:      # DEVIATION 23: trained weights kept (not in git) for the frozen-bank analyses
             Path(weights_dir).mkdir(parents=True, exist_ok=True)
             torch.save({k: v.detach().cpu() for k, v in m.state_dict().items()},
                        Path(weights_dir) / f"{arm.replace(':', '__').replace('+', '_plus_')}.pt")
