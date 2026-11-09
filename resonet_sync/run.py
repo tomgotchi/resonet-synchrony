@@ -7,8 +7,11 @@ new arms. Per-subject results are written as they finish (resumable).
 from __future__ import annotations
 
 import argparse
+import datetime
 import gc
 import json
+import os
+import platform
 import subprocess
 import time
 from pathlib import Path
@@ -36,11 +39,38 @@ ALL = (CORE
        + ["eegnet", "shallow"])
 
 
+N_SUBJECTS = 14      # Phase 1 inference only at n = 14 (DEVIATIONS 23); below that, summaries are descriptive
+
+
 def git_hash():
     try:
         return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     except Exception:
         return None
+
+
+def provenance(device):
+    """What produced an arm's result (stored per arm; board 2026-11-09: a resume used to overwrite this)."""
+    try:
+        dirty = subprocess.run(["git", "diff", "--quiet", "HEAD", "--", "resonet_sync", "vendor"], cwd=ROOT).returncode != 0
+    except Exception:
+        dirty = None
+    import scipy
+    return dict(git=git_hash(), code_dirty=dirty, utc=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+                device=str(device), gpu=torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+                torch=torch.__version__, cuda=torch.version.cuda, numpy=np.__version__, scipy=scipy.__version__,
+                python=platform.python_version())
+
+
+def write_json_atomic(path, obj):
+    """Write via a temporary file and os.replace, so an interrupted session never leaves a truncated JSON."""
+    path = Path(path)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(obj, indent=1))
+    try:
+        os.replace(tmp, path)
+    except OSError:                       # some FUSE mounts refuse rename-over; fall back to a direct write
+        path.write_text(tmp.read_text()); tmp.unlink(missing_ok=True)
 
 
 def load_config():
@@ -64,7 +94,7 @@ def build(arm, C, T, fs, cfg):
     return RNModel(b, Readout(cfg["n_osc"], n_classes=4, kind=ro, seed=cfg["seed"]))
 
 
-def run_subject(Xtr, ytr, Xte, yte, arms, cfg, fs, device, log=print, done=None):
+def run_subject(Xtr, ytr, Xte, yte, arms, cfg, fs, device, log=print, done=None, prov=None, weights_dir=None):
     vmask = data_hgd.train_val_split(ytr, cfg["val_frac"], cfg["seed"])
     tr = Split(Xtr[~vmask], ytr[~vmask], cfg["seed"])
     va = Split(Xtr[vmask], ytr[vmask], cfg["seed"] + 1)
@@ -83,10 +113,18 @@ def run_subject(Xtr, ytr, Xte, yte, arms, cfg, fs, device, log=print, done=None)
         rec = dict(test_acc=ev["acc"], test_bal_acc=ev["bal_acc"], n_test=ev["n"],
                    val_loss_best=float(min(hist["val_loss"])), best_epoch=hist["best_epoch"],
                    epochs_run=hist["epochs_run"], minutes=round((time.time() - t0) / 60, 2),
-                   n_params=int(sum(p.numel() * (2 if p.is_complex() else 1) for p in m.parameters())))
+                   n_params=int(sum(p.numel() * (2 if p.is_complex() else 1) for p in m.parameters())),
+                   curves={k: [round(float(v), 5) for v in hist[k]] for k in ("train_loss", "val_loss", "val_acc")})
+        if prov is not None:
+            rec["provenance"] = dict(prov, finished_utc=datetime.datetime.now(datetime.timezone.utc)
+                                     .isoformat(timespec="seconds"))
         if isinstance(m, RNModel):
             rec["f0_hz_learned"] = m.bank.f0_hz().detach().cpu().numpy().round(3).tolist()
             rec["bw_hz_learned"] = m.bank.bw_hz().detach().cpu().numpy().round(4).tolist()
+        if weights_dir is not None:      # DEVIATIONS 23: trained weights kept (not in git) for the frozen-bank analyses
+            Path(weights_dir).mkdir(parents=True, exist_ok=True)
+            torch.save({k: v.detach().cpu() for k, v in m.state_dict().items()},
+                       Path(weights_dir) / f"{arm.replace(':', '__').replace('+', '_plus_')}.pt")
         if isinstance(m, RNModel) and arm.endswith(":sync"):
             # evoked-vs-induced decomposition (analysis, not a decoder arm): same-split partners only
             from .decomposition import decompose
@@ -98,19 +136,27 @@ def run_subject(Xtr, ytr, Xte, yte, arms, cfg, fs, device, log=print, done=None)
         del m; gc.collect()
 
 
-def contrasts_phase1(per_subject_acc):
+CONFIRMATORY_BANKS = ("lin", "nl_coupled")   # DEVIATIONS 23: the banks every confirmatory family is declared over
+
+
+def contrasts_phase1(per_subject_acc, min_n=None):
+    """Confirmatory families are declared over CONFIRMATORY_BANKS only (Holm m = 2; coupling m = 1), whatever else
+    ran. Rows for the other banks form one exploratory family (DEVIATIONS 23)."""
+    B = CONFIRMATORY_BANKS
+    others = [b for b in BANKS if b not in B]
     fam = {
-        "H2_sync_vs_surrogate": [(f"{b}: sync-surrogate", f"{b}:sync", f"{b}:surrogate") for b in BANKS],
-        "coupling": [("nl_coupled-lin (sync)", "nl_coupled:sync", "lin:sync"),
-                     ("nl_coupled-nl_uncoupled (sync)", "nl_coupled:sync", "nl_uncoupled:sync"),
-                     ("nl_coupled-nl_uncoupled_wide (sync)", "nl_coupled:sync", "nl_uncoupled_wide:sync"),
-                     ("nl_uncoupled-lin (sync)", "nl_uncoupled:sync", "lin:sync")],
-        "incremental_sync_over_power": [(f"{b}: (sync+power)-power", f"{b}:sync+power", f"{b}:power") for b in BANKS],
-        # DEVIATIONS 22: capacity-matched test of "phase adds beyond band power"
+        "H2_sync_vs_surrogate": [(f"{b}: sync-surrogate", f"{b}:sync", f"{b}:surrogate") for b in B],
+        "coupling": [("nl_coupled-lin (sync)", "nl_coupled:sync", "lin:sync")],
+        "incremental_sync_over_power": [(f"{b}: (sync+power)-power", f"{b}:sync+power", f"{b}:power") for b in B],
+        # DEVIATIONS 22: capacity-matched test of "zero-lag cross-oscillator structure beyond the bank's log-powers"
         "incremental_capacity_matched": [(f"{b}: (sync+power)-(power+surrogate)", f"{b}:sync+power",
-                                          f"{b}:power+surrogate") for b in BANKS],
+                                          f"{b}:power+surrogate") for b in B],
+        "exploratory_other_banks": ([("nl_coupled-nl_uncoupled (sync)", "nl_coupled:sync", "nl_uncoupled:sync"),
+                                     ("nl_coupled-nl_uncoupled_wide (sync)", "nl_coupled:sync", "nl_uncoupled_wide:sync"),
+                                     ("nl_uncoupled-lin (sync)", "nl_uncoupled:sync", "lin:sync")]
+                                    + [(f"{b}: sync-surrogate", f"{b}:sync", f"{b}:surrogate") for b in others]),
     }
-    return {k: contrast_table(per_subject_acc, v) for k, v in fam.items()}
+    return {k: contrast_table(per_subject_acc, v, min_n=min_n, phase1=True) for k, v in fam.items()}
 
 
 def phase1(args):
@@ -134,6 +180,8 @@ def phase1(args):
         raise SystemExit("cache looks LOW-PASSED; Pitch 1 requires the full-band (subj_cache_hg) cache")
     lo, hi = (args.subjects.split("-") + [args.subjects])[:2]
     fs = data_hgd.FS_NATIVE / cfg["decim"]
+    prov = provenance(device)
+    cfg_json = json.loads(json.dumps(cfg))
     for s in range(int(lo), int(hi) + 1):
         path = out_dir / f"subj_{s:02d}.json"
         rec = json.loads(path.read_text()) if path.exists() else {}
@@ -141,14 +189,25 @@ def phase1(args):
         if not todo:
             continue
         npz = Path(cache) / f"subj_{s}.npz"
+        sha = data_hgd.sha256(npz)
+        if rec:                                   # resume: refuse silent changes, keep the original provenance
+            if rec.get("config") != cfg_json:
+                raise SystemExit(f"[S{s:02d}] config differs from the stored run ({path}); refusing to resume.\n"
+                                 f"stored {rec.get('config')}\nnow    {cfg_json}")
+            if rec.get("data_sha256") and rec["data_sha256"] != sha:
+                raise SystemExit(f"[S{s:02d}] data file changed since the stored run (sha256); refusing to resume")
         Xtr, ytr, Xte, yte = data_hgd.load(cache, s, cfg["decim"], cfg["cap"], cfg["seed"])
-        meta = dict(subject=s, config=cfg, git=git_hash(), device=str(device), data_file=str(npz),
-                    data_sha256=rec.get("data_sha256") or data_hgd.sha256(npz), band_check=bc,
-                    chance_threshold=rn().chance_threshold(len(yte), 4), n_train=int(len(ytr)),
-                    n_test=int(len(yte)))
+        if rec:
+            meta = {k: v for k, v in rec.items() if k != "arms"}
+            meta["resumes"] = meta.get("resumes", []) + [dict(prov, arms=todo)]
+        else:
+            meta = dict(subject=s, config=cfg_json, git=prov["git"], device=str(device), data_file=str(npz),
+                        data_sha256=sha, band_check=bc, chance_threshold=rn().chance_threshold(len(yte), 4),
+                        n_train=int(len(ytr)), n_test=int(len(yte)), first_run=prov)
         print(f"[S{s:02d}] train {Xtr.shape} test {Xte.shape} chance thr {meta['chance_threshold']:.3f}")
-        for arm, res in run_subject(Xtr, ytr, Xte, yte, todo, cfg, fs, device, done=rec.get("arms")):
-            path.write_text(json.dumps(dict(meta, arms=res), indent=1))
+        for arm, res in run_subject(Xtr, ytr, Xte, yte, todo, cfg, fs, device, done=rec.get("arms"), prov=prov,
+                                    weights_dir=out_dir / "weights" / f"subj_{s:02d}"):
+            write_json_atomic(path, dict(meta, arms=res))
         del Xtr, Xte; gc.collect()
     summarize(out_dir)
 
@@ -157,7 +216,7 @@ PUB_MAP = {"nl_sync": "nl_coupled:sync", "nl_surrogate": "nl_coupled:surrogate",
            "lin_sync": "lin:sync", "lin_surrogate": "lin:surrogate", "lin_power": "lin:power"}
 
 
-def compare_published(per, published_dir):
+def compare_published(per, published_dir, min_n=None):
     """Hz-parameterized vs published (omega*h) arms, paired by subject, on plain test accuracy
     (the metric the published JSON stores). Published runs: GPU, same cap/decim/epochs/seed."""
     f = Path(published_dir) / "surrogate_results.json"
@@ -171,14 +230,15 @@ def compare_published(per, published_dir):
             rows_pub.append({k: pub[p["subject"]].get(k, np.nan) for k in PUB_MAP})
     paired = [{**{f"new:{k}": v for k, v in a.items()}, **{f"pub:{k}": v for k, v in b.items()}}
               for a, b in zip(rows_new, rows_pub)]
-    hz_vs_pub = contrast_table(paired, [(f"Hz - published: {k}", f"new:{k}", f"pub:{k}") for k in PUB_MAP])
+    hz_vs_pub = contrast_table(paired, [(f"Hz - published: {k}", f"new:{k}", f"pub:{k}") for k in PUB_MAP], min_n=min_n)
     effect = contrast_table(paired, [(f"published sync-surrogate ({b})", f"pub:{b}_sync", f"pub:{b}_surrogate")
                                      for b in ("nl", "lin")]
-                            + [(f"Hz sync-surrogate ({b})", f"new:{b}_sync", f"new:{b}_surrogate") for b in ("nl", "lin")])
+                            + [(f"Hz sync-surrogate ({b})", f"new:{b}_sync", f"new:{b}_surrogate") for b in ("nl", "lin")],
+                            min_n=min_n)
     return dict(n=len(paired), hz_minus_published=hz_vs_pub, phase_effect_both=effect)
 
 
-def summarize_decomposition(per):
+def summarize_decomposition(per, min_n=None):
     """Separate from the decoder table: per bank, mean over units of the train-only CV discriminability of
     genuine / trial-shuffled (evoked) / induced coherence, plus paired genuine-vs-shuffled magnitude tests."""
     out = {}
@@ -191,28 +251,36 @@ def summarize_decomposition(per):
         mean = {k: float(np.mean([t[k] for t in tr])) for k in tr[0]}
         cv = contrast_table(tr, [("CV genuine - shuffled", "cv_bal_acc_genuine", "cv_bal_acc_shuffled"),
                                  ("CV induced - shuffled", "cv_bal_acc_induced", "cv_bal_acc_shuffled"),
-                                 ("|genuine| - |shuffled| (class-avg)", "genuine_classavg_abs", "shuffled_classavg_abs")])
+                                 ("|genuine| - |shuffled| (class-avg)", "genuine_classavg_abs", "shuffled_classavg_abs")],
+                            min_n=min_n)
         out[b] = dict(n=len(rows), train_mean=mean, paired=cv,
                       test_descriptive_mean={k: float(np.mean([r["test_descriptive"][k] for r in rows]))
                                              for k in rows[0]["test_descriptive"]})
     return out
 
 
-def summarize(out_dir):
-    files = sorted(Path(out_dir).glob("subj_*.json"))
+def summarize(out_dir, min_n=N_SUBJECTS):
+    """Means (with n per arm) always; paired inference only for contrasts with n >= min_n (DEVIATIONS 23:
+    no interim p-values). Pass min_n=None only for synthetic or smoke data."""
+    files = sorted(Path(out_dir).glob("subj_[0-9]*.json"))
     per = [json.loads(f.read_text()) for f in files]
     acc = [{a: r["test_bal_acc"] for a, r in p["arms"].items()} for p in per]
     if not acc:
         return
     arms = sorted({a for u in acc for a in u})
     means = {a: float(np.nanmean([u.get(a, np.nan) for u in acc])) for a in arms}
+    n_per_arm = {a: int(sum(a in u for u in acc)) for a in arms}
     summ = dict(n_subjects=len(per), subjects=[p["subject"] for p in per], metric="test balanced accuracy",
-                means=means, contrasts=contrasts_phase1(acc), git=per[-1].get("git"), config=per[-1]["config"],
-                evoked_induced=summarize_decomposition(per))
+                means=means, n_per_arm=n_per_arm, inference_min_n=min_n,
+                complete=bool(min_n is not None and len(per) >= min_n),
+                contrasts=contrasts_phase1(acc, min_n=min_n),
+                git_per_subject={p["subject"]: sorted({r.get("provenance", {}).get("git") or p.get("git")
+                                                       for r in p["arms"].values()} - {None}) for p in per},
+                config=per[-1]["config"], evoked_induced=summarize_decomposition(per, min_n=min_n))
     pub_dir = load_config().get("paths", {}).get("published_results_hg") or str(ROOT.parent / "results_hg")
-    summ["vs_published"] = compare_published(per, pub_dir)
-    (Path(out_dir) / "summary.json").write_text(json.dumps(summ, indent=1, default=float))
-    print(json.dumps(means, indent=1))
+    summ["vs_published"] = compare_published(per, pub_dir, min_n=min_n)
+    write_json_atomic(Path(out_dir) / "summary.json", json.loads(json.dumps(summ, default=float)))
+    print(json.dumps({a: f"{m:.4f} (n={n_per_arm[a]})" for a, m in means.items()}, indent=1))
     fams = dict(summ["contrasts"])
     if summ["vs_published"]:
         fams.update(summ["vs_published"]["hz_minus_published"] and
@@ -221,9 +289,14 @@ def summarize(out_dir):
     for fam, rows in fams.items():
         print(f"-- {fam}")
         for r in rows:
-            if r["n"]:
-                print(f"   {r['contrast']:40s} d={r['mean_diff']:+.3f} CI[{r['ci95'][0]:+.3f},{r['ci95'][1]:+.3f}] "
-                      f"dz={r['dz']:+.2f} p={r['p']:.4f} holm={r['p_holm']:.4f} wins {r['wins']}/{r['n']}")
+            if r["n"] and r.get("incomplete"):
+                print(f"   {r['contrast']:40s} d={r['mean_diff']:+.3f} wins {r['wins']}/{r['n']}  "
+                      f"(descriptive: n < {min_n}, no inference)")
+            elif r["n"] and r["ci95"][0] == r["ci95"][0]:
+                ci = r.get("ci95_t") or r["ci95"]
+                print(f"   {r['contrast']:40s} d={r['mean_diff']:+.3f} CI[{ci[0]:+.3f},{ci[1]:+.3f}] "
+                      f"dz={r['dz']:+.2f} p={r['p']:.4f} holm={r['p_holm']:.4f} (m={r['holm_m']}) wins {r['wins']}/{r['n']}"
+                      + (f"  -> {r['outcome']}" if r.get("outcome") else ""))
 
 
 # ============================================================================================ #

@@ -435,3 +435,80 @@ input: P(fire) 1.00 / 1.00 / 0.94). **The TE/LDS rule is retired from real-data 
   - **This is the confirmatory test of "phase synchrony adds information beyond band power".**
   - `incremental_sync_over_power` stays, but is reported as capacity-confounded (descriptive).
 
+
+| # | date | where | decision | reason |
+|---|---|---|---|---|
+| 23 | 2026-11-09 | **Phase 1 analysis rules** (review board 2026-11-09, rounds 1-2): declared families over lin and nl_coupled, exact sign-flip test, TOST margin 0.05, intersection-union rule, wording limits, a secondary frozen-bank family, analysis sets, diagnostics, no interim inference. Code: provenance per arm, curves and weights stored. | The board showed (verified by the judge) that the Phase 1 "phase" contrasts are not phase-specific: they fire on source-power-only data (sync 0.98 vs power 0.79), they are inflated by dilution, and the fixed-roll surrogate leaks phase. Frozen before any capacity-matched arm has run, before subjects 8-14 and the rest of subject 7, and before the calibration screen (DEVIATION 24). |
+
+### DEVIATION 23: protocol (frozen 2026-11-09, before any capacity-matched arm, before subjects 7-14 finish, before DEVIATION 24 runs)
+- **Disclosure: what had been seen.** On 2026-11-05 the judge read the core-arm records (lin and nl_coupled x
+  sync / surrogate / power: test accuracy, balanced accuracy, best epoch, best validation loss, epochs run) of
+  subjects 1-6 (Drive `resonet_synchrony_runs/phase1/subj_01..06.json`, last written 2026-11-04 by 08:44 UTC,
+  git 3c10616) and wrote the interim section of `results/README_results.md`. The half-finished `subj_07.json`
+  (08:45 UTC) was not read. No capacity-matched arm exists for any subject.
+- **Families (confirmatory; all 14 subjects; test balanced accuracy).** Declared over `CONFIRMATORY_BANKS =
+  (lin, nl_coupled)` only (`run.py`), so Holm has m = 2; coupling has m = 1. Rows for other banks, if run, form
+  one exploratory family. This replaces "Holm over all four banks", under which banks that never ran entered as
+  p = 1.
+  - F1 `H2_sync_vs_surrogate` (as published).
+  - F2 `incremental_capacity_matched` = (sync+power) - (power+surrogate) (DEVIATION 22).
+  - F3 `incremental_sync_over_power` = (sync+power) - power. Promoted from descriptive: it is the second leg
+    of the rule below.
+  - F4 `coupling` = nl_coupled - lin (sync).
+- **Test and intervals.** Primary: exact two-sided sign-flip permutation test of the mean paired difference
+  (all 2^14 sign patterns). The exact Wilcoxon signed-rank p is reported alongside (scipy's default falls back
+  to a normal approximation with ties). Intervals: t-based 95% CI; t-based 90% CI for equivalence.
+- **Outcomes per contrast.** *Superior*: Holm p < 0.05 and mean > 0. *Inferior*: Holm p < 0.05 and mean < 0.
+  *Equivalent*: TOST with margin Delta = 0.05 balanced accuracy (8 of 160 test trials; about one third of the
+  published phase effect; 80% TOST power at a true 0 when the paired SD is 0.06), Holm across the family on the
+  TOST p. Otherwise *inconclusive*. A non-significant superiority test is never reported as "no effect".
+- **Rule for "adds beyond the bank's log-powers"** (per bank): F2 superior AND F3 superior
+  (intersection-union; no extra correction). F2 alone can be positive under the null through dilution by
+  noise-like surrogate dimensions (toy: +0.13, 40/40). Validity check, descriptive: (power+surrogate) - power;
+  if its mean is below -Delta, F2 is reported as inflated by dilution.
+- **Wording limits.**
+  - F1 compares sync with a surrogate that uses one fixed roll per oscillator for every trial. It is neither a
+    phase null (it leaks cross-oscillator phase: 0.42-1.00 on phase-only synthetic data, also at 4.5 s) nor
+    capacity-free. Report it as "sync vs the published fixed-roll surrogate".
+  - The F2/F3 rule may be called "phase" or "synchrony" only if DEVIATION 24 shows that F2 and F3 are calibrated
+    on its null and source-power-only generators and sensitive on its phase generator. Otherwise the result is
+    worded "zero-lag cross-oscillator structure beyond the bank's 16 log-powers". (The bank's "power" is itself
+    the power of learned spatial mixtures, so it contains cross-channel phase; DEVIATION 8.)
+- **F5, secondary family: phase beyond sensor band power** (frozen now; post hoc on the saved trained banks of
+  the `{bank}:sync+power` arms, all 14 subjects; Holm m = 2).
+  - Contrast: (B + sync) - (B + surrogate_random), where sync and surrogate_random (a fresh uniform circular
+    roll per trial and per oscillator) come from the frozen bank, and B is a train-fitted band-power baseline
+    computed from the same trials.
+  - Head: L2 logistic regression; C chosen on the seed-42 validation carve; fitted on train minus the carve;
+    scored on test (balanced accuracy).
+  - B is the first of [FBCSP, filter-bank log-variance] (definitions in DEVIATION 24) that passes DEVIATION 24's
+    calibration and sensitivity criteria. If neither passes, F5 is descriptive and no Phase 1 result is called
+    "phase".
+- **Analysis sets.** F1-F5 use all 14 subjects. Questions generated by the interim (does the surrogate readout
+  train at all; is power >= sync under Hz initialisation) are answered on subjects 7-14 only, descriptively
+  (n = 8; minimal detectable dz 1.34).
+- **Pre-declared diagnostics (descriptive).**
+  - D1 optimiser failure: training loss at the best epoch less than 0.05 nats below epoch 0 (needs the stored
+    curves; arms run after this entry).
+  - D2 fixed-feature probe: on each saved trained bank, train-CV logistic regression on sync, fixed-roll
+    surrogate and random-roll surrogate features. A surrogate that the probe decodes while the trained readout is
+    near chance is a training failure, not an information floor.
+  - D3 (power+surrogate) - power (the dilution handicap).
+  - D4 drift of learned f0 and bw from initialisation.
+- **Baselines (descriptive):** filter-bank log-variance + shrinkage LDA, FBCSP + shrinkage LDA, filter-bank
+  tangent space + logistic regression; same cap, validation carve and windows (definitions in DEVIATION 24).
+- **No interim inference.** `summarize()` and the notebook print and store means with n per arm, but p-values,
+  CIs, dz and Holm only for contrasts with n = 14 (`stats.contrast_table(min_n=...)`). If the run stops before
+  14 subjects, Phase 1 is descriptive.
+- **Code changes (no change to any result).**
+  - Provenance per arm: git, code-dirty flag, time, device, GPU, torch/CUDA/numpy/scipy/python versions.
+  - A resume keeps the original file-level metadata, appends to `resumes`, and refuses a different config or a
+    changed data file.
+  - Atomic JSON writes. Learning curves per arm. Trained weights per arm in `results/phase1/weights/` (on Drive;
+    git-ignored).
+  - Proof of no change in results: a CPU smoke run of every arm at ac481c4 and with the patch gives identical
+    accuracy, validation loss, best epoch and learned f0/bw; `tests/test_run_provenance.py`.
+- **Judgement call logged (band).** The 1-40 Hz bank band (TASK_PITCH1 §2) meets a 4-125 Hz zero-phase cache:
+  6 of 16 oscillators (1.0-3.4 Hz) sit at or below the high-pass, and none covers high gamma. Phase 1 keeps the
+  spec; a 4-112 Hz sensitivity run (rk4 sub-steps >= 3) is exploratory, after Phase 1. (The published bank,
+  omega ~ U(0.5, 4) with h = 0.01, sat at about 0.2-1.6 Hz.)

@@ -22,3 +22,6 @@ results/phase*/raw/
 
 # resumable checkpoints of running screens (final results.json holds per_dataset)
 results/**/*partial.json
+
+# trained weights (DEVIATIONS 23): kept on Drive, never committed
+results/**/weights/
