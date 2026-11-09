@@ -26,7 +26,7 @@ def test_holm_counts_only_tested_rows():
 def test_min_n_makes_rows_descriptive():
     per = [{"a": 0.6 + 0.01 * i, "b": 0.5} for i in range(6)]
     r = contrast_table(per, [("a-b", "a", "b")], min_n=14)[0]
-    assert r["incomplete"] and r["p"] is None and r["p_holm"] is None and r["ci95"] is None
+    assert r["incomplete"] and np.isnan(r["p"]) and np.isnan(r["p_holm"]) and np.isnan(r["ci95"]).all()
     assert r["mean_diff"] > 0 and r["wins"] == 6 and r["holm_m"] == 0
     r = contrast_table(per, [("a-b", "a", "b")], min_n=6)[0]
     assert not r["incomplete"] and r["p"] is not None and r["holm_m"] == 1
@@ -128,4 +128,6 @@ def test_phase1_rows_outcomes():
     assert rows[1]["outcome"] in ("equivalent", "inconclusive") and rows[1]["p_tost"] is not None
     assert "_d" not in rows[0]
     short = contrast_table(per[:9], [("s-z", "s", "z")], min_n=14, phase1=True)[0]
-    assert short["incomplete"] and short["outcome"] is None and short["p"] is None
+    assert short["incomplete"] and short["outcome"] is None and np.isnan(short["p"])
+    # an older notebook copy formats these fields; NaN must not crash it
+    f"{short['ci95'][0]:+.3f} {short['dz']:+.2f} {short['p_holm']:.4f}"

@@ -123,7 +123,7 @@ def contrast_table(per_unit, contrasts, n_boot=10000, seed=0, min_n=None, phase1
     Holm runs over the rows that were actually tested (finite p and, if given, n >= min_n); its size is stored
     as `holm_m`. Rows that could not be tested (an arm that never ran) no longer enter Holm as p = 1 (board
     2026-11-09: that silently doubled the family for banks that were not run). With `min_n`, rows below it are
-    descriptive only: their inferential fields are None and `incomplete` is True (no interim p-values).
+    descriptive only: their inferential fields are NaN and `incomplete` is True (no interim p-values).
     phase1=True applies the DEVIATION 23 rules (exact sign-flip primary test, t CIs, TOST, outcome); see phase1_rows."""
     rows = []
     for name, a, b in contrasts:
@@ -142,8 +142,9 @@ def contrast_table(per_unit, contrasts, n_boot=10000, seed=0, min_n=None, phase1
     if min_n is not None:
         for r in rows:
             r["incomplete"] = bool(r["n"] < min_n)
-            if r["incomplete"]:
-                r.update({k: None for k in INFERENTIAL_KEYS})
+            if r["incomplete"]:              # NaN (not None): older notebook copies format these fields
+                r.update({k: ([np.nan, np.nan] if k.startswith("ci") else None if k == "outcome" else np.nan)
+                          for k in INFERENTIAL_KEYS})
     if phase1:
         return phase1_rows(rows, margin=margin)
     for r in rows:
