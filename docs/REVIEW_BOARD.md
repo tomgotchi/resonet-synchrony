@@ -272,3 +272,112 @@ family `incremental_capacity_matched`. Tests pass.
 2. Run the 4 arms for lin and nl_coupled.
 3. Report the capacity-matched family as primary for the phase-beyond-power claim.
 4. Decide on closed loop separately, after Phase 1.
+
+---
+
+# Board session, 2026-11-09: what should the project do next, with no new real data?
+
+**Header.**
+- **Target:** the repo at ac481c4; direction for the project while the Phase 1 Colab run is stopped at 6/14.
+- **Members:** all six. **Mode:** agent mode (six independent reviewer agents), 2 rounds. Every member ran its own
+  checks; the judge re-ran the decisive ones.
+
+## Findings and verdicts
+VERIFIED = re-run or found by the judge; ACCEPTED = plausible, not reproduced.
+
+| sev | member | finding | verdict | evidence |
+|---|---|---|---|---|
+| crit | Asante | On source-power-only data (4 sources, class = 30% ERD of one, random phases) sync beats power (0.98 vs 0.79); sync-surrogate +0.46; (sync+power)-(power+surrogate) +0.25 | VERIFIED | proto_surr.py re-run: 0.983 / 0.790 / 0.523 / 0.985 / 0.735 |
+| crit | Zhao | That signal is source power carried by zero-lag cross-covariance, not phase: channel imaginary coherency is at chance (0.25), real coherency 0.99 | ACCEPTED | a1_check.py (not re-run) |
+| crit | Halvorsen | The capacity-matched contrast is positive under "nothing beyond power" by dilution (noise-like surrogate dims) | VERIFIED (toy) | dil.py re-run: +0.130, 40/40; real-readout size PENDING |
+| crit | Zhao | The fixed-roll surrogate leaks cross-oscillator phase | VERIFIED | phase-only synth: fixed roll 0.42-0.51, fresh roll 0.19-0.25 (surr_leak.py); 4.5 s stationary narrowband: 0.90-1.00 (Novak r2_both.py, re-run) |
+| crit | Asante (r2) | The intersection-union rule still fires on source-power-only data; only (band power + sync) - (band power + fresh-roll surrogate) separated power-only (+0.01) from phase-only (+0.73) | ACCEPTED | r2_rules.py (not re-run) |
+| crit | Echeverria, Novak, Volkov | Gate 1 site selection is broken: the ripple dipole is null at the true pyramidal site; "radiatum" = the reversal site or the CA3 return source, never the sink | VERIFIED | seed 2000: runner radiatum 5, true 7; z0 = -10 um gives EC+20% mean -0.185, 0/10; true sites +0.369, 10/10 |
+| crit | Novak (r2) | The judge's proposed replacement rule (most negative CSD at the pyramidal trough) also fails: the EC return source is in phase with the CA3 sink (corr 0.93) | VERIFIED | r2_both.py re-run: trough CSD +0.91 at 350 um, +0.94 at 400 um |
+| crit | Zhao, Volkov | Coupling and rhythmic common input are not identifiable from passive data in the linear-Gaussian regime (two constructions: directed pair with latent driver; symmetric pair = sum mode + private modes) | VERIFIED | spectral matrices equal to 6e-16 and 1e-15; GC, coherence, PLV match (ident2.py, equiv.py re-run) |
+| crit | Volkov | Phase 2 emergent class information is purely second order: a Whittle (Gaussian spectral) classifier scores 1.000 | VERIFIED | whittle.py re-run, emergent seeds 0-2 (driven 0.73-0.81) |
+| major | Volkov | nl_coupled is a damped linear bank with weak linear crosstalk: coupling `z @ W.t()`, Re(lambda) < 0 forced, max Re eig -0.51, h|W| ~ 6e-4, sync features corr 0.985 with W -> 0 | VERIFIED | banks.py:62-63, 150; bank_regime.py re-run (init) |
+| major | Halvorsen, Novak | Holm ran over 4 banks when 2 ran (missing rows as p = 1) | VERIFIED; fixed | stats.py:57, run.py:103-111 |
+| major | Novak | A resume overwrote git, config and device for earlier arms; changed data undetected | VERIFIED; fixed | q2_meta.py; run.py:139-151 |
+| major | Halvorsen | summarize() and the notebook print Holm p at any n (peeking channel) | VERIFIED; fixed | run.py:201-226; notebook cell 15 |
+| major | Halvorsen | Learning curves not stored, so "surrogate does not train" cannot be checked | VERIFIED; fixed | run.py:83-86 |
+| major | Halvorsen | MDE at n = 14 is dz 0.92 (0.037-0.078 accuracy); TOST at margin 0.05 has 0.81 power at SD 0.06 | VERIFIED | pow.py re-run |
+| major | Asante | The bank's power readout is a weak band-power estimator and f0/bw barely move in training | VERIFIED (synthetic) | SD(log P) 0.28-0.45 vs ~0.24 for a 4 Hz band; log f0 moves <= 0.014 in 36 steps |
+| major | Asante | Published Shallow 0.749 vs nl_sync 0.530 | VERIFIED | results_hg/ablation_summary.json |
+| major | Asante | The 1-40 Hz band meets a 4-125 Hz cache; it comes from TASK_PITCH1 §2, not the published bank (0.2-1.6 Hz) | VERIFIED | build_hg_cache.py:37,47; TASK_PITCH1:40; vendor:229 |
+| major | Echeverria | HGD is not a test of Pitch 1 (no internally generated contrast); nl-lin +0.023 is inside Phase 2's generic-capacity band | ACCEPTED | |
+| major | Echeverria | Gate 0 is likely to fail on hc-5 (32-channel blocks; about 140 um span) | PENDING | needs the hc-5 QC (crcns.org unreachable here) |
+| major | Echeverria, Volkov | Speed drift is independent per generator; with shared (septal) drift it is harmless; the real nuisance is CA3-EC coherence (about -0.07 at full decoherence) | VERIFIED (code), ACCEPTED (numbers) | laminar.py:68-70; drift_truesites.py, r2_drift.py |
+| major | Echeverria | qc_hc5 marks a shank usable without the span criterion | VERIFIED | qc_hc5.py:57 |
+| major | Echeverria | "Travelling-wave 10 deg" is implemented as an inter-generator phase change | VERIFIED | gate1_laminar.py CELLS |
+| minor | Novak | 12x50: l-m lands on the EC source (last site excluded) | VERIFIED | q4_gate1.py |
+| minor | Novak | Zero Delta passes every null cell (i_rad == i_lm) | VERIFIED | sign_flip_p(zeros) = 1.0 |
+| minor | Zhao | Label smoothing 0.05 makes ln 4 the floor | VERIFIED | train.py:67 |
+| minor | Asante | ResoNet as configured is ruled out for phase-locked stimulation; fixed point is not a constraint | ACCEPTED | |
+
+## Verdicts overturned or corrected in round 2
+1. **The judge's A3 reconciliation** ("the leak is large at 1 s, small at 4.5 s") is wrong. Novak, Zhao and Asante
+   each showed it: a linear head uses the best pairs (smallest lags) and BatchNorm undoes the attenuation, so the
+   fixed-roll surrogate decodes 0.90-1.00 at 4.5 s on stationary narrowband phase classes. The leak depends on
+   lag relative to how long the class structure stays coherent, and on SNR.
+2. **Novak N7** ("val loss near ln 4 is what an informationless null looks like") was withdrawn by Novak and
+   rejected by Halvorsen: the frozen-feature probe decodes what the trained readout does not, so the HGD
+   surrogate's near-chance score is not explained. Diagnostic D2 (DEVIATION 23) decides it.
+3. **Zhao's inference that the leak makes the contrasts conservative** was rejected by Halvorsen: with leak a =
+   0.08 the dilution bias is unchanged (+0.143, 25/25), and for an equivalence claim the leak is anti-conservative.
+4. **Echeverria E4 and Volkov V6** ("the amplitude cell is removed exactly"): rejected as stated, because the
+   ripple is not scaled (phi differs by up to 0.48). Substance kept: the cell is a null replicate (true sites
+   +0.0125) and is replaced by an absolute-noise cell.
+5. **Echeverria E5** (perisomatic, absolute-noise and DG traps fail): withdrawn by Echeverria. At the true sites
+   they pass (+0.011, +0.011, -0.035); the round-1 failures came from the broken site picker. Only the radiatum
+   depth shift still moves Delta.
+6. **Volkov V7** (layer-specific asymmetry moves Delta by about 0.15): it is a normalisation artefact. Each source
+   is normalised to unit variance, so the 16 Hz harmonic takes power from the fundamental; with the fundamental
+   fixed, Delta is +0.012 (Echeverria).
+7. **Novak N1** (speed_drift fails at the true sites): the failure is real but is not caused by frequency drift. It
+   comes from independent drift decohering CA3 and EC (Volkov, Echeverria).
+8. **Asante A6** was relabelled: the 1-40 Hz band is the spec's, not the published configuration's.
+9. **Upgraded:** H6, H7, A4, N2, N4, N8, V3 to VERIFIED.
+
+## Fixed in this session (commit b0f24b4)
+- DEVIATION 23 (Phase 1 analysis rules), frozen before any capacity-matched arm and before subjects 7-14.
+- Code: families declared over lin and nl_coupled; exact sign-flip primary test, t CIs, TOST, outcomes; no
+  inference below n = 14; provenance per arm; resume refuses config/data changes; atomic writes; learning curves
+  and trained weights stored. A golden CPU smoke run of all 22 arms is identical before and after.
+- **Declined (proportion):** installing `requirements.lock` on Colab (it pins this container's torch/CUDA 13 wheels
+  and would swap the environment mid-study; provenance records versions instead); pinning the notebook to a commit
+  (per-arm git hashes plus the golden-equality test cover it); hiding `wins` below n = 14 (descriptive, already
+  disclosed in the interim).
+
+## Pending
+- DEVIATION 24 calibration screen (frozen before it runs).
+- Gate 1 v2 and the amendment of the generator-mix draft.
+- The non-identifiability note, the Whittle oracle on all Phase 2 seeds, and Volkov's supercritical check.
+- Standard baselines and the frozen-bank analyses (F5, D2), which need the HGD data (Colab).
+- Gate 0 on real hc-5 data (needs the QC run).
+
+## Positions
+- **Halvorsen:** P2 before P3 (done: DEVIATION 23); add a dilution null to the calibration.
+- **Echeverria:** rebuild Gate 1 with shared septal drift, disc sources and per-session jitter before anything
+  else; freeze only the rule for the Gate-0-fail branch now.
+- **Zhao:** the calibration must include a coupling-only generator and source-power baselines; no "phase" wording
+  until it passes on source-power-only data.
+- **Volkov:** record the equivalence theorem; add a cheap supercritical oracle check so the note does not read as
+  "coupling is never identifiable".
+- **Asante:** only (band power + sync) - (band power + fresh-roll surrogate) may use the word "phase"; save the
+  trained banks (done).
+- **Novak:** Gate 1 needs a site/generator method validated against ground truth across lags and probe offsets.
+
+## Judge's plan
+1. **DEVIATION 24, a calibration screen of the Phase 1 contrasts** (frozen, then run on CPU): generators null,
+   source-power-only, coupling-only (class-invariant source spectra) and both; arms through the real training
+   loop; the frozen-bank F5 candidates and the D2 probe. It decides what the Phase 1 result may be called.
+2. **Gate 1 v2**: a site/generator method validated against ground truth; forward-model fixes (distributed
+   ripple, disc sources, absolute noise, per-site gain, probe-offset and thickness jitter, shared drift); the cell
+   list from Echeverria's round 2; equivalence relative to the target effect; a geometry pass map that replaces
+   the guessed 300 um in Gate 0.
+3. **Non-identifiability note** (both constructions, assumptions, N-unit form, what breaks it), the Whittle
+   oracle on all 10 Phase 2 seeds and a supercritical oracle check.
+4. **Baselines module** (FBLV + shrinkage LDA, FBCSP, tangent space) and the F5/D2 frozen-bank analyses, ready for
+   Colab.
+5. Tom: resume the Colab run (the code now stores weights and curves); run the hc-5 QC.
