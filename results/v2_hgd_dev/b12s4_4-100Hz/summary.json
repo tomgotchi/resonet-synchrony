@@ -1,0 +1,37 @@
+{
+ "note": "DEVELOPMENT: train-split cross-validation, descriptive means only",
+ "tag": "b12s4_4-100Hz",
+ "subjects": [
+  1,
+  3
+ ],
+ "mean_over_subjects": {
+  "FBCSP_LDA": 0.91640625,
+  "FBLV_LDA": 0.78984375,
+  "lin:sync+power": 0.6171875,
+  "v2:cov": 0.740625,
+  "v2:cov+lag": 0.7765625,
+  "v2:cov+lag_null": 0.7390625,
+  "v2:power": 0.7125
+ },
+ "per_subject": {
+  "1": {
+   "FBCSP_LDA": 0.8875,
+   "FBLV_LDA": 0.74375,
+   "lin:sync+power": 0.515625,
+   "v2:cov": 0.653125,
+   "v2:cov+lag": 0.678125,
+   "v2:cov+lag_null": 0.68125,
+   "v2:power": 0.675
+  },
+  "3": {
+   "FBCSP_LDA": 0.9453125,
+   "FBLV_LDA": 0.8359375,
+   "lin:sync+power": 0.71875,
+   "v2:cov": 0.828125,
+   "v2:cov+lag": 0.875,
+   "v2:cov+lag_null": 0.796875,
+   "v2:power": 0.75
+  }
+ }
+}

@@ -1,0 +1,46 @@
+{
+ "subject": 2,
+ "config": {
+  "decim": 2,
+  "cap": 80,
+  "n_osc": 16,
+  "epochs": 80,
+  "batch": 128,
+  "seed": 42,
+  "band": [
+   1.0,
+   40.0
+  ],
+  "val_frac": 0.15,
+  "rk4_substeps": 1,
+  "v2": {
+   "n_bands": 12,
+   "n_spatial": 4,
+   "band": [
+    4.0,
+    100.0
+   ],
+   "skip_s": 0.5
+  }
+ },
+ "folds": {
+  "0": {
+   "FBLV_LDA": 0.765625,
+   "FBCSP_LDA": 0.890625,
+   "v2:power": 0.59375,
+   "v2:cov": 0.625
+  }
+ },
+ "provenance": {
+  "git": "ddc464fe8f112cb6703440571267a47b14476bf1",
+  "code_dirty": false,
+  "utc": "2026-11-10T05:55:09+00:00",
+  "device": "cpu",
+  "gpu": null,
+  "torch": "2.14.1+cu130",
+  "cuda": "13.0",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "python": "3.13.17"
+ }
+}

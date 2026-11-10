@@ -1,0 +1,63 @@
+{
+ "subject": 3,
+ "config": {
+  "decim": 2,
+  "cap": 80,
+  "n_osc": 16,
+  "epochs": 80,
+  "batch": 128,
+  "seed": 42,
+  "band": [
+   1.0,
+   40.0
+  ],
+  "val_frac": 0.15,
+  "rk4_substeps": 1,
+  "v2": {
+   "n_bands": 12,
+   "n_spatial": 4,
+   "band": [
+    4.0,
+    100.0
+   ],
+   "skip_s": 0.5
+  }
+ },
+ "folds": {
+  "0": {
+   "FBLV_LDA": 0.84375,
+   "FBCSP_LDA": 0.96875,
+   "v2:power": 0.765625,
+   "v2:cov": 0.828125,
+   "v2:cov+lag": 0.875,
+   "v2:cov+lag_null": 0.796875,
+   "lin:sync+power": 0.71875
+  },
+  "1": {
+   "FBLV_LDA": 0.828125,
+   "FBCSP_LDA": 0.921875,
+   "v2:power": 0.734375,
+   "v2:cov": 0.796875,
+   "v2:cov+lag": 0.796875,
+   "v2:cov+lag_null": 0.8125,
+   "lin:sync+power": 0.5625
+  },
+  "2": {
+   "FBLV_LDA": 0.859375,
+   "FBCSP_LDA": 0.953125,
+   "v2:power": 0.703125
+  }
+ },
+ "provenance": {
+  "git": "737fb48464ba38b308ca973c125d54ef003e1fe0",
+  "code_dirty": true,
+  "utc": "2026-11-10T05:29:51+00:00",
+  "device": "cpu",
+  "gpu": null,
+  "torch": "2.14.1+cu130",
+  "cuda": "13.0",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "python": "3.13.17"
+ }
+}

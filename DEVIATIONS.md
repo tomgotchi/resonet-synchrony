@@ -663,3 +663,27 @@ input: P(fire) 1.00 / 1.00 / 0.94). **The TE/LDS rule is retired from real-data 
   sources whatever their powers. A non-zero value means time-lagged structure between spatial components. That
   includes stimulus-locked sequences and lagged common input; it is not, by itself, coupling between oscillators
   (`docs/NONIDENTIFIABILITY.md`).
+
+#### DEVIATION 27, addendum 1 (2026-11-10): first real-data development results and the closed-form path
+Written before the closed-form path was run on its synthetic seeds or on HGD subjects 2-6.
+- **Real data used.** Training recordings of HGD subjects 1-6 only (public data, `scripts/build_hgd_dev_cache.py`,
+  published preprocessing). The test recordings were not downloaded. All numbers are k-fold cross-validation inside
+  the training split (`scripts/v2_hgd_dev.py`), i.e. development results.
+- **What was seen.**
+  - Trained v2 (12 bands 4-100 Hz x 4 filters, random init), subject 1, 5 folds: v2 0.65-0.68; v1 `lin:sync+power`
+    0.52; FBLV + LDA 0.74; **FBCSP + LDA 0.89**. Subject 3, 2 folds; subject 2, 1 fold (stopped).
+  - CSP-initialised trained v2 (same size), subject 1 fold 0: power 0.75.
+  - Diagnostic on subject 1, folds 0 and 2 (untrained bank, shrinkage LDA): with CSP filters, power scores 0.75-0.81
+    at 4 filters per band, 0.92 at 8 and 0.91-0.94 at 16 (FBCSP 0.94-0.95). The lag block alone scores 0.50-0.78.
+- **Decision.** The number of spatial filters per band, not gradient training, limits v2 on real data. Real-data
+  development continues on the **closed-form path** (`resonet_sync/v2_probe.py`, `scripts/v2_probe_run.py`): CSP
+  filters from the training trials, untrained constant-Q resonators, shrinkage LDA per feature set. HGD
+  configuration fixed now: 12 bands 4-100 Hz x **8** filters. The slow trained runs were stopped; their partial
+  files are kept in `results/v2_hgd_dev/`.
+- **Controls added for the lag block.** `im_null` (fresh circular shift per trial and projection) and `im_evoked`
+  (same-class partner trial: only structure time-locked to the trial start survives; needs labels, analysis only).
+- **Closed-form path on synthetic ground truth.** Same generators and criteria as the trained path above, new
+  seeds 3700-3709, 8 bands 4-40 Hz x 4 CSP filters: L = acc(power+re+im) - acc(power+re+im_null) must be valid on
+  G0, G1, G1r and sensitive on G2i and G2.
+- **Status of any real-data number here: descriptive development.** A confirmatory test needs a frozen
+  configuration and untouched data (subjects 7-14, or the test recordings).
