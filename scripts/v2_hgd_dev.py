@@ -46,11 +46,14 @@ def main(argv=None):
     ap.add_argument("--bands", type=int, default=V2_HGD["n_bands"]); ap.add_argument("--spatial", type=int, default=V2_HGD["n_spatial"])
     ap.add_argument("--fmin", type=float, default=V2_HGD["band"][0]); ap.add_argument("--fmax", type=float, default=V2_HGD["band"][1])
     ap.add_argument("--epochs", type=int, default=P1["epochs"]); ap.add_argument("--threads", type=int, default=0)
+    ap.add_argument("--csp-init", action="store_true",
+                    help="start v2's spatial filters from CSP filters fitted on each fold's training trials")
     a = ap.parse_args(argv)
     if a.threads:
         torch.set_num_threads(a.threads)
     cfg = dict(P1, epochs=a.epochs, v2=dict(n_bands=a.bands, n_spatial=a.spatial, band=[a.fmin, a.fmax], skip_s=V2_HGD["skip_s"]))
-    tag = f"b{a.bands}s{a.spatial}_{a.fmin:g}-{a.fmax:g}Hz"
+    tag = f"b{a.bands}s{a.spatial}_{a.fmin:g}-{a.fmax:g}Hz" + ("_csp" if a.csp_init else "") + \
+        (f"_ep{a.epochs}" if a.epochs != P1["epochs"] else "")
     out = ROOT / "results" / "v2_hgd_dev" / tag; out.mkdir(parents=True, exist_ok=True)
     cache = a.cache or load_config().get("paths", {}).get("hgd_cache_hg")
     dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -74,11 +77,18 @@ def main(argv=None):
                 fr["FBLV_LDA"] = BL.lda(BL.fblv(Xa, fs), ya, BL.fblv(Xh, fs), yh, vmask)
                 fr["FBCSP_LDA"] = BL.lda(BL.fbcsp(Xa, W, fs), ya, BL.fbcsp(Xh, W, fs), yh, vmask)
             tr, va, ho = Split(Xa[~vmask], ya[~vmask], 42), Split(Xa[vmask], ya[vmask], 43), Split(Xh, yh, 44)
+            Wcsp = None
             for arm in arms:
                 if arm in fr:
                     continue
                 torch.manual_seed(cfg["seed"]); np.random.seed(cfg["seed"])
                 m = build(arm, X.shape[1], X.shape[2], fs, cfg)
+                if a.csp_init and arm.startswith("v2:"):
+                    if Wcsp is None:                                  # once per fold, from its training trials only
+                        from resonet_sync.v2 import csp_init_
+                        Wcsp = csp_init_(m.bank, Xa[~vmask], ya[~vmask]).W.detach().clone()
+                    with torch.no_grad():
+                        m.bank.W.copy_(Wcsp)
                 m, hist = train(m, tr, va, dev, max_epochs=cfg["epochs"], batch=cfg["batch"], seed=cfg["seed"])
                 torch.manual_seed(cfg["seed"] + 7)
                 fr[arm] = evaluate(m, ho, dev, crit, cfg["batch"])["bal_acc"]

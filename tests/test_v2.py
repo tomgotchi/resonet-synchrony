@@ -101,7 +101,7 @@ def test_hgd_dev_script_runs_cv_without_touching_test(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "P1", dict(R.P1, batch=16))
     mod.main(["--subjects", "1", "--folds", "2", "--epochs", "1", "--bands", "3", "--spatial", "2", "--fmax", "40",
               "--cache", str(tmp_path)])
-    s = json.loads((tmp_path / "results" / "v2_hgd_dev" / "b3s2_4-40Hz" / "summary.json").read_text())
+    s = json.loads((tmp_path / "results" / "v2_hgd_dev" / "b3s2_4-40Hz_ep1" / "summary.json").read_text())
     assert set(s["mean_over_subjects"]) == {"v2:power", "v2:cov", "v2:cov+lag", "v2:cov+lag_null", "FBLV_LDA", "FBCSP_LDA"}
     assert all(0 <= v <= 1 for v in s["mean_over_subjects"].values())
 
@@ -116,3 +116,34 @@ def test_null_arm_shares_the_global_rng_stream_with_cov_lag():
         torch.manual_seed(5); m(x)
         states.append(torch.rand(1).item())
     assert states[0] == states[1]
+
+
+def test_csp_init_finds_the_class_specific_source():
+    """csp_init_: with one 10 Hz source whose power depends on the class, the first filter of the 10 Hz band
+    isolates it far better than a random projection; shapes and unit projected variance hold."""
+    from scipy import signal
+    from resonet_sync.v2 import CrossSpectralBank, csp_filters, csp_init_
+    rng = np.random.default_rng(0)
+    n, C, T, fs = 80, 10, 750, 250.0
+    y = np.repeat(np.arange(4), n // 4)
+    a = rng.standard_normal(C)
+    src = signal.sosfilt(signal.butter(2, (9, 11), "band", fs=fs, output="sos"), rng.standard_normal((n, T)))
+    X = (1 + 2.0 * (y == 0))[:, None, None] * a[None, :, None] * src[:, None, :] * 3 + rng.standard_normal((n, C, T))
+    b = CrossSpectralBank(C, n_bands=4, n_spatial=4, fs=fs, band=(4.0, 40.0))
+    w_rand = b.W.detach().clone()
+    csp_init_(b, X, y)
+    assert b.W.shape == (4, 4, C) and not torch.allclose(b.W, w_rand)
+    f0 = b._band_params()[0].detach().numpy()
+    k = int(np.argmin(np.abs(f0 - 10)))
+    def ratio(w):                                   # class-0 vs rest power of the projection, 8-12 Hz
+        xb = signal.sosfilt(signal.butter(4, (8, 12), "band", fs=fs, output="sos"), np.einsum("c,nct->nt", w, X), axis=-1)
+        p = (xb ** 2).mean(-1)
+        return p[y == 0].mean() / p[y != 0].mean()
+    assert max(ratio(b.W[k, j].detach().numpy()) for j in range(4)) > 8.0          # ideal 9 (3x amplitude)
+    Wk = b.W[k].detach().numpy().astype(np.float64)
+    tot = np.einsum("nct,ndt->cd", X, X) / (n * T)
+    G = Wk @ tot @ Wk.T
+    corr = G / np.sqrt(np.outer(np.diag(G), np.diag(G)))
+    assert np.abs(corr - np.eye(4)).max() < 0.97                                    # no duplicated filters
+    W = csp_filters(X, y, [(8.0, 12.0)], fs, 4)
+    assert W.shape == (1, 4, C)

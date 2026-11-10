@@ -130,3 +130,48 @@ def build_v2(readout, n_channels, fs, cfg=None, seed=42, n_classes=4):
     bank = CrossSpectralBank(n_channels, c["n_bands"], c["n_spatial"], fs, tuple(c["band"]), seed=seed)
     torch.manual_seed(seed)                                   # head init independent of the bank's generator
     return RNModel(bank, V2Readout(c["n_bands"], c["n_spatial"], fs, n_classes, readout, c["skip_s"], seed=seed))
+
+
+def csp_filters(X, y, bands, fs, n_spatial, shrink=0.1):
+    """Closed-form spatial filters for each band from TRAINING trials only: one-vs-rest CSP per class, then the most
+    discriminative filters taken round-robin over classes (score |lambda - 0.5|, lambda = the class's share of the
+    projected band variance), skipping a filter whose projection correlates above 0.9 with one already taken.
+    X (n, C, T), bands [(lo, hi)] -> (F, n_spatial, C), unit projected variance."""
+    from scipy import signal
+    from scipy.linalg import eigh
+    C = X.shape[1]
+    classes = np.unique(y)
+    out = []
+    for lo, hi in bands:
+        xb = signal.sosfilt(signal.butter(4, (max(lo, 0.5), min(hi, 0.49 * fs)), "band", fs=fs, output="sos"), X, axis=-1)
+        xb = xb[..., min(125, xb.shape[-1] // 4):].astype(np.float64)
+        cov = np.einsum("nct,ndt->ncd", xb, xb) / xb.shape[-1]   # NOT trace-normalised: the readout uses raw log-power,
+        tot = cov.mean(0)                                         # so the filters are ranked on raw variance shares
+        ranked = []
+        for k in classes:
+            Ca, Cb = cov[y == k].mean(0), cov[y != k].mean(0)
+            Ca, Cb = [(1 - shrink) * M + shrink * np.trace(M) / C * np.eye(C) for M in (Ca, Cb)]
+            lam, V = eigh(Ca, Ca + Cb)
+            order = np.argsort(-np.abs(lam - 0.5))
+            ranked.append([V[:, j] for j in order])
+        W, depth = [], [0] * len(classes)               # round-robin over classes, skipping near-duplicates
+        ci = 0
+        while len(W) < n_spatial and min(depth) < C:
+            k = ci % len(classes); ci += 1
+            while depth[k] < C:
+                w = ranked[k][depth[k]]; depth[k] += 1
+                w = w / np.sqrt(max(w @ tot @ w, 1e-20))
+                if all(abs(w @ tot @ v) < 0.9 for v in W):
+                    W.append(w); break
+        out.append(np.array(W))
+    return np.array(out, dtype=np.float32)
+
+
+def csp_init_(bank, X, y):
+    """Replace the bank's random spatial filters by CSP filters computed in each resonator's -3 dB band
+    (training trials only). In place; returns the bank."""
+    f0, bw = [t.detach().cpu().numpy() for t in bank._band_params()]
+    W = csp_filters(np.asarray(X), np.asarray(y), [(f - b, f + b) for f, b in zip(f0, bw)], bank.fs, bank.S)
+    with torch.no_grad():
+        bank.W.copy_(torch.as_tensor(W, dtype=bank.W.dtype, device=bank.W.device))
+    return bank
