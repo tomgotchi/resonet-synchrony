@@ -1,0 +1,90 @@
+{
+ "subject": 2,
+ "config": {
+  "n_bands": 12,
+  "n_spatial": 8,
+  "band": [
+   4.0,
+   100.0
+  ]
+ },
+ "folds": {
+  "0": {
+   "power": 0.65625,
+   "power+re": 0.734375,
+   "power+re+im": 0.75,
+   "power+re+im_null": 0.75,
+   "im": 0.578125,
+   "im_null": 0.265625,
+   "im_evoked": 0.25,
+   "L": 0.0,
+   "R": 0.078125,
+   "FBCSP_LDA": 0.890625,
+   "FBLV_LDA": 0.765625
+  },
+  "1": {
+   "power": 0.734375,
+   "power+re": 0.8125,
+   "power+re+im": 0.78125,
+   "power+re+im_null": 0.765625,
+   "im": 0.671875,
+   "im_null": 0.234375,
+   "im_evoked": 0.265625,
+   "L": 0.015625,
+   "R": 0.078125,
+   "FBCSP_LDA": 0.84375,
+   "FBLV_LDA": 0.671875
+  },
+  "2": {
+   "power": 0.828125,
+   "power+re": 0.75,
+   "power+re+im": 0.828125,
+   "power+re+im_null": 0.6875,
+   "im": 0.765625,
+   "im_null": 0.28125,
+   "im_evoked": 0.203125,
+   "L": 0.140625,
+   "R": -0.078125,
+   "FBCSP_LDA": 0.78125,
+   "FBLV_LDA": 0.734375
+  },
+  "3": {
+   "power": 0.765625,
+   "power+re": 0.765625,
+   "power+re+im": 0.75,
+   "power+re+im_null": 0.75,
+   "im": 0.546875,
+   "im_null": 0.359375,
+   "im_evoked": 0.21875,
+   "L": 0.0,
+   "R": 0.0,
+   "FBCSP_LDA": 0.71875,
+   "FBLV_LDA": 0.671875
+  },
+  "4": {
+   "power": 0.71875,
+   "power+re": 0.75,
+   "power+re+im": 0.796875,
+   "power+re+im_null": 0.71875,
+   "im": 0.671875,
+   "im_null": 0.21875,
+   "im_evoked": 0.203125,
+   "L": 0.078125,
+   "R": 0.03125,
+   "FBCSP_LDA": 0.828125,
+   "FBLV_LDA": 0.65625
+  }
+ },
+ "provenance": {
+  "git": "1509be89c4878edce0073239d0e6df0a31ee0f59",
+  "code_dirty": false,
+  "utc": "2026-11-10T06:26:16+00:00",
+  "device": "cpu",
+  "gpu": null,
+  "torch": "2.14.1+cu130",
+  "cuda": "13.0",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "python": "3.13.17"
+ }
+}

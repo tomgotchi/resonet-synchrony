@@ -1,0 +1,120 @@
+{
+ "note": "DEVELOPMENT: 5-fold CV inside the training split; descriptive means; no inference",
+ "config": {
+  "n_bands": 12,
+  "n_spatial": 8,
+  "band": [
+   4.0,
+   100.0
+  ]
+ },
+ "subjects": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6
+ ],
+ "mean_over_subjects": {
+  "power": 0.8812500000000001,
+  "power+re": 0.8807291666666667,
+  "power+re+im": 0.8791666666666665,
+  "power+re+im_null": 0.8427083333333333,
+  "im": 0.7364583333333333,
+  "im_null": 0.24999999999999997,
+  "im_evoked": 0.2520833333333334,
+  "L": 0.036458333333333336,
+  "R": -0.0005208333333333332,
+  "FBCSP_LDA": 0.8911458333333334,
+  "FBLV_LDA": 0.7713541666666667
+ },
+ "per_subject": {
+  "1": {
+   "power": 0.875,
+   "power+re": 0.85625,
+   "power+re+im": 0.8625,
+   "power+re+im_null": 0.83125,
+   "im": 0.696875,
+   "im_null": 0.284375,
+   "im_evoked": 0.2625,
+   "L": 0.03125,
+   "R": -0.01875,
+   "FBCSP_LDA": 0.8875,
+   "FBLV_LDA": 0.74375
+  },
+  "2": {
+   "power": 0.740625,
+   "power+re": 0.7625,
+   "power+re+im": 0.78125,
+   "power+re+im_null": 0.734375,
+   "im": 0.646875,
+   "im_null": 0.271875,
+   "im_evoked": 0.228125,
+   "L": 0.046875,
+   "R": 0.021875,
+   "FBCSP_LDA": 0.8125,
+   "FBLV_LDA": 0.7
+  },
+  "3": {
+   "power": 0.95625,
+   "power+re": 0.953125,
+   "power+re+im": 0.9375,
+   "power+re+im_null": 0.90625,
+   "im": 0.846875,
+   "im_null": 0.23125,
+   "im_evoked": 0.253125,
+   "L": 0.03125,
+   "R": -0.003125,
+   "FBCSP_LDA": 0.94375,
+   "FBLV_LDA": 0.84375
+  },
+  "4": {
+   "power": 0.94375,
+   "power+re": 0.94375,
+   "power+re+im": 0.93125,
+   "power+re+im_null": 0.903125,
+   "im": 0.840625,
+   "im_null": 0.2125,
+   "im_evoked": 0.2875,
+   "L": 0.028125,
+   "R": 0.0,
+   "FBCSP_LDA": 0.94375,
+   "FBLV_LDA": 0.828125
+  },
+  "5": {
+   "power": 0.88125,
+   "power+re": 0.896875,
+   "power+re+im": 0.91875,
+   "power+re+im_null": 0.8625,
+   "im": 0.8,
+   "im_null": 0.2375,
+   "im_evoked": 0.25625,
+   "L": 0.05625,
+   "R": 0.015625,
+   "FBCSP_LDA": 0.890625,
+   "FBLV_LDA": 0.78125
+  },
+  "6": {
+   "power": 0.890625,
+   "power+re": 0.871875,
+   "power+re+im": 0.84375,
+   "power+re+im_null": 0.81875,
+   "im": 0.5875,
+   "im_null": 0.2625,
+   "im_evoked": 0.225,
+   "L": 0.025,
+   "R": -0.01875,
+   "FBCSP_LDA": 0.86875,
+   "FBLV_LDA": 0.73125
+  }
+ },
+ "n_folds": {
+  "1": 5,
+  "2": 5,
+  "3": 5,
+  "4": 5,
+  "5": 5,
+  "6": 5
+ }
+}

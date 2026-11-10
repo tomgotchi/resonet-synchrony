@@ -2,7 +2,8 @@
 
 2026-11-09. Independent second look at the published Resonance Network (`reso-net/`, manuscript under review)
 and at this follow-up repository. Every number below comes from a script in this repo, run on the published
-checkpoints, the published code or synthetic data with known ground truth. No HGD recording was used.
+checkpoints, the published code, synthetic data with known ground truth, or (Part 4.4 only) the training
+recordings of HGD subjects 1-6. No HGD test recording was used.
 
 ## Bottom line
 1. **The published model does not resonate with the EEG.** In all 14 published checkpoints the trained
@@ -13,8 +14,15 @@ checkpoints, the published code or synthetic data with known ground truth. No HG
    which source *power* shows at the sensors.
 4. **The reported high-gamma effect is confounded with the sampling rate.**
 5. The results themselves are reproducible and carefully evaluated; the *interpretation* (resonance, phase
-   synchronization, high gamma) is what does not hold. **ResoNet v2** (`resonet_sync/v2.py`) is a redesign in
-   which the phase question becomes testable.
+   synchronization, high gamma) is what does not hold.
+6. **ResoNet v2** (`resonet_sync/v2.py`) is a redesign in which the phase question becomes testable.
+   - On simulated ground truth its lag block ignores source power and finds lagged coupling.
+   - On real EEG (HGD subjects 1-6, cross-validation inside the training recordings; development only) it matches
+     FBCSP as a decoder (0.88 against 0.89; the published model's arms score about 0.53 on the test session).
+   - Its lag block alone decodes movement class at 0.74 (chance 0.25, nulls at chance), but adds almost nothing
+     once power is in the model.
+
+![summary](../results/figures/fig10_critique_and_v2.png)
 
 ## Part 1. What the published model computes
 
@@ -133,4 +141,132 @@ These are the authors' decisions. My reading of what the evidence supports:
   entirely; six of the Hz bank's sixteen). `scripts/published_null_test.py` high-passes at 4 Hz for that reason.
 
 ## Part 4. ResoNet v2
-PENDING
+`resonet_sync/v2.py` (model), `resonet_sync/v2_probe.py` (closed-form path), protocol in DEVIATION 27.
+
+### 4.1 Design: three changes
+1. **Resonators that tile the band, in Hz.** Log-spaced centre frequencies with constant-Q bandwidths, so each
+   resonator's upper -3 dB edge is the midpoint to the next centre. (Synthetic study: 8 bands over 4-40 Hz. HGD:
+   12 bands over 4-100 Hz.)
+2. **Several real spatial filters per band, no tanh.** `z[f, s](t)` is band f's resonator applied to the real
+   projection `w[f, s] . x(t)`: the analytic band signal of one spatial component. The filters can start from CSP
+   (closed form, training trials only).
+3. **A readout that separates what can and cannot come from power.** Within each band, the cross-spectral matrix
+   of the S projections is split into three blocks:
+
+| block | what it is | responds to source power / volume conduction | responds to lagged coupling |
+|---|---|---|---|
+| power | log band power of each projection | yes | only through mixing |
+| re | real part of the coherency between projections (zero lag) | yes | through cos(lag) |
+| **im** | imaginary part of the coherency (the lag block) | **no** | **yes**, through sin(lag) |
+
+For real weights, `Im C = w^T Im(S_x) w'`, and instantaneous mixing of independent sources has `Im(S_x) = 0`
+whatever the source powers (Nolte et al. 2004). The dimension-matched control replaces the lag block by the same
+quantity after a fresh circular shift per trial and projection (`im_null`).
+
+### 4.2 Exact properties (unit tests, `tests/test_v2.py`)
+- The bank is linear and causal and equals the one-pole recursion; unit gain at resonance.
+- One source seen through any real mixing gives coherency exactly +/-1 with zero imaginary part at any source
+  power; a lagged second source gives a non-zero imaginary part.
+- The null arm leaves the power and re blocks untouched and consumes the global random stream exactly like the
+  real arm.
+
+### 4.3 Ground truth (synthetic; criteria frozen in DEVIATION 27 before the runs)
+L = accuracy(power + re + im) - accuracy(power + re + im_null). Ten new datasets per generator.
+
+**Closed-form path** (CSP filters, untrained resonators, shrinkage LDA; seeds 3700-3709): **L passes all five
+criteria.**
+
+| generator | lag block alone | its null | L (90% CI) | FBCSP + LDA | oracle |
+|---|---|---|---|---|---|
+| G0: classes carry nothing | 0.242 | 0.245 | +0.002 [-0.014, +0.019] valid | 0.246 | 0.227 |
+| G1: source power only | **0.256** | 0.243 | -0.007 [-0.028, +0.014] valid | 0.653 | 0.686 |
+| G1r: one source's power | **0.267** | 0.254 | +0.011 [-0.006, +0.029] valid | 0.696 | 0.676 |
+| G2: coupling, mixed lags | 0.574 | 0.262 | **+0.126** [+0.097, +0.154] sensitive | 0.658 | 0.785 |
+| G2i: lagged coupling only | **0.696** | 0.269 | **+0.378** [+0.356, +0.400] sensitive | 0.268 | 0.752 |
+
+- On power-only data the lag block is at chance (0.26, 0.27), where the published `sync` and `sync_imag` readouts
+  scored 0.63 and 0.61 (1.6).
+- On lag-only data it reaches 0.70 (oracle 0.75) while power and FBCSP are at chance.
+
+**Trained path** (random spatial filters, the Phase 1 training loop; seeds 3600-3609): **L passes all five
+criteria.**
+
+| generator | L (90% CI) | v2 power + re + im | v1 `lin:sync+power` | FBCSP + LDA | oracle |
+|---|---|---|---|---|---|
+| G0 | -0.009 [-0.031, +0.013] valid | 0.247 | - | 0.259 | 0.235 |
+| G1 | -0.022 [-0.035, -0.009] valid | 0.611 | 0.511 | 0.669 | 0.675 |
+| G1r | -0.013 [-0.043, +0.017] valid | 0.586 | 0.544 | 0.689 | 0.681 |
+| G2 | **+0.161** [+0.139, +0.183] sensitive | 0.721 | 0.641 | 0.634 | 0.753 |
+| G2i | **+0.466** [+0.450, +0.483] sensitive | 0.725 | 0.644 | 0.253 | 0.756 |
+
+- Trained v2 beats the Phase 1 bank's best arm on every informative generator (+0.04 to +0.10).
+- On power-only data L is slightly negative (-0.02): the real lag block is fixed noise that the head can memorise,
+  while the null is redrawn every epoch. The bias is conservative for a "lag adds" claim.
+- The Phase 1 bank does see lag-only coupling (0.64 on G2i). Its problem is the opposite one: its sync readout also
+  responds to power, so a positive result cannot be attributed.
+
+### 4.4 Real EEG: HGD development subjects 1-6 (cross-validation inside the training recordings)
+`scripts/build_hgd_dev_cache.py`, `scripts/v2_probe_run.py`. Published preprocessing; cap 80 trials per class;
+5-fold CV inside the training split. **The test recordings were not downloaded.** These are development numbers:
+descriptive, no inference.
+
+Closed-form v2, 12 bands 4-100 Hz x 8 CSP filters, shrinkage LDA. Balanced accuracy on held-out folds (chance 0.25):
+
+| subject | FBLV + LDA | FBCSP + LDA | v2 power | v2 power+re+im | same with null lag block | L | lag block alone | its null | evoked control |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 0.744 | 0.887 | 0.875 | 0.863 | 0.831 | +0.031 | 0.697 | 0.284 | 0.263 |
+| 2 | 0.700 | 0.812 | 0.741 | 0.781 | 0.734 | +0.047 | 0.647 | 0.272 | 0.228 |
+| 3 | 0.844 | 0.944 | 0.956 | 0.938 | 0.906 | +0.031 | 0.847 | 0.231 | 0.253 |
+| 4 | 0.828 | 0.944 | 0.944 | 0.931 | 0.903 | +0.028 | 0.841 | 0.212 | 0.287 |
+| 5 | 0.781 | 0.891 | 0.881 | 0.919 | 0.863 | +0.056 | 0.800 | 0.237 | 0.256 |
+| 6 | 0.731 | 0.869 | 0.891 | 0.844 | 0.819 | +0.025 | 0.588 | 0.263 | 0.225 |
+| **mean** | 0.771 | 0.891 | **0.881** | 0.879 | 0.843 | **+0.036** | **0.736** | 0.250 | 0.252 |
+
+- **As a decoder, v2 now matches the standard method.** v2 power 0.881 against FBCSP 0.891, with resonators in
+  place of the band-pass filters. On the same folds of subject 1, the Phase 1 bank's best arm
+  (`lin:sync+power`, trained) scored 0.516 and trained v2 with 4 random filters per band 0.68
+  (`results/v2_hgd_dev/`). The step that mattered was the number and initialisation of the spatial filters, not
+  gradient training (DEVIATION 27, addendum 1).
+- **The lag block carries class information on real EEG: 0.74 alone** (0.59-0.85 per subject), with its
+  shift-null at chance (0.25) and the evoked control at chance (0.25). So real movement EEG contains
+  class-dependent, time-lagged structure between spatial components that is not locked to the cue. No
+  instantaneous mixture of independent sources can produce that.
+- **It adds little to decoding.** Against the matched null block L is +0.036 (positive in 6/6 subjects), but
+  power + re + im (0.879) does not beat power alone (0.881).
+- **The lag information is mostly shared with power, and it sits in the mu/beta range**
+  (`scripts/v2_probe_controls.py`).
+  - After removing from the lag block everything linearly predictable from power and zero-lag coherency, it scores
+    0.33 (chance 0.25; the same treatment of the null block gives 0.18).
+  - By band, the lag block alone scores 0.58-0.65 at 10-31 Hz, 0.32-0.41 at 4-7 Hz and 0.35-0.40 above 40 Hz; power
+    alone follows the same profile (0.67-0.77 at 10-31 Hz).
+  - The simplest reading: the mu/beta rhythms that movement modulates have a time-lagged spatial structure (for
+    example lagged source pairs or travelling waves). When their amplitude changes, power and the lag block change
+    together. This is **not** evidence that coupling itself changes with the movement class.
+- **A timing offset between channels is not the explanation.** A fixed delay would turn zero-lag covariance into
+  imaginary cross-spectrum in proportion to frequency. Fitted delays against the channel average are within about
+  +/-0.2 ms (5-95% range; an upper bound, since real lags are included), which is under 1 degree at 13 Hz, and the lag
+  information is at 10-30 Hz, not at high frequencies.
+
+### 4.5 What v2 does and does not show
+- **Decoder.** v2 is a member of a known family (filter bank + spatial filters + second-order features: FBCSP,
+  Riemannian and cross-spectral methods; imaginary coherency is Nolte et al. 2004). It is not a new decoder. Its
+  value here is that the ResoNet idea now does what the paper describes, with a control that works.
+- **The phase question.** The lag block answers "is there class-dependent lagged structure that zero-lag mixing
+  cannot explain?" It does not answer "does coupling between oscillators change?" (`docs/NONIDENTIFIABILITY.md`).
+- **Assumptions of the immunity claim:** instantaneous linear mixing, real spatial weights, the same linear filter
+  for every projection in a band, and no fixed timing offsets between channels.
+- **Training.** The closed-form path (CSP + LDA) is the validated one on real data. End-to-end training of the same
+  model from CSP initialisation is implemented (`--csp-init`) but was only run on one fold.
+- **Hardware.** Per sample, v2 needs one real projection and one complex one-pole update per component, plus running
+  second moments. The HGD configuration (96 components, 128 channels, 250 Hz) is about 3.6 million multiply-adds
+  per second before any pruning of channels.
+
+## Part 5. What I would do next, in order
+1. **Tell the co-authors about Part 1** and decide how to handle the manuscript. The three checks reproduce in
+   minutes.
+2. **Run the missing bandwidth control** for the paper: full cache low-passed at 48 Hz, `decim = 2`.
+3. **Freeze a v2 confirmatory test on untouched data.** Configuration as in 4.4. Subjects 7-14 (or the test
+   recordings of all 14). Pre-registered contrasts: v2 against FBCSP (equivalence); lag block alone against its
+   null; L. That would give the paper's original question a valid answer.
+4. **Phase 1 as frozen** only if the replication record is still wanted; DEVIATION 24 already fixed its wording.
+5. Leave hc-5 until its QC shows the probe geometry (Gate 0).

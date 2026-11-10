@@ -349,8 +349,6 @@ def fig_calib_p1():
 def fig_v2():
     """Fig 10: the critique in one picture, and ResoNet v2 (docs/CRITIQUE_AND_V2.md)."""
     fx, pn = ROOT / "results" / "published_forensics.json", ROOT / "results" / "published_null" / "results.json"
-    vf = ROOT / "results" / "v2_study" / "results_final.json"
-    hg = sorted((ROOT / "results" / "v2_hgd_dev").glob("*/summary.json"))
     if not fx.exists():
         return
     fig, axes = plt.subplots(2, 2, figsize=(13, 8.6))
@@ -386,52 +384,53 @@ def fig_v2():
         for j, (k, lab, col) in enumerate(arms):
             v = np.array([r["arms"][k]["bal_acc"] for r in rs])
             ax.bar(j, v.mean(), 0.6, color=col); ax.plot(np.full(len(v), j) + np.linspace(-0.18, 0.18, len(v)), v, "o", ms=3.5, color=INK, alpha=0.55)
-            ax.text(j, v.mean() + 0.05, f"{v.mean():.2f}", ha="center", fontsize=9.5, fontweight="bold")
+            ax.text(j, v.max() + 0.025, f"{v.mean():.2f}", ha="center", fontsize=9.5, fontweight="bold")
         d = np.array([r["arms"]["sync"]["bal_acc"] - r["arms"]["surrogate"]["bal_acc"] for r in rs])
-        ax.axhline(0.25, color=MUTED, ls="--", lw=1); ax.text(2.42, 0.255, "chance", fontsize=8, color=MUTED, ha="right")
+        ax.axhline(0.25, color=MUTED, ls="--", lw=1); ax.text(0.5, 0.262, "chance", fontsize=8, color=MUTED, ha="center")
         ax.set_xticks(range(3), [a[1] for a in arms], fontsize=9); ax.set_ylim(0, 0.95); ax.grid(axis="x", visible=False)
         ax.set_ylabel("balanced accuracy")
         ax.text(0.5, 0.93, f"sync - surrogate = {d.mean():+.2f} ({int((d > 0).sum())}/{len(d)} datasets)\nalthough the classes differ ONLY in source power",
                 transform=ax.transAxes, ha="center", va="top", fontsize=9.5, color=CRIT)
     ax.set_title("(b) Published code, power-only data: the \"phase\" contrast fires", loc="left", fontsize=10)
-    # (c) v2 synthetic
+    # (c) v2 on synthetic ground truth (closed-form path)
     ax = axes[1, 0]
-    if vf.exists():
-        V = json.loads(vf.read_text())["summary"]
+    vp = ROOT / "results" / "v2_probe" / "synthetic.json"
+    if vp.exists():
+        V = json.loads(vp.read_text())["summary"]
         gens = [g for g in ("G1", "G2", "G2i") if g in V]
-        arms = [("lin:sync+power", "v1 sync+power", S2, "arms"), ("FBCSP_LDA", "FBCSP + LDA", MUTED, "post"),
-                ("v2:cov", "v2 power + zero-lag", S3, "arms"), ("v2:cov+lag", "v2 + lag block", S1, "arms"),
-                ("v2:cov+lag_null", "v2 + null lag block", "#9dbfe8", "arms")]
-        w = 0.16
+        arms = [("FBCSP_LDA", "FBCSP + LDA", MUTED), ("power+re", "v2 power + zero-lag", S3),
+                ("im", "v2 lag block alone", S1), ("im_null", "its null (shifted)", "#9dbfe8")]
+        w = 0.2
         for gi, g in enumerate(gens):
-            for j, (k, lab, col, src) in enumerate(arms):
-                m = V[g]["means" if src == "arms" else "post_means"].get(k)
-                if m is not None:
-                    ax.bar(gi + (j - 2) * w, m, w * 0.92, color=col, label=lab if gi == 0 else None)
-            ax.plot([gi - 0.45, gi + 0.45], [V[g]["post_means"]["oracle"]] * 2, color=INK, lw=1.2, ls=":")
+            for k_, (k, lab, col) in enumerate(arms):
+                m = V[g]["means"][k]
+                ax.bar(gi + (k_ - 1.5) * w, m, w * 0.92, color=col, label=lab if gi == 0 else None)
+                ax.text(gi + (k_ - 1.5) * w, m - 0.045, f"{m:.2f}", ha="center", fontsize=7.5, color="white" if k != "im_null" else INK)
+            ax.plot([gi - 0.45, gi + 0.45], [V[g]["means"]["oracle"]] * 2, color=INK, lw=1.2, ls=":")
         ax.axhline(0.25, color=MUTED, ls="--", lw=1)
-        names = dict(G1="G1: source power only", G2="G2: coupling, mixed lags", G2i="G2i: lagged coupling only")
+        names = dict(G1="source power only", G2="coupling, mixed lags", G2i="lagged coupling only")
         ax.set_xticks(range(len(gens)), [names[g] for g in gens], fontsize=9); ax.set_ylim(0, 1.0); ax.grid(axis="x", visible=False)
-        ax.set_ylabel("balanced accuracy (dotted: oracle)"); ax.legend(ncol=3, fontsize=7.8, loc="upper left")
-    ax.set_title("(c) v2 on ground truth: the lag block ignores power and finds lagged coupling", loc="left", fontsize=10)
-    # (d) HGD dev
+        ax.set_ylabel("balanced accuracy (dotted: oracle)"); ax.legend(ncol=2, fontsize=8, loc="upper left")
+    ax.set_title("(c) v2 on simulated ground truth: the lag block ignores power, finds lags", loc="left", fontsize=10)
+    # (d) HGD development subjects (closed-form path)
     ax = axes[1, 1]
-    if hg:
-        H = json.loads(hg[-1].read_text())
-        arms = [("lin:sync+power", "v1 sync+power", S2), ("FBLV_LDA", "FBLV + LDA", MUTED), ("FBCSP_LDA", "FBCSP + LDA", "#b9b8b2"),
-                ("v2:power", "v2 power", S3), ("v2:cov+lag_null", "v2 + null lag block", "#9dbfe8"), ("v2:cov+lag", "v2 + lag block", S1)]
+    hp = sorted((ROOT / "results" / "v2_probe").glob("hgd_*/summary.json"))
+    if hp:
+        H = json.loads(hp[-1].read_text())
+        arms = [("FBCSP_LDA", "FBCSP\n+ LDA", MUTED), ("power", "v2\npower", S3), ("power+re+im", "v2 all\nblocks", S1),
+                ("power+re+im_null", "v2, null\nlag block", "#9dbfe8"), ("im", "lag block\nalone", S1),
+                ("im_null", "its null", "#9dbfe8"), ("im_evoked", "evoked\ncontrol", "#b9b8b2")]
         subs = sorted(H["per_subject"], key=int)
-        for j, (k, lab, col) in enumerate(arms):
-            v = np.array([H["per_subject"][s].get(k, np.nan) for s in subs], float)
-            if np.all(np.isnan(v)):
-                continue
-            ax.bar(j, np.nanmean(v), 0.62, color=col)
-            ax.plot(np.full(len(v), j) + np.linspace(-0.15, 0.15, len(v)), v, "o", ms=4, color=INK, alpha=0.6)
-            ax.text(j, np.nanmean(v) + 0.045, f"{np.nanmean(v):.2f}", ha="center", fontsize=9, fontweight="bold")
+        for k_, (k, lab, col) in enumerate(arms):
+            x = k_ + (0.5 if k_ >= 4 else 0)
+            v = np.array([H["per_subject"][s_][k] for s_ in subs])
+            ax.bar(x, v.mean(), 0.66, color=col)
+            ax.plot(np.full(len(v), x) + np.linspace(-0.17, 0.17, len(v)), v, "o", ms=3.5, color=INK, alpha=0.55)
+            ax.text(x, max(v.max(), v.mean()) + 0.025, f"{v.mean():.2f}", ha="center", fontsize=9, fontweight="bold")
         ax.axhline(0.25, color=MUTED, ls="--", lw=1)
-        ax.set_xticks(range(len(arms)), [a[1].replace(" + ", "\n+ ").replace("v1 ", "v1\n") for a in arms], fontsize=8)
-        ax.set_ylim(0, 1.0); ax.grid(axis="x", visible=False); ax.set_ylabel("balanced accuracy (held-out folds)")
-        ax.set_title(f"(d) Real EEG (HGD subjects {', '.join(subs)}; development, train-split CV)", loc="left", fontsize=10)
+        ax.set_xticks([k_ + (0.5 if k_ >= 4 else 0) for k_ in range(len(arms))], [a_[1] for a_ in arms], fontsize=8)
+        ax.set_ylim(0, 1.08); ax.grid(axis="x", visible=False); ax.set_ylabel("balanced accuracy, held-out folds")
+        ax.set_title(f"(d) Real EEG: HGD subjects {subs[0]}-{subs[-1]}, CV inside the training data", loc="left", fontsize=10)
     else:
         ax.set_title("(d) Real EEG: not run", loc="left", fontsize=10)
     fig.savefig(OUT / "fig10_critique_and_v2.png", dpi=150)

@@ -687,3 +687,23 @@ Written before the closed-form path was run on its synthetic seeds or on HGD sub
   G0, G1, G1r and sensitive on G2i and G2.
 - **Status of any real-data number here: descriptive development.** A confirmatory test needs a frozen
   configuration and untouched data (subjects 7-14, or the test recordings).
+
+#### DEVIATION 27, addendum 2 (2026-11-10): outcomes
+- **Synthetic, trained path** (`results/v2_study/results_final.json`, seeds 3600-3609): L passes. Valid on G0
+  (-0.009 [-0.031, +0.013]), G1 (-0.022 [-0.035, -0.009]) and G1r (-0.013 [-0.043, +0.017]); sensitive on G2
+  (+0.161, 10/10) and G2i (+0.466, 10/10). v2 cov+lag exceeds v1 `lin:sync+power` by +0.04 to +0.10 on G1, G1r, G2
+  and G2i.
+- **Synthetic, closed-form path** (`results/v2_probe/synthetic.json`, seeds 3700-3709): L passes. Valid on G0
+  (+0.002), G1 (-0.007), G1r (+0.011); sensitive on G2 (+0.126) and G2i (+0.378). The lag block alone is at chance on
+  power-only data (0.256, 0.267) and scores 0.696 on lag-only data.
+- **Published model on the same kind of data** (`results/published_null/results.json`, seeds 3200-3209, 4 Hz
+  high-pass): sync - surrogate = +0.309 [+0.266, +0.352] on power-only data.
+- **HGD development subjects 1-6** (closed-form path, 5-fold CV inside the training split; descriptive):
+  v2 power 0.881, FBCSP + LDA 0.891, FBLV + LDA 0.771; lag block alone 0.736, its shift-null 0.250, evoked control
+  0.252; L = +0.036 (6/6 subjects positive); power + re + im 0.879.
+  - Controls (`controls.json`): lag block after regressing out power and zero-lag coherency 0.327; lag information
+    concentrated at 10-31 Hz; fitted inter-channel delays within about +/-0.2 ms.
+- **Mapping applied.** L passed on ground truth, so L is the contrast to pre-register for a confirmatory real-data
+  test. Proposed frozen configuration: closed-form path, 12 bands 4-100 Hz x 8 CSP filters, 0.5 s skip, shrinkage
+  LDA; contrasts: v2 power vs FBCSP (equivalence), lag block alone vs its null, and L; data: subjects 7-14 or the
+  test recordings. Not run; needs Tom's go-ahead because it uses up untouched data.

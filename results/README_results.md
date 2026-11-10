@@ -725,3 +725,18 @@ development.
     are uninformative about bias. F5b's miss is pure noise (G0); F5a's leans liberal on G1r.
   - G2 is coupling-only at the source level only: F5's sensitivity is to lagged coupling beyond zero-lag covariance.
   - The Phase 1 wording stays as pre-committed.
+
+## 2026-11-10: the published model re-examined, and ResoNet v2
+Full account with tables: `docs/CRITIQUE_AND_V2.md`; fig 10; protocol and outcomes in DEVIATION 27.
+- **Published checkpoints** (`results/published_forensics.json`): trained oscillators at 0.36-1.55 Hz in all 14
+  subjects (data 4-125 Hz); the 16 gain curves correlate above 0.9995; 82% of the output power comes from 4-8 Hz for
+  a 1/f input; the oscillator state rotates backwards in 42% of samples.
+- **Published code on ground truth** (`results/published_null/`): on power-only data sync 0.627, power 0.584,
+  surrogate 0.319; sync - surrogate = +0.309 [+0.266, +0.352], 10/10.
+- **v2 on ground truth** (`results/v2_study/results_final.json`, `results/v2_probe/synthetic.json`): the lag
+  contrast L passes its five criteria on both the trained and the closed-form path.
+- **v2 on HGD development subjects 1-6** (`results/v2_probe/hgd_b12s8_4-100Hz/`; CV inside the training split;
+  descriptive): v2 power 0.881, FBCSP 0.891; lag block alone 0.736 (null 0.250, evoked control 0.252); L +0.036
+  (6/6); after regressing out power-type features the lag block scores 0.327.
+- Earlier trained real-data development runs (random or CSP-initialised 4 filters per band, stopped):
+  `results/v2_hgd_dev/`. Subject 1, 5 folds: v1 `lin:sync+power` 0.516, trained v2 0.65-0.68, FBCSP 0.887.
