@@ -346,6 +346,98 @@ def fig_calib_p1():
     plt.close(fig)
 
 
+def fig_v2():
+    """Fig 10: the critique in one picture, and ResoNet v2 (docs/CRITIQUE_AND_V2.md)."""
+    fx, pn = ROOT / "results" / "published_forensics.json", ROOT / "results" / "published_null" / "results.json"
+    vf = ROOT / "results" / "v2_study" / "results_final.json"
+    hg = sorted((ROOT / "results" / "v2_hgd_dev").glob("*/summary.json"))
+    if not fx.exists():
+        return
+    fig, axes = plt.subplots(2, 2, figsize=(13, 8.6))
+    fig.subplots_adjust(left=0.13, right=0.98, top=0.86, bottom=0.08, wspace=0.24, hspace=0.42)
+    _title(fig, "ResoNet: where the oscillators are, what the published contrast measures, and v2",
+           "(a) published checkpoints; (b) published code on simulated data with NO phase information; "
+           "(c) v2 on simulated ground truth; (d) v2 on real EEG, cross-validation inside the training recordings.")
+    # (a) frequencies
+    ax = axes[0, 0]
+    F = json.loads(fx.read_text())
+    ax.axvspan(4, 125, color=GRID, alpha=0.8, lw=0)
+    ax.text(22, 3.62, "EEG fed to the model: 4-125 Hz", ha="center", fontsize=8.5, color=INK2)
+    rows = [("published model\n(trained, 14 subjects)", np.array(F.get("trained_f0_hz_all") or F["trained_f0_hz"]), None, CRIT),
+            ("Hz bank (Phase 1)", np.geomspace(1, 40, 16), 0.28, S2),
+            ("v2 (synthetic study)", np.geomspace(4, 40, 8), "q", S1), ("v2 (HGD config)", np.geomspace(4, 100, 12), "q", S3)]
+    for i, (lab, f0, bw, col) in enumerate(rows):
+        y = len(rows) - 1 - i
+        if bw == "q":
+            r = (f0[-1] / f0[0]) ** (1 / (len(f0) - 1)); h = f0 * (r - 1) / 2
+            for f, w in zip(f0, h):
+                ax.plot([f - w, f + w], [y, y], color=col, lw=5, alpha=0.45, solid_capstyle="butt")
+        ax.plot(f0, np.full(len(f0), y), "|", color=col, ms=13, mew=1.6 if len(f0) < 40 else 0.6, alpha=1 if len(f0) < 40 else 0.45)
+    ax.set_yticks(range(len(rows)), [r[0] for r in rows][::-1], fontsize=8.5); ax.set_ylim(-0.6, 3.9)
+    ax.set_xscale("log"); ax.set_xlim(0.15, 140); ax.set_xticks([0.2, 0.5, 1, 2, 4, 10, 20, 40, 100], ["0.2", "0.5", "1", "2", "4", "10", "20", "40", "100"])
+    ax.set_xlabel("oscillator frequency (Hz); shaded bars = -3 dB width"); ax.grid(axis="y", visible=False)
+    ax.set_title("(a) The published oscillators sit below the signal they are fed", loc="left", fontsize=10)
+    # (b) published null test
+    ax = axes[0, 1]
+    if pn.exists():
+        P = json.loads(pn.read_text())
+        rs = [r for r in P["rows"] if r["gen"] == "G1"]
+        arms = [("power", "power", S3), ("sync", "sync\n(\"phase\")", S1), ("surrogate", "surrogate\n(phase destroyed)", S2)]
+        for j, (k, lab, col) in enumerate(arms):
+            v = np.array([r["arms"][k]["bal_acc"] for r in rs])
+            ax.bar(j, v.mean(), 0.6, color=col); ax.plot(np.full(len(v), j) + np.linspace(-0.18, 0.18, len(v)), v, "o", ms=3.5, color=INK, alpha=0.55)
+            ax.text(j, v.mean() + 0.05, f"{v.mean():.2f}", ha="center", fontsize=9.5, fontweight="bold")
+        d = np.array([r["arms"]["sync"]["bal_acc"] - r["arms"]["surrogate"]["bal_acc"] for r in rs])
+        ax.axhline(0.25, color=MUTED, ls="--", lw=1); ax.text(2.42, 0.255, "chance", fontsize=8, color=MUTED, ha="right")
+        ax.set_xticks(range(3), [a[1] for a in arms], fontsize=9); ax.set_ylim(0, 0.95); ax.grid(axis="x", visible=False)
+        ax.set_ylabel("balanced accuracy")
+        ax.text(0.5, 0.93, f"sync - surrogate = {d.mean():+.2f} ({int((d > 0).sum())}/{len(d)} datasets)\nalthough the classes differ ONLY in source power",
+                transform=ax.transAxes, ha="center", va="top", fontsize=9.5, color=CRIT)
+    ax.set_title("(b) Published code, power-only data: the \"phase\" contrast fires", loc="left", fontsize=10)
+    # (c) v2 synthetic
+    ax = axes[1, 0]
+    if vf.exists():
+        V = json.loads(vf.read_text())["summary"]
+        gens = [g for g in ("G1", "G2", "G2i") if g in V]
+        arms = [("lin:sync+power", "v1 sync+power", S2, "arms"), ("FBCSP_LDA", "FBCSP + LDA", MUTED, "post"),
+                ("v2:cov", "v2 power + zero-lag", S3, "arms"), ("v2:cov+lag", "v2 + lag block", S1, "arms"),
+                ("v2:cov+lag_null", "v2 + null lag block", "#9dbfe8", "arms")]
+        w = 0.16
+        for gi, g in enumerate(gens):
+            for j, (k, lab, col, src) in enumerate(arms):
+                m = V[g]["means" if src == "arms" else "post_means"].get(k)
+                if m is not None:
+                    ax.bar(gi + (j - 2) * w, m, w * 0.92, color=col, label=lab if gi == 0 else None)
+            ax.plot([gi - 0.45, gi + 0.45], [V[g]["post_means"]["oracle"]] * 2, color=INK, lw=1.2, ls=":")
+        ax.axhline(0.25, color=MUTED, ls="--", lw=1)
+        names = dict(G1="G1: source power only", G2="G2: coupling, mixed lags", G2i="G2i: lagged coupling only")
+        ax.set_xticks(range(len(gens)), [names[g] for g in gens], fontsize=9); ax.set_ylim(0, 1.0); ax.grid(axis="x", visible=False)
+        ax.set_ylabel("balanced accuracy (dotted: oracle)"); ax.legend(ncol=3, fontsize=7.8, loc="upper left")
+    ax.set_title("(c) v2 on ground truth: the lag block ignores power and finds lagged coupling", loc="left", fontsize=10)
+    # (d) HGD dev
+    ax = axes[1, 1]
+    if hg:
+        H = json.loads(hg[-1].read_text())
+        arms = [("lin:sync+power", "v1 sync+power", S2), ("FBLV_LDA", "FBLV + LDA", MUTED), ("FBCSP_LDA", "FBCSP + LDA", "#b9b8b2"),
+                ("v2:power", "v2 power", S3), ("v2:cov+lag_null", "v2 + null lag block", "#9dbfe8"), ("v2:cov+lag", "v2 + lag block", S1)]
+        subs = sorted(H["per_subject"], key=int)
+        for j, (k, lab, col) in enumerate(arms):
+            v = np.array([H["per_subject"][s].get(k, np.nan) for s in subs], float)
+            if np.all(np.isnan(v)):
+                continue
+            ax.bar(j, np.nanmean(v), 0.62, color=col)
+            ax.plot(np.full(len(v), j) + np.linspace(-0.15, 0.15, len(v)), v, "o", ms=4, color=INK, alpha=0.6)
+            ax.text(j, np.nanmean(v) + 0.045, f"{np.nanmean(v):.2f}", ha="center", fontsize=9, fontweight="bold")
+        ax.axhline(0.25, color=MUTED, ls="--", lw=1)
+        ax.set_xticks(range(len(arms)), [a[1].replace(" + ", "\n+ ").replace("v1 ", "v1\n") for a in arms], fontsize=8)
+        ax.set_ylim(0, 1.0); ax.grid(axis="x", visible=False); ax.set_ylabel("balanced accuracy (held-out folds)")
+        ax.set_title(f"(d) Real EEG (HGD subjects {', '.join(subs)}; development, train-split CV)", loc="left", fontsize=10)
+    else:
+        ax.set_title("(d) Real EEG: not run", loc="left", fontsize=10)
+    fig.savefig(OUT / "fig10_critique_and_v2.png", dpi=150)
+    plt.close(fig)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(); ap.add_argument("--diag", default=None, help="dir with diag10.json, diag10b.json")
     a = ap.parse_args(argv)
@@ -376,6 +468,7 @@ def main(argv=None):
     fig_drift()
     fig_screen11()
     fig_calib_p1()
+    fig_v2()
     print("wrote", sorted(p.name for p in OUT.glob("*.png")))
 
 

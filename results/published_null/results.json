@@ -1,0 +1,554 @@
+{
+ "model": "vendor FastResonanceNetwork (published linear bank), N = 16, published training loop",
+ "generators": "DEVIATION 24 (calib_p1), frozen difficulty",
+ "seeds": [
+  3200,
+  3201,
+  3202,
+  3203,
+  3204,
+  3205,
+  3206,
+  3207,
+  3208,
+  3209
+ ],
+ "summary": {
+  "G0": {
+   "n": 10,
+   "means": {
+    "power": 0.24937499999999999,
+    "sync": 0.2425,
+    "surrogate": 0.24562499999999998,
+    "sync_imag": 0.24375
+   },
+   "contrasts": {
+    "sync - surrogate (the paper's phase contrast)": {
+     "mean": -0.0031250000000000054,
+     "ci90": [
+      -0.02547503831166714,
+      0.019225038311667126
+     ],
+     "p_signflip": 0.84375,
+     "n_pos": 4
+    },
+    "sync - power": {
+     "mean": -0.0068750000000000035,
+     "ci90": [
+      -0.025066362659178852,
+      0.011316362659178847
+     ],
+     "p_signflip": 0.546875,
+     "n_pos": 4
+    },
+    "surrogate - power": {
+     "mean": -0.0037499999999999977,
+     "ci90": [
+      -0.015850821102418453,
+      0.008350821102418459
+     ],
+     "p_signflip": 0.63671875,
+     "n_pos": 4
+    },
+    "sync_imag - 0.25 (chance)": {
+     "mean": -0.00625,
+     "ci90": [
+      -0.014076590820571779,
+      0.0015765908205717782
+     ],
+     "p_signflip": 0.2265625,
+     "n_pos": 3
+    }
+   }
+  },
+  "G1": {
+   "n": 10,
+   "means": {
+    "power": 0.58375,
+    "sync": 0.6275,
+    "surrogate": 0.31875,
+    "sync_imag": 0.605625
+   },
+   "contrasts": {
+    "sync - surrogate (the paper's phase contrast)": {
+     "mean": 0.30875,
+     "ci90": [
+      0.2658411893449653,
+      0.35165881065503474
+     ],
+     "p_signflip": 0.001953125,
+     "n_pos": 10
+    },
+    "sync - power": {
+     "mean": 0.04375,
+     "ci90": [
+      0.008128876729158345,
+      0.07937112327084164
+     ],
+     "p_signflip": 0.0625,
+     "n_pos": 7
+    },
+    "surrogate - power": {
+     "mean": -0.265,
+     "ci90": [
+      -0.2894056765204101,
+      -0.2405943234795899
+     ],
+     "p_signflip": 0.001953125,
+     "n_pos": 0
+    },
+    "sync_imag - 0.25 (chance)": {
+     "mean": 0.35562499999999997,
+     "ci90": [
+      0.3293627070782261,
+      0.3818872929217738
+     ],
+     "p_signflip": 0.001953125,
+     "n_pos": 10
+    }
+   }
+  }
+ },
+ "rows": [
+  {
+   "gen": "G0",
+   "seed": 3201,
+   "arms": {
+    "power": {
+     "bal_acc": 0.225,
+     "best_epoch": 28
+    },
+    "sync": {
+     "bal_acc": 0.21875,
+     "best_epoch": 1
+    },
+    "surrogate": {
+     "bal_acc": 0.2,
+     "best_epoch": 0
+    },
+    "sync_imag": {
+     "bal_acc": 0.23125,
+     "best_epoch": 2
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3200,
+   "arms": {
+    "power": {
+     "bal_acc": 0.26875,
+     "best_epoch": 24
+    },
+    "sync": {
+     "bal_acc": 0.2125,
+     "best_epoch": 12
+    },
+    "surrogate": {
+     "bal_acc": 0.23750000000000002,
+     "best_epoch": 0
+    },
+    "sync_imag": {
+     "bal_acc": 0.21875,
+     "best_epoch": 3
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3202,
+   "arms": {
+    "power": {
+     "bal_acc": 0.25,
+     "best_epoch": 17
+    },
+    "sync": {
+     "bal_acc": 0.28125,
+     "best_epoch": 1
+    },
+    "surrogate": {
+     "bal_acc": 0.22499999999999998,
+     "best_epoch": 0
+    },
+    "sync_imag": {
+     "bal_acc": 0.25625,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3203,
+   "arms": {
+    "power": {
+     "bal_acc": 0.23124999999999998,
+     "best_epoch": 13
+    },
+    "sync": {
+     "bal_acc": 0.2375,
+     "best_epoch": 1
+    },
+    "surrogate": {
+     "bal_acc": 0.25,
+     "best_epoch": 11
+    },
+    "sync_imag": {
+     "bal_acc": 0.23750000000000002,
+     "best_epoch": 1
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3204,
+   "arms": {
+    "power": {
+     "bal_acc": 0.25625,
+     "best_epoch": 15
+    },
+    "sync": {
+     "bal_acc": 0.25,
+     "best_epoch": 3
+    },
+    "surrogate": {
+     "bal_acc": 0.24375000000000002,
+     "best_epoch": 17
+    },
+    "sync_imag": {
+     "bal_acc": 0.2625,
+     "best_epoch": 3
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3205,
+   "arms": {
+    "power": {
+     "bal_acc": 0.275,
+     "best_epoch": 43
+    },
+    "sync": {
+     "bal_acc": 0.30625,
+     "best_epoch": 21
+    },
+    "surrogate": {
+     "bal_acc": 0.28750000000000003,
+     "best_epoch": 17
+    },
+    "sync_imag": {
+     "bal_acc": 0.25625,
+     "best_epoch": 7
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3206,
+   "arms": {
+    "power": {
+     "bal_acc": 0.21875000000000003,
+     "best_epoch": 64
+    },
+    "sync": {
+     "bal_acc": 0.225,
+     "best_epoch": 1
+    },
+    "surrogate": {
+     "bal_acc": 0.225,
+     "best_epoch": 9
+    },
+    "sync_imag": {
+     "bal_acc": 0.23750000000000002,
+     "best_epoch": 2
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3207,
+   "arms": {
+    "power": {
+     "bal_acc": 0.25,
+     "best_epoch": 52
+    },
+    "sync": {
+     "bal_acc": 0.2375,
+     "best_epoch": 14
+    },
+    "surrogate": {
+     "bal_acc": 0.2375,
+     "best_epoch": 0
+    },
+    "sync_imag": {
+     "bal_acc": 0.25,
+     "best_epoch": 1
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3208,
+   "arms": {
+    "power": {
+     "bal_acc": 0.28125,
+     "best_epoch": 25
+    },
+    "sync": {
+     "bal_acc": 0.21875,
+     "best_epoch": 0
+    },
+    "surrogate": {
+     "bal_acc": 0.3125,
+     "best_epoch": 0
+    },
+    "sync_imag": {
+     "bal_acc": 0.25,
+     "best_epoch": 3
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3209,
+   "arms": {
+    "power": {
+     "bal_acc": 0.23750000000000002,
+     "best_epoch": 27
+    },
+    "sync": {
+     "bal_acc": 0.2375,
+     "best_epoch": 10
+    },
+    "surrogate": {
+     "bal_acc": 0.2375,
+     "best_epoch": 0
+    },
+    "sync_imag": {
+     "bal_acc": 0.2375,
+     "best_epoch": 1
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3200,
+   "arms": {
+    "power": {
+     "bal_acc": 0.54375,
+     "best_epoch": 78
+    },
+    "sync": {
+     "bal_acc": 0.625,
+     "best_epoch": 19
+    },
+    "surrogate": {
+     "bal_acc": 0.27499999999999997,
+     "best_epoch": 1
+    },
+    "sync_imag": {
+     "bal_acc": 0.625,
+     "best_epoch": 46
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3201,
+   "arms": {
+    "power": {
+     "bal_acc": 0.59375,
+     "best_epoch": 79
+    },
+    "sync": {
+     "bal_acc": 0.5875,
+     "best_epoch": 50
+    },
+    "surrogate": {
+     "bal_acc": 0.375,
+     "best_epoch": 39
+    },
+    "sync_imag": {
+     "bal_acc": 0.54375,
+     "best_epoch": 63
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3202,
+   "arms": {
+    "power": {
+     "bal_acc": 0.53125,
+     "best_epoch": 79
+    },
+    "sync": {
+     "bal_acc": 0.6625,
+     "best_epoch": 26
+    },
+    "surrogate": {
+     "bal_acc": 0.30625,
+     "best_epoch": 13
+    },
+    "sync_imag": {
+     "bal_acc": 0.5812499999999999,
+     "best_epoch": 38
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3203,
+   "arms": {
+    "power": {
+     "bal_acc": 0.6187499999999999,
+     "best_epoch": 74
+    },
+    "sync": {
+     "bal_acc": 0.5812499999999999,
+     "best_epoch": 17
+    },
+    "surrogate": {
+     "bal_acc": 0.2875,
+     "best_epoch": 7
+    },
+    "sync_imag": {
+     "bal_acc": 0.6187499999999999,
+     "best_epoch": 25
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3204,
+   "arms": {
+    "power": {
+     "bal_acc": 0.5687500000000001,
+     "best_epoch": 68
+    },
+    "sync": {
+     "bal_acc": 0.65625,
+     "best_epoch": 22
+    },
+    "surrogate": {
+     "bal_acc": 0.275,
+     "best_epoch": 0
+    },
+    "sync_imag": {
+     "bal_acc": 0.6187499999999999,
+     "best_epoch": 47
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3205,
+   "arms": {
+    "power": {
+     "bal_acc": 0.575,
+     "best_epoch": 74
+    },
+    "sync": {
+     "bal_acc": 0.6875,
+     "best_epoch": 28
+    },
+    "surrogate": {
+     "bal_acc": 0.28125,
+     "best_epoch": 10
+    },
+    "sync_imag": {
+     "bal_acc": 0.675,
+     "best_epoch": 78
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3206,
+   "arms": {
+    "power": {
+     "bal_acc": 0.625,
+     "best_epoch": 67
+    },
+    "sync": {
+     "bal_acc": 0.575,
+     "best_epoch": 28
+    },
+    "surrogate": {
+     "bal_acc": 0.39375,
+     "best_epoch": 47
+    },
+    "sync_imag": {
+     "bal_acc": 0.55625,
+     "best_epoch": 28
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3207,
+   "arms": {
+    "power": {
+     "bal_acc": 0.61875,
+     "best_epoch": 64
+    },
+    "sync": {
+     "bal_acc": 0.6437499999999999,
+     "best_epoch": 21
+    },
+    "surrogate": {
+     "bal_acc": 0.35625,
+     "best_epoch": 38
+    },
+    "sync_imag": {
+     "bal_acc": 0.65,
+     "best_epoch": 31
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3208,
+   "arms": {
+    "power": {
+     "bal_acc": 0.63125,
+     "best_epoch": 69
+    },
+    "sync": {
+     "bal_acc": 0.675,
+     "best_epoch": 66
+    },
+    "surrogate": {
+     "bal_acc": 0.31875,
+     "best_epoch": 17
+    },
+    "sync_imag": {
+     "bal_acc": 0.6375,
+     "best_epoch": 37
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3209,
+   "arms": {
+    "power": {
+     "bal_acc": 0.53125,
+     "best_epoch": 68
+    },
+    "sync": {
+     "bal_acc": 0.58125,
+     "best_epoch": 30
+    },
+    "surrogate": {
+     "bal_acc": 0.31875,
+     "best_epoch": 8
+    },
+    "sync_imag": {
+     "bal_acc": 0.55,
+     "best_epoch": 50
+    }
+   }
+  }
+ ]
+}

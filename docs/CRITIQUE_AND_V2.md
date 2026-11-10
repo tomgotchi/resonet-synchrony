@@ -58,7 +58,8 @@ each oscillator's series by a fixed lag (74-1056 samples). Because the states ar
 all cross-terms between projections. So the contrast shows that *cross-covariance between projections is
 informative*, which is true whenever classes differ in source power.
 
-Test on synthetic data with known ground truth: PENDING (filled in below, section 1.6).
+Section 1.6 tests this on data with known ground truth: the contrast is +0.31 when the classes carry no phase
+information at all.
 
 ### 1.4 The bandwidth finding changed two things at once
 The paper reads "restricted vs full band" as the effect of high gamma ("the same experiment ... changing only the
@@ -82,13 +83,33 @@ low-pass the full cache at 48 Hz and keep `decim = 2`.
   dilution penalty: DEVIATION 24).
 
 ### 1.6 The published code on data with known ground truth
-PENDING
+`scripts/published_null_test.py`: the published linear model (`FastResonanceNetwork`, N = 16) and the published
+training loop, on simulated HGD-like trials (16 channels, 4.5 s, 4 classes, 80 + 40 trials per class, high-passed
+at 4 Hz like the real cache). Ten datasets per generator, seeds 3200-3209. Test balanced accuracy:
+
+| generator | power | sync | surrogate | sync_imag | **sync - surrogate** |
+|---|---|---|---|---|---|
+| G0: classes carry nothing | 0.249 | 0.242 | 0.246 | 0.244 | -0.003 [-0.025, +0.019] |
+| **G1: classes differ only in source power** | 0.584 | 0.627 | 0.319 | 0.606 | **+0.309 [+0.266, +0.352], 10/10** |
+| HGD, as published (linear / nonlinear bank) | 0.526 / 0.533 | 0.528 / 0.530 | 0.378 / 0.367 | - | +0.150 / +0.163 |
+
+(90% CI. G1: four independent narrowband sources with random phases; the class is which source is 15% weaker. There
+is no phase relation between anything.)
+
+- **The paper's "phase" contrast is +0.31 on data with no phase information.** A power-only world reproduces the
+  whole published pattern: sync about equal to power, surrogate near chance.
+- **`sync_imag` is not robust to volume conduction here.** The imaginary-coherence readout that the code calls
+  "volume-conduction-robust" decodes power-only data at 0.61. With a complex encoder, real and imaginary parts
+  of the coherence both mix zero-lag covariances.
+- A first run without the 4 Hz high-pass was discarded (`partial_UNFILTERED_discarded.json`): the simulated sensor
+  noise then drove the 0.2-1.6 Hz oscillators at resonance, which cannot happen on the real cache.
 
 ## Part 2. What this means for the manuscript
 These are the authors' decisions. My reading of what the evidence supports:
 - **Finding 1** ("phase synchronization carries capacity-controlled class information beyond band power") is not
-  supported as worded. Supported: *pairwise second-order features of learned spatial projections carry class
-  information that per-projection power does not; a fixed-lag surrogate that removes them costs 0.10-0.16.*
+  supported as worded. Supported: *a fixed-lag surrogate that removes the cross-terms between learned spatial
+  projections costs 0.15-0.16 accuracy.* The same happens when classes differ only in source power (1.6), so the
+  result does not show phase synchronization.
 - **"Resonance", "Hopf oscillator", "PLV"** describe the equations, not the trained model's behaviour on this
   data. State the oscillator frequencies in Hz.
 - **Finding 2** (high gamma) needs the same-sampling-rate control before it can be claimed.

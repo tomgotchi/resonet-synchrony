@@ -101,11 +101,12 @@ def main(argv=None):
                trained_f0_hz=[min(r["f0_hz_min"] for r in ck), max(r["f0_hz_max"] for r in ck)] if ck else None,
                trained_bw_hz=[min(r["bw_hz_min"] for r in ck), max(r["bw_hz_max"] for r in ck)] if ck else None,
                init_f0_hz=[0.5 * H * FS / (2 * np.pi), 4.0 * H * FS / (2 * np.pi)],
+               trained_f0_hz_all=sorted(float(o * H * FS / (2 * np.pi)) for r in ck for o in r["omega"]),
                per_subject=[{k: v for k, v in r.items() if k not in ("omega", "mu")} for r in ck],
                response_subject_1=response(ck[0]["omega"], ck[0]["mu"]) if ck else None, behaviour=behaviour())
     (ROOT / "results").mkdir(exist_ok=True)
     (ROOT / "results" / "published_forensics.json").write_text(json.dumps(out, indent=1))
-    print(json.dumps({k: v for k, v in out.items() if k != "per_subject"}, indent=1))
+    print(json.dumps({k: v for k, v in out.items() if k not in ("per_subject", "trained_f0_hz_all")}, indent=1))
 
 
 if __name__ == "__main__":
