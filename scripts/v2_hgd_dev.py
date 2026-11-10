@@ -4,10 +4,12 @@ The test split is never given to a model, so v2 can be tuned here without touchi
 confirmatory test (or the frozen Phase 1 analysis) uses. Development subjects default to 1-6; subjects 7-14 are
 left untouched for a later one-shot evaluation with a frozen v2 configuration.
 
-  python scripts/v2_hgd_dev.py --subjects 1-6 [--cache DIR] [--folds 5] [--refs] [--bands 12 --spatial 4 --fmax 100]
+  python scripts/v2_hgd_dev.py --subjects 1-6 [--cache DIR] [--folds 5] [--refs lin:sync+power,shallow]
+                               [--bands 12 --spatial 4 --fmax 100]
 
 Arms per fold: v2:power, v2:cov, v2:cov+lag, v2:cov+lag_null; baselines FBLV and FBCSP with shrinkage LDA;
-with --refs also the Hz-bank lin:sync+power (v1) and the published ShallowConvNet (slow on CPU).
+--refs adds reference arms on the same folds, e.g. the Hz-bank lin:sync+power (v1) and the published
+ShallowConvNet (`shallow`, slow on CPU). Arms can be added to finished subjects later (resumable per fold and arm).
 Writes results/v2_hgd_dev/<tag>/subj_XX.json and summary.json (means only; no inference: this is development).
 Caveat: the loader's channel z-scoring uses all capped training trials, so a held-out fold shares normalisation
 statistics (no labels) with its training folds."""
@@ -26,7 +28,6 @@ from resonet_sync.run import P1, V2_HGD, build, load_config, provenance, write_j
 from resonet_sync.train import Split, evaluate, train  # noqa: E402
 
 V2_ARMS = ["v2:power", "v2:cov", "v2:cov+lag", "v2:cov+lag_null"]
-REFS = ["lin:sync+power", "shallow"]
 
 
 def folds(y, k, seed):
@@ -41,7 +42,7 @@ def folds(y, k, seed):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--subjects", default="1-6"); ap.add_argument("--cache", default=None)
-    ap.add_argument("--folds", type=int, default=5); ap.add_argument("--refs", action="store_true")
+    ap.add_argument("--folds", type=int, default=5); ap.add_argument("--refs", default="")
     ap.add_argument("--bands", type=int, default=V2_HGD["n_bands"]); ap.add_argument("--spatial", type=int, default=V2_HGD["n_spatial"])
     ap.add_argument("--fmin", type=float, default=V2_HGD["band"][0]); ap.add_argument("--fmax", type=float, default=V2_HGD["band"][1])
     ap.add_argument("--epochs", type=int, default=P1["epochs"]); ap.add_argument("--threads", type=int, default=0)
@@ -54,7 +55,7 @@ def main(argv=None):
     cache = a.cache or load_config().get("paths", {}).get("hgd_cache_hg")
     dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     fs = data_hgd.FS_NATIVE / cfg["decim"]
-    arms = V2_ARMS + (REFS if a.refs else [])
+    arms = V2_ARMS + [r for r in a.refs.split(",") if r]
     lo, hi = (a.subjects.split("-") + [a.subjects])[:2]
     crit = torch.nn.CrossEntropyLoss()
     for s in range(int(lo), int(hi) + 1):

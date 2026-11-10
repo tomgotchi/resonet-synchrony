@@ -63,6 +63,7 @@ def run_one(job):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(); ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--gens", default=",".join(GENS), help="subset to run now (the summary covers what exists)")
     a = ap.parse_args(argv)
     OUT.mkdir(parents=True, exist_ok=True)
     diff = json.loads(CP.DIFF_FILE.read_text())["chosen"]
@@ -71,12 +72,14 @@ def main(argv=None):
     done = {(r["gen"], r["seed"]) for r in rows}
     os.environ.setdefault("OMP_NUM_THREADS", "1")
     with Pool(a.workers) as p:
-        for r in p.imap_unordered(run_one, [(g, s, diff) for g in GENS for s in SEEDS if (g, s) not in done]):
+        for r in p.imap_unordered(run_one, [(g, s, diff) for g in a.gens.split(",") for s in SEEDS if (g, s) not in done]):
             rows.append(r); part.write_text(json.dumps(rows))
             print(r["gen"], r["seed"], {k: round(v["bal_acc"], 3) for k, v in r["arms"].items()}, flush=True)
     summ = {}
     for g in GENS:
         rs = [r for r in rows if r["gen"] == g]
+        if not rs:
+            continue
         S = dict(n=len(rs), means={k: float(np.mean([r["arms"][k]["bal_acc"] for r in rs])) for k in ARMS}, contrasts={})
         for name, (x, y) in {"sync - surrogate (the paper's phase contrast)": ("sync", "surrogate"),
                              "sync - power": ("sync", "power"), "surrogate - power": ("surrogate", "power"),
