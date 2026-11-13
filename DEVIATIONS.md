@@ -707,3 +707,27 @@ Written before the closed-form path was run on its synthetic seeds or on HGD sub
   test. Proposed frozen configuration: closed-form path, 12 bands 4-100 Hz x 8 CSP filters, 0.5 s skip, shrinkage
   LDA; contrasts: v2 power vs FBCSP (equivalence), lag block alone vs its null, and L; data: subjects 7-14 or the
   test recordings. Not run; needs Tom's go-ahead because it uses up untouched data.
+
+#### DEVIATION 27, addendum 3 (2026-11-13): review-board findings on v2, written before the new runs
+Board session 2026-11-13 (`docs/REVIEW_BOARD.md`). Its checks, re-run by the judge, show:
+- **Neither "lag block alone above its null" nor L > 0 is evidence that coupling differs between classes.**
+  - A world with the *same* lagged coupling in every class, where only the amplitude of the coupled sources depends
+    on the class, gives lag block alone 0.76 and L = +0.037 (Halvorsen, Zhao). The real-data pattern is 0.74 and
+    +0.036.
+  - L is positive (+0.055 to +0.075) when the lag block is only a noisy linear function of power, with no unique
+    information (Halvorsen). Its noise null controls dimension, not redundancy.
+  - The "regress out power" control (`im_resid`) scores about 0.32-0.35 both with and without unique lag
+    information (Zhao; judge), so it decides nothing.
+- **The immunity claim was too strong.** With coherency normalisation the lag block responds to the power of
+  unrelated sources as soon as any lagged structure exists, even a class-independent one (Echeverria: 0.58-0.61).
+  The unnormalised imaginary cross-spectrum stays at chance there (judge: 0.24).
+- **Consequences.**
+  - The mapping in addendum 2 is withdrawn: L is **not** pre-registered as a confirmatory contrast, and no
+    confirmatory real-data test of the lag block is run. The untouched data stay untouched.
+  - Added now: an unnormalised lag block (`im_raw`, `im_raw_null` in `v2_probe.py`) and two trap generators
+    (`v2_study.make_trap`: `T_amp`, `T_bg`), run on new seeds 3800-3809 (`scripts/v2_probe_run.py --traps`).
+  - The development analysis on HGD subjects 1-6 is repeated with the unnormalised lag block
+    (`--hgd --tag raw`; same folds; descriptive). Reading fixed in advance: if `im_raw` alone falls to chance, the
+    earlier 0.74 came from power changes of unrelated sources through the normalisation; if it stays well above
+    chance, the sources that movement modulates have lagged structure themselves. Neither outcome shows a change
+    in coupling.

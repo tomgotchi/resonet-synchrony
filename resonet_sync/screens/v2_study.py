@@ -60,6 +60,47 @@ def make_dataset(gen, seed, diff):
     return (Xtr - mu) / sd, ytr, (Xte - mu) / sd, yte, Str, Ste
 
 
+# ---- validity traps found by the review board (2026-11-13): no coupling differs between classes in either of them
+def _lag_pair(rng, n, f, T, rho):
+    a = CP._band_noise(rng, n, f, T) / CP._scale(f)
+    b = rho * -np.imag(signal.hilbert(a, axis=-1)) + np.sqrt(1 - rho ** 2) * CP._band_noise(rng, n, f, T) / CP._scale(f)
+    return a, b
+
+
+def _mix(rng, A, S):
+    n, T = S.shape[0], S.shape[-1]
+    bg = np.cumsum(rng.standard_normal((n, CP.C, T)), axis=-1) * 0.05
+    bg = signal.sosfiltfilt(signal.butter(2, 4.0, "high", fs=CP.FS, output="sos"), bg, axis=-1)
+    return (np.einsum("ck,nkt->nct", A, S) + bg + rng.standard_normal((n, CP.C, T))).astype(np.float32)
+
+
+def make_trap(kind, seed, rho=0.6, erd=0.30):
+    """T_amp   two source pairs with the SAME 90-deg lagged coupling in every class; the class only scales each
+               pair's amplitude (Halvorsen, Zhao). Coupling is constant; power changes.
+       T_bg    power-only classes (which independent source is weaker) plus one class-INDEPENDENT lagged pair in
+               the background (Echeverria). Nothing lagged depends on the class.
+    Returns Xtr, ytr, Xte, yte (channels standardised with train statistics)."""
+    rng = np.random.default_rng([seed, 77 if kind == "T_amp" else 7])
+    T = int(CP.T_S * CP.FS)
+    ytr, yte = np.repeat(np.arange(4), CP.N_TR), np.repeat(np.arange(4), CP.N_TE)
+    A = rng.standard_normal((CP.C, 4 if kind == "T_amp" else 6))
+
+    def trials(y):
+        n = len(y)
+        if kind == "T_amp":
+            S = np.stack([*_lag_pair(rng, n, CP.SRC_F[0], T, rho), *_lag_pair(rng, n, CP.SRC_F[2], T, rho)], 1)
+            S[:, 0:2] *= (1 - erd * (y // 2))[:, None, None]
+            S[:, 2:4] *= (1 - erd * (y % 2))[:, None, None]
+        else:
+            S = CP._sources(rng, n, T)
+            S[np.arange(n), y] *= (1.0 - 0.4)
+            S = np.concatenate([S, np.stack(_lag_pair(rng, n, 11.0, T, 0.9), 1)], 1)
+        return _mix(rng, A, S)
+    Xtr, Xte = trials(ytr), trials(yte)
+    mu, sd = Xtr.mean(axis=(0, 2), keepdims=True), Xtr.std(axis=(0, 2), keepdims=True)
+    return (Xtr - mu) / sd, ytr, (Xte - mu) / sd, yte
+
+
 def oracle_features(gen, S):
     if gen != "G2i":
         return CP.oracle_features(gen, S)

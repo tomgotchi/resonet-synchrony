@@ -26,7 +26,11 @@ from .v2 import CrossSpectralBank, V2Readout, csp_init_
 
 FEATURE_SETS = {"power": ("power",), "power+re": ("power", "re"), "power+re+im": ("power", "re", "im"),
                 "power+re+im_null": ("power", "re", "im_null"), "im": ("im",), "im_null": ("im_null",),
-                "im_evoked": ("im_evoked",)}
+                "im_evoked": ("im_evoked",),
+                # board 2026-11-13: UNNORMALISED imaginary cross-spectrum. The coherency normalisation divides by the
+                # projections' powers, so `im` responds to the power of unrelated sources whenever any lagged
+                # structure exists, even a class-independent one. `im_raw` does not.
+                "im_raw": ("im_raw",), "im_raw_null": ("im_raw_null",)}
 
 
 def _same_class_partner(y, rng):
@@ -43,7 +47,7 @@ def blocks(bank, head, X, y, seed, batch=64):
     rng = np.random.default_rng(seed)
     g = torch.Generator().manual_seed(int(seed))
     partner = _same_class_partner(np.asarray(y), rng)
-    out = {k: [] for k in ("power", "re", "im", "im_null", "im_evoked")}
+    out = {k: [] for k in ("power", "re", "im", "im_null", "im_evoked", "im_raw", "im_raw_null")}
     X = torch.as_tensor(X, dtype=torch.float32)
     skip = head.skip
     with torch.no_grad():
@@ -54,9 +58,13 @@ def blocks(bank, head, X, y, seed, batch=64):
             p, coh = head._coherency(z)
             out["power"].append(torch.log(p).reshape(B, -1)); out["re"].append(coh.real.reshape(B, -1))
             out["im"].append(coh.imag.reshape(B, -1))
+            raw = lambda zz: (torch.einsum("btfs,btfr->bfsr", zz, zz.conj()) / T)[:, :, head.iu, head.ju].imag.reshape(B, -1)
+            out["im_raw"].append(raw(z))
             sh = torch.randint(0, T, (B, 1, bank.F, bank.S), generator=g)
             idx = (torch.arange(T)[None, :, None, None] - sh) % T
-            out["im_null"].append(head._coherency(torch.gather(z, 1, idx))[1].imag.reshape(B, -1))
+            zr = torch.gather(z, 1, idx)
+            out["im_null"].append(head._coherency(zr)[1].imag.reshape(B, -1))
+            out["im_raw_null"].append(raw(zr))
             zp = bank(X[partner[s:s + batch]])
             zp = zp[:, skip:] if zp.shape[1] > 2 * skip else zp
             Cx = torch.einsum("btfs,btfr->bfsr", z, zp.conj()) / T                 # projection s (trial n) x r (partner)

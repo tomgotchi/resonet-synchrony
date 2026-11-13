@@ -67,6 +67,36 @@ def synthetic(workers):
     print("L passes:", ok)
 
 
+def trap_one(job):
+    kind, seed = job
+    import torch
+    torch.set_num_threads(1)
+    from resonet_sync import data_hgd
+    from resonet_sync.screens import calib_p1 as CP, v2_study as V
+    from resonet_sync.v2_probe import probe
+    Xtr, ytr, Xte, yte = V.make_trap(kind, seed)
+    return dict(kind=kind, seed=seed, acc=probe(Xtr, ytr, Xte, yte, data_hgd.train_val_split(ytr, 0.15, 42), CP.FS, **SYN))
+
+
+def traps(workers):
+    """Review board 2026-11-13: worlds in which NO coupling differs between classes. A statistic that is offered as
+    evidence of class-dependent coupling must stay at chance (alone) or at zero (L) in both."""
+    seeds = list(range(3800, 3810))
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    with Pool(workers) as p:
+        rows = p.map(trap_one, [(k, s) for k in ("T_amp", "T_bg") for s in seeds])
+    summ = {}
+    for k in ("T_amp", "T_bg"):
+        rs = [r["acc"] for r in rows if r["kind"] == k]
+        L = np.array([r["L"] for r in rs])
+        summ[k] = dict(n=len(rs), means={q: float(np.mean([r[q] for r in rs])) for q in rs[0]},
+                       L=dict(mean=float(L.mean()), ci90=t_ci(L, 0.90), p_signflip=sign_flip_p(L), n_pos=int((L > 0).sum())))
+        print(k, {q: round(v, 3) for q, v in summ[k]["means"].items()})
+        print(f"   L {L.mean():+.3f} CI90{np.round(t_ci(L, 0.90), 3)} p {sign_flip_p(L):.4f} +{(L > 0).sum()}/{len(L)}")
+    OUT.mkdir(parents=True, exist_ok=True)
+    (OUT / "traps.json").write_text(json.dumps(dict(config=SYN, seeds=seeds, summary=summ, rows=rows), indent=1))
+
+
 def hgd(a):
     import importlib.util
     import torch
@@ -77,7 +107,7 @@ def hgd(a):
     spec = importlib.util.spec_from_file_location("dev", ROOT / "scripts" / "v2_hgd_dev.py")
     dev = importlib.util.module_from_spec(spec); spec.loader.exec_module(dev)
     cfg = dict(HGD, n_bands=a.bands, n_spatial=a.spatial, band=[a.fmin, a.fmax])
-    tag = f"b{a.bands}s{a.spatial}_{a.fmin:g}-{a.fmax:g}Hz"
+    tag = f"b{a.bands}s{a.spatial}_{a.fmin:g}-{a.fmax:g}Hz" + (f"_{a.tag}" if a.tag else "")
     out = OUT / f"hgd_{tag}"; out.mkdir(parents=True, exist_ok=True)
     cache = a.cache or load_config().get("paths", {}).get("hgd_cache_hg")
     fs = data_hgd.FS_NATIVE / P1["decim"]
@@ -115,6 +145,7 @@ def hgd(a):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--synthetic", action="store_true"); ap.add_argument("--hgd", action="store_true")
+    ap.add_argument("--traps", action="store_true"); ap.add_argument("--tag", default="")
     ap.add_argument("--workers", type=int, default=3); ap.add_argument("--threads", type=int, default=1)
     ap.add_argument("--subjects", default="1-6"); ap.add_argument("--cache", default=None)
     ap.add_argument("--folds", type=int, default=5)
@@ -123,6 +154,8 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.synthetic:
         synthetic(a.workers)
+    if a.traps:
+        traps(a.workers)
     if a.hgd:
         hgd(a)
 
