@@ -26,6 +26,9 @@ generated internally (hippocampal wheel running), and not where it is stimulus-d
     construction 3).
   - Its one-pole resonators leak across bands on real EEG. A higher-order option (`order = 4`) fixes most of that;
     the lag results do not change, v2 power moves from 0.881 to 0.908 (mostly one subject).
+  - Artefact control: with only the 44 sensors over sensorimotor cortex the lag result is unchanged (0.70), and
+    with clean bands it sits at 10-31 Hz. That fits mu/beta rhythms better than eye or edge-of-cap muscle artefacts;
+    muscle activity at central sensors is not excluded.
 - **Synthetic mechanism programme (screens 1-11)** is closed; **hc-5** waits for its QC (Gate 0), and Gate 1 v2
   fails (DEVIATION 26).
 

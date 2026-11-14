@@ -209,3 +209,14 @@ def test_higher_order_resonator_is_a_cascade_with_the_same_3db_width_and_steeper
             assert abs(gup ** 2 - 0.5) < 0.03 and abs(gdn ** 2 - 0.5) < 0.03          # -3 dB at f0 +/- bw
         far1, far4 = gain(b1, 5.0)[0], gain(b4, 5.0)[0]                               # two octaves below the 20 Hz band
         assert far4 < 0.2 * far1                                                      # much steeper skirt
+
+
+def test_central44_is_a_valid_sensor_subset():
+    import importlib.util
+    from pathlib import Path
+    p = Path(__file__).resolve().parent.parent / "scripts" / "v2_probe_run.py"
+    spec = importlib.util.spec_from_file_location("v2_probe_run", p)
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    idx = m.CENTRAL44
+    assert len(idx) == 44 and len(set(idx)) == 44 and min(idx) >= 0 and max(idx) < 128
+    assert 15 not in idx                                    # Cz (index 15 in the HGD order) is not in the selection

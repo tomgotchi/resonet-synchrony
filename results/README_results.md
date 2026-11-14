@@ -765,6 +765,14 @@ cross-validation inside the training recordings; no inference; no test recording
   before the run). v2 power 0.908 (order 1: 0.881); minus FBCSP +0.017, SD 0.047 (order 1: -0.010, SD 0.033);
   subject 5 alone moves from 0.881 to 0.994. Lag block alone 0.732, unnormalised 0.691, nulls 0.239 and 0.277;
   L +0.016 (6/6). The lag results do not depend on the leak; the decoder comparison depends on the resonator shape.
+- **Per-band profile with order 4** (`results/v2_probe/hgd_b12s8_4-100Hz_o4/controls.json`; exploratory). Lag block
+  alone 0.53-0.63 at 10-31 Hz, 0.31-0.36 at 4-7 Hz, 0.26-0.33 above 40 Hz (order 1: 0.35-0.40 above 40 Hz, mostly
+  leak). Power alone 0.68-0.79 at 10-31 Hz, 0.26-0.38 above 40 Hz. Subject 5's 75 Hz band alone scores 0.86.
+- **Artefact control with the 44 central sensors** (`results/v2_probe/hgd_b12s8_4-100Hz_o4_c44/`; reading fixed in
+  DEVIATION 27 addendum 5 before the run; values with all 128 sensors in brackets). Unnormalised lag block alone
+  0.696 (0.691), coherency lag block 0.753 (0.732), nulls 0.304 and 0.261, v2 power 0.920 (0.908), FBCSP 0.892
+  (0.891). The lag result does not need the sensors outside the sensorimotor region. Muscle activity at central
+  sensors and movement artefacts common to all sensors are not excluded.
 - **Synthetic study rerun on seeds 3700-3709** to add the unnormalised block (`results/v2_probe/synthetic.json`):
   all stored values reproduced exactly; unnormalised block alone G0 0.246, G1 0.260, G1r 0.248, G2 0.464, G2i 0.694.
 - **Non-identifiability, construction 3** (`docs/NONIDENTIFIABILITY.md`; `scripts/nonident_check.py`, check 4): a

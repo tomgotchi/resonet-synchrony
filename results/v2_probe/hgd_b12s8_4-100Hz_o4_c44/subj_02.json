@@ -1,0 +1,102 @@
+{
+ "subject": 2,
+ "config": {
+  "n_bands": 12,
+  "n_spatial": 8,
+  "band": [
+   4.0,
+   100.0
+  ],
+  "order": 4
+ },
+ "folds": {
+  "0": {
+   "power": 0.71875,
+   "power+re": 0.796875,
+   "power+re+im": 0.765625,
+   "power+re+im_null": 0.71875,
+   "im": 0.5625,
+   "im_null": 0.1875,
+   "im_evoked": 0.15625,
+   "im_raw": 0.46875,
+   "im_raw_null": 0.15625,
+   "L": 0.046875,
+   "R": 0.078125,
+   "FBCSP_LDA": 0.78125,
+   "FBLV_LDA": 0.75
+  },
+  "1": {
+   "power": 0.828125,
+   "power+re": 0.78125,
+   "power+re+im": 0.765625,
+   "power+re+im_null": 0.71875,
+   "im": 0.671875,
+   "im_null": 0.296875,
+   "im_evoked": 0.1875,
+   "im_raw": 0.625,
+   "im_raw_null": 0.265625,
+   "L": 0.046875,
+   "R": -0.046875,
+   "FBCSP_LDA": 0.828125,
+   "FBLV_LDA": 0.71875
+  },
+  "2": {
+   "power": 0.828125,
+   "power+re": 0.84375,
+   "power+re+im": 0.859375,
+   "power+re+im_null": 0.78125,
+   "im": 0.78125,
+   "im_null": 0.390625,
+   "im_evoked": 0.28125,
+   "im_raw": 0.609375,
+   "im_raw_null": 0.375,
+   "L": 0.078125,
+   "R": 0.015625,
+   "FBCSP_LDA": 0.8125,
+   "FBLV_LDA": 0.796875
+  },
+  "3": {
+   "power": 0.78125,
+   "power+re": 0.78125,
+   "power+re+im": 0.71875,
+   "power+re+im_null": 0.765625,
+   "im": 0.65625,
+   "im_null": 0.28125,
+   "im_evoked": 0.265625,
+   "im_raw": 0.609375,
+   "im_raw_null": 0.40625,
+   "L": -0.046875,
+   "R": 0.0,
+   "FBCSP_LDA": 0.75,
+   "FBLV_LDA": 0.6875
+  },
+  "4": {
+   "power": 0.765625,
+   "power+re": 0.734375,
+   "power+re+im": 0.796875,
+   "power+re+im_null": 0.6875,
+   "im": 0.65625,
+   "im_null": 0.203125,
+   "im_evoked": 0.171875,
+   "im_raw": 0.609375,
+   "im_raw_null": 0.28125,
+   "L": 0.109375,
+   "R": -0.03125,
+   "FBCSP_LDA": 0.703125,
+   "FBLV_LDA": 0.609375
+  }
+ },
+ "provenance": {
+  "git": "3c721035d228c88025a1d4296ddbea3777108e8a",
+  "code_dirty": false,
+  "utc": "2026-11-14T14:42:14+00:00",
+  "device": "cpu",
+  "gpu": null,
+  "torch": "2.14.1+cu130",
+  "cuda": "13.0",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "python": "3.13.17"
+ },
+ "channels": "central44"
+}

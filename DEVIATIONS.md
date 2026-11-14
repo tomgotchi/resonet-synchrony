@@ -788,6 +788,27 @@ Board session 2026-11-13 (`docs/REVIEW_BOARD.md`). Its checks, re-run by the jud
   - The per-band profile with order 4 (running, started after the order-4 outcome) is read together with it: lag
     information concentrated at 10-31 Hz fits mu/beta rhythms; information concentrated above 40 Hz would fit
     muscle activity.
+- **Outcome, central sensors** (2026-11-14; `results/v2_probe/hgd_b12s8_4-100Hz_o4_c44/`; all 128 sensors with
+  order 4 in brackets).
+  - Unnormalised lag block alone **0.696** (0.691); per subject 0.662, 0.584, 0.794, 0.759, 0.747, 0.631. Its
+    shift-null 0.304 (0.277). Coherency lag block 0.753 (0.732), shift-null 0.261 (0.239), evoked control 0.239
+    (0.254).
+  - v2 power 0.920 (0.908); FBCSP on the same 44 sensors 0.892 (0.891); power + re + im 0.908 (0.890).
+  - **Reading by the rule above:** 0.696 is above 0.50, so the sensors outside the sensorimotor region are not needed
+    for the lag result. Eye artefacts and muscle artefacts confined to the edge of the cap are unlikely to be its
+    main source. Muscle activity reaching central sensors and movement artefacts common to all sensors are not
+    excluded.
+- **Outcome, per-band profile with order 4** (exploratory; `results/v2_probe/hgd_b12s8_4-100Hz_o4/controls.json`;
+  one band at a time, mean over the six subjects; order-1 values in brackets).
+  - Lag block alone: 0.53-0.63 at 10-31 Hz (0.58-0.65); 0.31-0.36 at 4-7 Hz (0.32-0.41); **0.26-0.33 above 40 Hz**
+    (0.35-0.40). The unnormalised block gives the same profile (0.51-0.64; 0.31-0.37; 0.24-0.30).
+  - Power alone: 0.68-0.79 at 10-31 Hz (0.67-0.77); 0.26-0.38 above 40 Hz (0.32-0.42).
+  - So the apparent lag and power information above 40 Hz with order 1 was mostly leak from the mu/beta range. With
+    clean bands the lag information sits at 10-31 Hz, which by the reading of this addendum fits mu/beta rhythms and
+    not muscle activity.
+  - Subject 5 is the exception for power: its 75 Hz band alone scores 0.86 and its 100 Hz band 0.61 with order 4
+    (0.58 and 0.40 with order 1). That is where its gain of +0.113 in addendum 4 comes from. Whether this is
+    high-gamma activity or muscle activity is not decided by these data.
 
 | # | date | where | decision | reason |
 |---|---|---|---|---|

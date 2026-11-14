@@ -326,13 +326,20 @@ lag block (trap `T_bg`). The unnormalised block `im_raw` does not have that leak
 - The shared-key numbers of this rerun are identical to the first run (maximum difference 0).
 
 **Where the lag information sits, and two caveats.**
-- By band, the lag block alone scores 0.58-0.65 at 10-31 Hz, 0.32-0.41 at 4-7 Hz and 0.35-0.40 above 40 Hz; power
-  alone follows the same profile (0.67-0.77 at 10-31 Hz) (`scripts/v2_probe_controls.py`).
+- By band (one band at a time; `scripts/v2_probe_controls.py`; order-4 resonators, whose bands are clean enough to
+  label, see 4.5):
+
+  | band centre | 4-7 Hz | 10-31 Hz | above 40 Hz |
+  |---|---|---|---|
+  | lag block alone (coherency) | 0.31-0.36 | **0.53-0.63** | 0.26-0.33 |
+  | lag block alone (unnormalised) | 0.31-0.37 | **0.51-0.64** | 0.24-0.30 |
+  | power alone | 0.42-0.52 | 0.68-0.79 | 0.26-0.38 |
+
 - The simplest reading (Echeverria): mu/beta rhythms with a fixed lagged spatial structure (for example lagged
   source pairs or travelling waves) whose amplitude changes with the movement. Power and the lag block then change
   together.
-- **Caveat 1: band labels are approximate.** The one-pole resonators leak (4.5). The profile above was measured
-  with them.
+- **Caveat 1: the first version of this profile overstated the high bands.** With one-pole resonators the lag block
+  scored 0.35-0.40 above 40 Hz. Most of that was leak from the mu/beta range (4.5).
 - **Caveat 2: a timing offset between channels is excluded for the mu band only** (Asante). A fixed delay turns
   zero-lag covariance into imaginary cross-spectrum in proportion to frequency.
   - Fitted delays against the channel average are within about +/-0.2 ms (5-95% range; an upper bound, since real
@@ -340,8 +347,24 @@ lag block (trap `T_bg`). The unnormalised block `im_raw` does not have that leak
   - At 12.9 Hz, injected offsets of 0.1-1 ms leave the lag block's accuracy unchanged (0.719).
   - At 23.2 Hz, a 0.1 ms offset already produces 13-20% of the (small) class effect. For the beta band and above,
     a hardware timing offset is not excluded as a contributor.
-- **Not controlled: EMG and movement artefacts.** The movements are executed. No physiological claim should rest on
-  these numbers before a control on artefact-cleaned data (Echeverria).
+- **Caveat 3: artefacts, partly controlled.** The movements are executed, so eye, muscle and movement artefacts
+  can carry class information (Echeverria). One control was run, with its reading fixed before the run
+  (DEVIATION 27, addendum 5): the same analysis with **only the 44 sensors over sensorimotor cortex**, order-4
+  resonators.
+
+  | development folds, subjects 1-6, order 4 | all 128 sensors | 44 central sensors |
+  |---|---|---|
+  | FBCSP + LDA | 0.891 | 0.892 |
+  | v2 power | 0.908 | 0.920 |
+  | lag block alone (coherency) | 0.732 | 0.753 |
+  | lag block alone (unnormalised) | 0.691 | **0.696** |
+  | shift-nulls (coherency, unnormalised) | 0.239, 0.277 | 0.261, 0.304 |
+  | evoked control | 0.254 | 0.239 |
+
+  - Nothing is lost without the frontal, temporal, occipital and edge sensors. Eye artefacts and muscle artefacts
+    confined to the edge of the cap are therefore unlikely to be the main source of the lag result.
+  - Not excluded: muscle activity that reaches central sensors, and movement artefacts common to all sensors. A
+    control on artefact-cleaned data is still missing.
 
 ### 4.5 Front end: the resonators leak across bands, and a fix (board finding, Asante)
 `scripts/resonator_leakage.py`, DEVIATION 27 addendum 4 (reading fixed before the decoding run).
@@ -370,6 +393,10 @@ lag block (trap `T_bg`). The unnormalised block `im_raw` does not have that leak
 - **The decoder comparison depends on the resonator shape.** v2 power rose by 0.027, above the 0.02 mark fixed in
   advance. Most of it is one subject (subject 5: 0.881 -> 0.994; the other five: -0.012 to +0.031). So "v2 matches
   FBCSP" is the fair summary for either order, and neither difference is claimed on six development subjects.
+- **Where subject 5's gain comes from** (per-band profile, exploratory): its 75 Hz band alone scores 0.86 and its
+  100 Hz band 0.61 with order 4 (0.58 and 0.40 with order 1). The leak had buried high-frequency information in
+  this subject. Whether that is high-gamma activity or muscle activity is not decided here. In the other five
+  subjects single bands above 40 Hz score 0.19-0.52.
 - Adding the zero-lag and lag blocks to power now lowers accuracy slightly (0.890 against 0.908).
 - Order 4 costs four complex pole updates per component instead of one. The spatial projection still dominates.
 

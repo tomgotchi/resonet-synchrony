@@ -559,6 +559,12 @@ VERIFIED = the judge ran the member's script or its own check.
   change"): answered in the negative for second-order statistics. `docs/NONIDENTIFIABILITY.md`, construction 3: a
   class-dependent coupling strength or lag has the same cross-spectra as class-dependent non-negative gains of
   fixed generators (checked to 2e-16). **This construction has not been reviewed by the board.**
-- **Still pending:** the EMG / movement-artefact control (Echeverria); the band x sampling-rate control for the
-  manuscript (needs the full cache and a GPU; `scripts/bandwidth_control.py`, notebook section 4b).
+- **Accepted item "artefact control"** (Echeverria): partly done (DEVIATION 27 addendum 5, reading fixed before the
+  run). With only the 44 sensors over sensorimotor cortex the unnormalised lag block scores 0.696 (all sensors:
+  0.691) and v2 power 0.920 (0.908). With order-4 resonators the lag information sits at 10-31 Hz (0.51-0.64 per
+  band) and is near chance above 40 Hz (0.24-0.33). Both fit mu/beta rhythms better than eye or edge-of-cap muscle
+  artefacts. Not excluded: muscle activity at central sensors, movement artefacts common to all sensors. A control
+  on artefact-cleaned data is still missing.
+- **Still pending:** the band x sampling-rate control for the manuscript (needs the full cache and a GPU;
+  `scripts/bandwidth_control.py`, notebook section 4b).
 - **Untouched data:** still untouched. Only the training recordings of subjects 1-6 were read.
