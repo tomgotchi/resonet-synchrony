@@ -147,3 +147,29 @@ def test_csp_init_finds_the_class_specific_source():
     assert np.abs(corr - np.eye(4)).max() < 0.97                                    # no duplicated filters
     W = csp_filters(X, y, [(8.0, 12.0)], fs, 4)
     assert W.shape == (1, 4, C)
+
+
+def test_unnormalised_lag_block_ignores_unrelated_power_but_coherency_does_not():
+    """Review board 2026-11-13 (Echeverria): with a class-INDEPENDENT lagged pair present, the power of an unrelated
+    source changes the imaginary COHERENCY (through its normalisation) but not the unnormalised imaginary
+    cross-spectrum."""
+    from scipy import signal, stats
+    from resonet_sync.v2_probe import blocks
+    rng = np.random.default_rng(0)
+    n, C, T, fs = 80, 6, 1500, 250.0
+    bp = lambda x: signal.sosfilt(signal.butter(2, (8.5, 11.5), "band", fs=fs, output="sos"), x, axis=-1)
+    a = bp(rng.standard_normal((n, T + 500)))[:, 500:]
+    b = 0.9 * -np.imag(signal.hilbert(a, axis=-1)) + np.sqrt(1 - 0.81) * bp(rng.standard_normal((n, T + 500)))[:, 500:]
+    u = bp(rng.standard_normal((n, T + 500)))[:, 500:]
+    y = np.repeat([0, 1], n // 2)
+    A = rng.standard_normal((C, 3))
+    S = np.stack([a, b, u * (1 + 2.0 * y)[:, None]], 1)              # only the UNRELATED source depends on y
+    X = (np.einsum("ck,nkt->nct", A, S) * 8).astype(np.float32)
+    bank = CrossSpectralBank(C, n_bands=2, n_spatial=3, fs=fs, band=(9.0, 11.0)).eval()
+    head = V2Readout(2, 3, fs, kind="cov+lag", skip_s=0.5)
+    f = blocks(bank, head, X, y, seed=1)
+    t = lambda v: np.abs(stats.ttest_ind(v[y == 0], v[y == 1], axis=0).statistic)
+    assert t(f["im"]).max() > 6.0                                    # coherency: strongly "class"-dependent
+    assert t(f["im_raw"]).max() < 3.0                                # unnormalised: not
+    t0 = lambda v: np.abs(stats.ttest_1samp(v, 0.0, axis=0).statistic)
+    assert t0(f["im_raw"]).max() > 10.0 and t0(f["im_raw_null"]).max() < 4.0    # the lag structure itself is there

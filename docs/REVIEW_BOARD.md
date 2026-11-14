@@ -423,3 +423,121 @@ the "14%" figure; three sentences of the non-identifiability note.
    is chosen by documented geometry before any of its data are opened.
 3. Gate 1 v3 only for a dataset that passes Gate 0.
 4. Phase 1 analysis at n = 14 exactly as frozen (DEVIATIONS 23-24).
+
+---
+
+# Board session, 2026-11-13: three decisions (manuscript, confirmatory v2 test, Phase 1)
+
+**Header.**
+- **Target:** repo at a78a6b0; `docs/CRITIQUE_AND_V2.md`, DEVIATIONS 23-27, the published repo's checkpoints.
+- **Members:** all six. **Rounds:** 2.
+- **Mode: mixed, and weaker than agent mode.** The six reviewer agents were launched twice and were cut off by
+  usage limits both times, before any of them wrote a report. Each had already written its own check scripts
+  (kept in the session scratch folder, `board4/<member>/`). The judge ran those scripts and attributes each
+  finding below to the member whose script established it. The written reviews, the votes and the
+  cross-examination were then completed in **single-conversation mode: one model wrote all six positions.** Treat
+  the unanimous votes with suspicion; the weight is in the reproduced checks, not in the count.
+- **Read-only violation:** the code auditor's reproduction script wrote `repro_s6.json` into the repo root. It was
+  deleted; nothing else was changed by a member.
+
+## Findings and verdicts
+VERIFIED = the judge ran the member's script or its own check.
+
+| sev | member | finding | verdict | evidence |
+|---|---|---|---|---|
+| - | Volkov | The published checkpoints: f0 0.362-1.548 Hz, half-bandwidth 0.156-0.412 Hz, all 14 subjects; eigen-frequencies of the coupled operator 0.33-1.58 Hz | VERIFIED | `volkov/q1a.py`; matches `published_forensics.json` |
+| - | Volkov | "Nothing resonates" survives the nonlinearity. The Hermitian part of the trained linear operator is negative definite (max -0.258 over 14 subjects), the cubic term is 0.5% (median) to 20% (max) of the damping, nothing self-sustains after switch-off, and a 10 Hz tone gives no non-harmonic lines | VERIFIED | `volkov/q1b.py` on subject 1's trained nonlinear model |
+| - | Volkov | The trained nonlinear coupled model's sync features correlate 0.994 with those of an uncoupled linear bank on the same drive (0.95 under hard tanh saturation) | VERIFIED | same |
+| major | Volkov | Part 1.2 is incomplete: 14% of the trained model's output power lies below 3 Hz (41% under saturation). The tanh encoder creates slow intermodulation products from the 4-124 Hz input, and there the oscillators do resonate | VERIFIED | same; the drive has 0.1% below 3 Hz |
+| - | Asante | Frequency conversion `omega * h * fs / 2 pi` is right: kernel peaks at 0.198-1.591 Hz at 250 Hz and at 0.099-0.795 Hz at 125 Hz | VERIFIED | `asante/check.py` part A |
+| - | Novak | `published_forensics.json` reproduces (0 mismatches); the closed-form real-data result reproduces exactly (subject 6, fold 0, every key) | VERIFIED | `novak/repro_forensics.py`, `repro_s6.py` |
+| - | Novak | No test recording on disk: every development cache file holds a 4-trial all-zero placeholder under `X_te`; raw folder has `train/` only; no data file is tracked by git | VERIFIED | `novak/check_cache.py`; `git ls-files` |
+| **crit** | Halvorsen, Zhao | **A world with the same lagged coupling in every class, where only the amplitude of the coupled sources depends on the class, gives lag block alone 0.74-0.76 and L = +0.034 to +0.037** (real data: 0.74 and +0.036). Neither statistic shows that coupling differs between classes | VERIFIED | `halvorsen/g1l.py` (+0.037, 7/8); `zhao/immunity.py` (lag alone 0.58, L +0.02, coupling oracle at chance); repo trap `T_amp`, seeds 3800-3809: 0.737, L +0.034 [0.022, 0.045], 9/10 |
+| **crit** | Halvorsen | **L is positive with no unique lag information.** If the lag block is a noisy linear function of power (conditionally independent of the class given power), L = +0.055 to +0.075 (12/12) at HGD-like dimensions. The noise null controls dimension, not redundancy | VERIFIED | `halvorsen/checks.py` |
+| **crit** | Echeverria | **The immunity claim is too strong.** Power-only classes plus one class-independent lagged pair in the background: the lag block alone scores 0.58-0.62 | VERIFIED | `echeverria/trap_syn.py`; repo trap `T_bg`: 0.618 |
+| major | judge | That leak comes from the coherency normalisation. The unnormalised imaginary cross-spectrum scores 0.24 on the same data | VERIFIED | `judge/j_norm.py`; `T_bg`: `im_raw` 0.244 |
+| major | Zhao | The "regress out power" control decides nothing: it gives 0.32-0.35 whether the lag block carries unique information or none | VERIFIED | `zhao/toy_resid.py` (none: 0.35), `judge/j_w1.py` (unique: 0.32) |
+| major | Asante | v2's one-pole resonators isolate bands poorly on 1/f data: the in-band share of output power is 0.19-0.69 (4th-order Butterworth: 0.87-0.97); for the bands above 40 Hz, 60-76% of the output comes from below 40 Hz | VERIFIED | `asante/check.py` part B (subject 1, training data) |
+| major | Asante | The timing-offset argument holds at 13 Hz, not at 23 Hz. Injected offsets of 0.1-1 ms leave the 12.9 Hz lag block's accuracy unchanged (0.719). At 23.2 Hz a 0.1 ms offset produces 13-20% of the (small) class effect | VERIFIED | `asante/check.py` part C |
+| minor | Asante | The delay estimator recovers injected delays (|slope| 0.95, |corr| 0.98); the fitted delays show no ramp over channel index | VERIFIED | part D |
+| minor | Asante | v2 power minus FBCSP on the six development subjects: -0.010, SD 0.033 | VERIFIED | part F |
+| minor | Halvorsen | Power for a later test: with SD 0.033, an equivalence test at +/-0.05 has power 0.97 at n = 8 and 1.00 at n = 14 | VERIFIED | `halvorsen/checks.py` |
+| minor | Novak (cut off), judge | Sixteen key numbers of `CRITIQUE_AND_V2.md` match the result files | VERIFIED | judge audit |
+| - | Echeverria | EMG and movement artefacts in executed movement need a control (the published ICA-cleaned preprocessing) before any physiological claim | ACCEPTED | not run |
+
+## Judge's claims overturned by the board
+1. **"The lag block cannot respond to source power or volume conduction"** (`CRITIQUE_AND_V2.md` 4.1, `v2.py`). True
+   only if the data contain no lagged structure at all. With coherency normalisation it responds to unrelated power
+   (Echeverria). Fixed: unnormalised block `im_raw`.
+2. **"Real movement EEG contains class-dependent, time-lagged structure"** (4.4). Not shown. Lagged structure that is
+   the same in every class, plus power changes, reproduces the whole pattern (Halvorsen, Zhao).
+3. **"L is the contrast to pre-register"** (DEVIATION 27, addendum 2). Withdrawn. L fires without any coupling
+   change and without unique information.
+4. **"After regressing out power the lag block scores 0.33, so its information is mostly shared with power."** The
+   control cannot tell (Zhao).
+5. **"A timing offset is not the explanation."** Holds for the mu band only (Asante).
+6. **"One shared 1/f low-pass."** Incomplete for the trained model (Volkov).
+
+## Decisions
+
+**1. The manuscript. The Part 1 findings hold; tell the co-authors now.** (6 of 6.)
+- The three facts are properties of the authors' own files and reproduce in seconds: oscillators at 0.36-1.55 Hz
+  on 4-125 Hz data; the sync - surrogate contrast firing on power-only data; `decim` 4 against 2.
+- They were re-derived independently (Volkov, Asante, Novak), including on the trained nonlinear model.
+- **What the null test does and does not show** (Halvorsen): it shows the contrast is not specific to phase. It
+  does not show that the HGD effect is power. The supported sentence is "the control cannot distinguish them".
+- **Advice to the authors:** do not let the review proceed on the current claims. Correct the interpretation (no
+  "resonance", no "phase synchronization beyond band power", no high-gamma attribution) or withdraw and resubmit.
+  How to approach the editor is the authors' decision.
+- **One experiment is worth running for the paper** (Asante, Volkov): the missing cells of the band x sampling-rate
+  design, i.e. the published model on the full cache low-passed at 48 Hz with `decim = 2`, and on the full band with
+  `decim = 4`.
+
+**2. The confirmatory v2 test. Do not run it.** (6 of 6.)
+- Its two lag contrasts would very probably "succeed" and could not support the claim: both succeed in worlds
+  where coupling never changes.
+- Spending the untouched subjects on an uninterpretable result would be the same mistake as the paper's.
+- The decoder claim (v2 matches FBCSP) is not worth the clean data either: v2 is a known decoder family, and its
+  front end leaks across bands (Asante).
+- **What would be needed for the phase question:** a statistic that stays at chance on both traps (`T_amp`, `T_bg`)
+  and still detects a real change in coupling. Second-order sensor statistics may not allow one; a source model with
+  class-invariant generators and class-dependent gains is the candidate (Volkov, Zhao). That is a research project,
+  not a test to freeze this week.
+
+**3. Phase 1. Stop it, and record why.** (6 of 6; the counter-position is recorded.)
+- Its wording was fixed in advance (DEVIATIONS 23-24): no outcome can be called "phase". It replicates a model
+  whose interpretation Part 1 removes. The remaining 20 GPU-hours buy a replication record of little use.
+- The stop is not driven by the interim outcome: the reasons are the calibration (DEVIATION 24) and the checkpoint
+  forensics, both independent of the six subjects seen. The interim stays reported as descriptive and incomplete.
+- **Counter-position** (not adopted): finishing a pre-registered study protects against selective stopping. The
+  board judged that a recorded, outcome-independent rationale gives the same protection at no GPU cost.
+- If GPU time is available, spend it on the control in decision 1.
+
+## Positions (one model wrote all six; see the header)
+- **Halvorsen:** 1 tell co-authors; 2 no; 3 stop with a recorded rationale. Any future estimand must be validated on
+  worlds with redundant and with amplitude-only lag structure before data are spent.
+- **Echeverria:** 1 the terms cannot stand; 2 no; 3 stop. The plausible physiology is a mu/beta rhythm with fixed
+  lagged spatial structure whose amplitude movement changes.
+- **Zhao:** 1 tell co-authors, and soften "second-order feature" (unit-phasor normalisation is not second order);
+  2 no: the estimand must be conditional on power, and L is not; 3 stop.
+- **Volkov:** 1 holds, with the low-frequency intermodulation nuance; 2 no; 3 stop. Amplitude change of a coupled
+  pair and a change in coupling differ in the pair's own coherency, which sensors do not give without a source
+  model.
+- **Asante:** 1 holds; run the same-sampling-rate control; 2 no, and fix the resonators before any decoder claim;
+  3 stop and use the GPU for the control.
+- **Novak:** 1 holds, the records are fit to share; 2 no: no frozen runner, manifest or run-once guard exists yet;
+  3 stop.
+
+## Fixed / pending
+- **Fixed in this session:** unnormalised lag block and trap generators (9756d89); DEVIATION 27 addendum 3; the
+  stray reproduction file removed.
+- **Pending:** the development rerun with the unnormalised lag block (running); corrections to
+  `CRITIQUE_AND_V2.md` and the README; a script for the paper's control experiment; DEVIATION 28 (Phase 1 stopped);
+  a higher-order resonator option for v2.
+
+## Judge's plan
+1. Correct the documents where the board overturned them.
+2. Record the stop of Phase 1 (DEVIATION 28).
+3. Give Tom a ready-to-run script for the band x sampling-rate control.
+4. Report the unnormalised rerun as development data.
+5. Leave the untouched HGD data untouched.

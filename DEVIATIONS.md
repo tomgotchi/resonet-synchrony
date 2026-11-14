@@ -731,3 +731,7 @@ Board session 2026-11-13 (`docs/REVIEW_BOARD.md`). Its checks, re-run by the jud
     earlier 0.74 came from power changes of unrelated sources through the normalisation; if it stays well above
     chance, the sources that movement modulates have lagged structure themselves. Neither outcome shows a change
     in coupling.
+
+| # | date | where | decision | reason |
+|---|---|---|---|---|
+| 28 | 2026-11-13 | **Phase 1 is stopped at 6 of 14 subjects** (review board 2026-11-13, decision 3; Tom delegated the decision to the board). The interim section of `results/README_results.md` stays as a descriptive, incomplete record. No capacity-matched arm was ever run. The notebook keeps the code but its Phase 1 switches now default to off. | The reasons are independent of the interim outcome: (a) DEVIATION 24 fixed in advance that no Phase 1 result can be called "phase"; (b) the checkpoint forensics show that the published model, which Phase 1 replicates, does not resonate with the data, so the replication cannot inform Pitch 1; (c) the remaining GPU time is better spent on the control the manuscript lacks (`scripts/bandwidth_control.py`). Counter-position recorded in `docs/REVIEW_BOARD.md`. |
