@@ -750,6 +750,44 @@ Board session 2026-11-13 (`docs/REVIEW_BOARD.md`). Its checks, re-run by the jud
   - If v2 power moves by more than that in either direction, the earlier "v2 matches FBCSP" statement is tied to
     the resonator shape and is reported as such.
   - Nothing in this run can support a statement about coupling (addendum 3).
+- **Outcome** (2026-11-14; `results/v2_probe/hgd_b12s8_4-100Hz_o4/`; order-1 values from
+  `hgd_b12s8_4-100Hz_raw/`, which reproduces the first run exactly on the shared keys).
+  - v2 power: 0.881 -> **0.908** (+0.027; per subject +0.022, +0.031, -0.003, +0.013, **+0.113**, -0.012). This is
+    above the 0.02 mark, so the second reading applies: **the decoder comparison depends on the resonator shape
+    and is reported per order.** v2 power minus FBCSP: -0.010 (SD 0.033) with order 1, +0.017 (SD 0.047) with
+    order 4. Most of the change is subject 5 (0.881 -> 0.994). Neither difference is claimed.
+  - Lag block alone: 0.736 -> 0.732; unnormalised 0.693 -> 0.691; shift-nulls 0.250 -> 0.239 and 0.285 -> 0.277;
+    evoked control 0.252 -> 0.254. All within 0.02: the band leak did not drive the lag results.
+  - power + re + im: 0.879 -> 0.890, now below power alone (0.908). L: +0.036 -> +0.016 (6/6 positive). L is not a
+    contrast any more (addendum 3).
+  - Follow-up started after seeing this outcome (so it is exploratory): the per-band profile with order 4
+    (`scripts/v2_probe_controls.py --order 4`), to see in which bands power gained.
+- **Synthetic study rerun on the same seeds 3700-3709** to add the unnormalised block to
+  `results/v2_probe/synthetic.json`. Every previously stored value is reproduced exactly (maximum difference 0);
+  L still passes. Unnormalised block alone: G0 0.246, G1 0.260, G1r 0.248, G2 0.464, G2i 0.694.
+
+#### DEVIATION 27, addendum 5 (2026-11-14): artefact control with the central sensors, written before the run
+- **Why.** Board item accepted but not run (Echeverria): the movements are executed, so eye, cranial-muscle and
+  movement artefacts can carry class information. The board asked for a control before any physiological reading.
+  The sentence at stake is the reading of addendum 3: "the sources that movement modulates have lagged structure
+  themselves."
+- **Control.** The closed-form analysis on HGD development subjects 1-6 (same folds; training recordings only) is
+  repeated with **only the 44 sensors over sensorimotor cortex** (the selection of Schirrmeister et al. 2017:
+  FC, C, CP rows and their half-row neighbours). Frontal, temporal, parietal-occipital and edge sensors, where eye
+  and muscle artefacts are strongest, are left out. Resonator order 4, 12 bands 4-100 Hz, 8 CSP filters
+  (`scripts/v2_probe_run.py --hgd --order 4 --channels central44`). Descriptive; no inference.
+- **Reading fixed in advance.**
+  - If the unnormalised lag block alone stays at 0.50 or above (128 sensors, order 4: 0.691), sensors outside the
+    sensorimotor region are not needed for it. Eye artefacts and muscle artefacts confined to the edge of the cap
+    are then unlikely to be its main source.
+  - If it falls below 0.40, the lag result depended on the non-central sensors, and artefacts become the leading
+    explanation. Between 0.40 and 0.50 the control is inconclusive.
+  - In no case does the control exclude muscle activity that reaches central sensors, or movement artefacts common
+    to all sensors. It cannot support any statement about coupling (addendum 3; `docs/NONIDENTIFIABILITY.md`,
+    construction 3).
+  - The per-band profile with order 4 (running, started after the order-4 outcome) is read together with it: lag
+    information concentrated at 10-31 Hz fits mu/beta rhythms; information concentrated above 40 Hz would fit
+    muscle activity.
 
 | # | date | where | decision | reason |
 |---|---|---|---|---|
