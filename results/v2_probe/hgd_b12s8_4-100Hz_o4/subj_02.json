@@ -1,0 +1,101 @@
+{
+ "subject": 2,
+ "config": {
+  "n_bands": 12,
+  "n_spatial": 8,
+  "band": [
+   4.0,
+   100.0
+  ],
+  "order": 4
+ },
+ "folds": {
+  "0": {
+   "power": 0.703125,
+   "power+re": 0.75,
+   "power+re+im": 0.71875,
+   "power+re+im_null": 0.75,
+   "im": 0.515625,
+   "im_null": 0.28125,
+   "im_evoked": 0.265625,
+   "im_raw": 0.53125,
+   "im_raw_null": 0.234375,
+   "L": -0.03125,
+   "R": 0.046875,
+   "FBCSP_LDA": 0.890625,
+   "FBLV_LDA": 0.765625
+  },
+  "1": {
+   "power": 0.796875,
+   "power+re": 0.8125,
+   "power+re+im": 0.796875,
+   "power+re+im_null": 0.828125,
+   "im": 0.640625,
+   "im_null": 0.203125,
+   "im_evoked": 0.28125,
+   "im_raw": 0.625,
+   "im_raw_null": 0.296875,
+   "L": -0.03125,
+   "R": 0.015625,
+   "FBCSP_LDA": 0.84375,
+   "FBLV_LDA": 0.671875
+  },
+  "2": {
+   "power": 0.859375,
+   "power+re": 0.75,
+   "power+re+im": 0.828125,
+   "power+re+im_null": 0.71875,
+   "im": 0.734375,
+   "im_null": 0.296875,
+   "im_evoked": 0.28125,
+   "im_raw": 0.578125,
+   "im_raw_null": 0.328125,
+   "L": 0.109375,
+   "R": -0.109375,
+   "FBCSP_LDA": 0.78125,
+   "FBLV_LDA": 0.734375
+  },
+  "3": {
+   "power": 0.75,
+   "power+re": 0.75,
+   "power+re+im": 0.6875,
+   "power+re+im_null": 0.734375,
+   "im": 0.59375,
+   "im_null": 0.296875,
+   "im_evoked": 0.1875,
+   "im_raw": 0.546875,
+   "im_raw_null": 0.3125,
+   "L": -0.046875,
+   "R": 0.0,
+   "FBCSP_LDA": 0.71875,
+   "FBLV_LDA": 0.671875
+  },
+  "4": {
+   "power": 0.75,
+   "power+re": 0.671875,
+   "power+re+im": 0.765625,
+   "power+re+im_null": 0.671875,
+   "im": 0.703125,
+   "im_null": 0.203125,
+   "im_evoked": 0.25,
+   "im_raw": 0.484375,
+   "im_raw_null": 0.25,
+   "L": 0.09375,
+   "R": -0.078125,
+   "FBCSP_LDA": 0.828125,
+   "FBLV_LDA": 0.65625
+  }
+ },
+ "provenance": {
+  "git": "18b1ccbbb933e4941e7102d4794a7f677c7c9225",
+  "code_dirty": true,
+  "utc": "2026-11-14T04:33:56+00:00",
+  "device": "cpu",
+  "gpu": null,
+  "torch": "2.14.1+cu130",
+  "cuda": "13.0",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "python": "3.13.17"
+ }
+}

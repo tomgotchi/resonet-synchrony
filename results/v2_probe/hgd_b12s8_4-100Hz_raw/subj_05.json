@@ -1,0 +1,100 @@
+{
+ "subject": 5,
+ "config": {
+  "n_bands": 12,
+  "n_spatial": 8,
+  "band": [
+   4.0,
+   100.0
+  ]
+ },
+ "folds": {
+  "0": {
+   "power": 0.859375,
+   "power+re": 0.90625,
+   "power+re+im": 0.953125,
+   "power+re+im_null": 0.890625,
+   "im": 0.8125,
+   "im_null": 0.1875,
+   "im_evoked": 0.265625,
+   "im_raw": 0.8125,
+   "im_raw_null": 0.234375,
+   "L": 0.0625,
+   "R": 0.046875,
+   "FBCSP_LDA": 0.921875,
+   "FBLV_LDA": 0.84375
+  },
+  "1": {
+   "power": 0.9375,
+   "power+re": 0.90625,
+   "power+re+im": 0.9375,
+   "power+re+im_null": 0.84375,
+   "im": 0.796875,
+   "im_null": 0.203125,
+   "im_evoked": 0.21875,
+   "im_raw": 0.78125,
+   "im_raw_null": 0.21875,
+   "L": 0.09375,
+   "R": -0.03125,
+   "FBCSP_LDA": 0.859375,
+   "FBLV_LDA": 0.765625
+  },
+  "2": {
+   "power": 0.921875,
+   "power+re": 0.9375,
+   "power+re+im": 0.953125,
+   "power+re+im_null": 0.875,
+   "im": 0.75,
+   "im_null": 0.234375,
+   "im_evoked": 0.375,
+   "im_raw": 0.65625,
+   "im_raw_null": 0.390625,
+   "L": 0.078125,
+   "R": 0.015625,
+   "FBCSP_LDA": 0.9375,
+   "FBLV_LDA": 0.765625
+  },
+  "3": {
+   "power": 0.859375,
+   "power+re": 0.90625,
+   "power+re+im": 0.875,
+   "power+re+im_null": 0.8125,
+   "im": 0.84375,
+   "im_null": 0.3125,
+   "im_evoked": 0.203125,
+   "im_raw": 0.734375,
+   "im_raw_null": 0.390625,
+   "L": 0.0625,
+   "R": 0.046875,
+   "FBCSP_LDA": 0.875,
+   "FBLV_LDA": 0.828125
+  },
+  "4": {
+   "power": 0.828125,
+   "power+re": 0.828125,
+   "power+re+im": 0.875,
+   "power+re+im_null": 0.890625,
+   "im": 0.796875,
+   "im_null": 0.25,
+   "im_evoked": 0.21875,
+   "im_raw": 0.640625,
+   "im_raw_null": 0.40625,
+   "L": -0.015625,
+   "R": 0.0,
+   "FBCSP_LDA": 0.859375,
+   "FBLV_LDA": 0.703125
+  }
+ },
+ "provenance": {
+  "git": "9756d891c1aa1f2d20ffa6ddf36a5c226fdab450",
+  "code_dirty": false,
+  "utc": "2026-11-13T00:47:31+00:00",
+  "device": "cpu",
+  "gpu": null,
+  "torch": "2.14.1+cu130",
+  "cuda": "13.0",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "python": "3.13.17"
+ }
+}

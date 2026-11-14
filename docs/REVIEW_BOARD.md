@@ -541,3 +541,24 @@ VERIFIED = the judge ran the member's script or its own check.
 3. Give Tom a ready-to-run script for the band x sampling-rate control.
 4. Report the unnormalised rerun as development data.
 5. Leave the untouched HGD data untouched.
+
+## Follow-up by the judge, 2026-11-14 (no new board session; plan items 1 and 4, and two pending items)
+- **Plan item 4, the unnormalised rerun** (`results/v2_probe/hgd_b12s8_4-100Hz_raw/`; reading fixed in DEVIATION 27
+  addendum 3 before the run). Unnormalised lag block alone 0.693 (0.58-0.84 per subject), its shift-null 0.285;
+  coherency lag block 0.736. By the reading fixed in advance: the 0.74 did not come from unrelated power through
+  the normalisation; the sources that movement modulates have lagged structure themselves. No change in coupling
+  is shown.
+- **Plan item 1, documents corrected:** `docs/CRITIQUE_AND_V2.md` (all six overturned claims, marked in place; Part
+  5 replaced by the board's decisions), README, `results/README_results.md`, module docstrings of `v2.py`,
+  `v2_probe.py` and `scripts/v2_probe_controls.py`, fig 10 (panel c now shows the trap worlds).
+- **Pending item "higher-order resonator"** (Asante): done. `CrossSpectralBank(order=n)`, tested; leakage measured
+  (`scripts/resonator_leakage.py`); development rerun with order 4 (DEVIATION 27 addendum 4, reading fixed before
+  the run). Lag blocks unchanged (0.732, 0.691). v2 power 0.881 -> 0.908, above the 0.02 mark, so the decoder
+  comparison is reported per order; most of the change is subject 5.
+- **Decision 2's open question** ("a statistic that stays at chance on both traps and still detects a real coupling
+  change"): answered in the negative for second-order statistics. `docs/NONIDENTIFIABILITY.md`, construction 3: a
+  class-dependent coupling strength or lag has the same cross-spectra as class-dependent non-negative gains of
+  fixed generators (checked to 2e-16). **This construction has not been reviewed by the board.**
+- **Still pending:** the EMG / movement-artefact control (Echeverria); the band x sampling-rate control for the
+  manuscript (needs the full cache and a GPU; `scripts/bandwidth_control.py`, notebook section 4b).
+- **Untouched data:** still untouched. Only the training recordings of subjects 1-6 were read.

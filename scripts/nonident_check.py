@@ -76,3 +76,39 @@ SB = np.array([[1 / abs(A1) ** 2 + nu1, ((1 - al) / abs(A1) ** 2) * np.conj(Kb)]
                [((1 - al) / abs(A1) ** 2) * Kb, abs(Kb) ** 2 * (1 - al) / abs(A1) ** 2 + Sq]])
 print("3. directed pair, latent L    max rel |S_coupled - S_common|:",
       f"{rel(SA, SB):.1e}  (alpha = {al:.3f} of unit 1's rhythm private; min private spectrum {Sq.min():.2f} > 0)")
+
+# 4. Review board 2026-11-13 (docs/NONIDENTIFIABILITY.md, construction 3). One frequency band, four classes.
+#    World A: two sources with class-INVARIANT powers and a class-DEPENDENT coupling (coherency g_c, lag phi).
+#    World B: three independent class-invariant generators (private a, private b, and a shared one that appears in
+#    b with lag phi), whose non-negative GAINS depend on the class; no coupling parameter changes.
+#    Same real mixing and the same class-invariant background in both. Sensor cross-spectra must be equal.
+rng = np.random.default_rng(1)
+Cn = 12
+A = rng.normal(size=(Cn, 2))
+Mb = rng.normal(size=(Cn, Cn)); Nn = 0.3 * Mb @ Mb.T
+pa, pb, phi = 1.3, 0.7, 0.9
+worst, gmin = 0.0, np.inf
+for g in (0.1, 0.3, 0.5, 0.8):
+    x = g * np.sqrt(pa * pb) * np.exp(1j * phi)
+    S_A = A @ np.array([[pa, x], [np.conj(x), pb]]) @ A.T + Nn
+    v = np.sqrt(pa) * A[:, 0] + np.sqrt(pb) * np.exp(-1j * phi) * A[:, 1]          # the shared generator's pattern
+    gains = np.array([(1 - g) * pa, (1 - g) * pb, g])
+    S_B = gains[0] * np.outer(A[:, 0], A[:, 0]) + gains[1] * np.outer(A[:, 1], A[:, 1]) + gains[2] * np.outer(v, v.conj()) + Nn
+    worst, gmin = max(worst, rel(S_A, S_B)), min(gmin, gains.min())
+print("4. coupling differs by class  max rel |S_coupling - S_gains|:  ", f"{worst:.1e}  (smallest gain {gmin:.2f} >= 0)")
+
+#    A class-dependent LAG is covered too: two shared generators with fixed lags phi1 < phi_c < phi2.
+worst, gmin = 0.0, np.inf
+phi1, phi2, g = 0.2, 1.4, 0.4
+for phic in (0.3, 0.6, 0.9, 1.2):
+    x = g * np.sqrt(pa * pb) * np.exp(1j * phic)
+    S_A = A @ np.array([[pa, x], [np.conj(x), pb]]) @ A.T + Nn
+    g1, g2 = np.linalg.solve(np.array([[np.cos(phi1), np.cos(phi2)], [np.sin(phi1), np.sin(phi2)]]),
+                             g * np.array([np.cos(phic), np.sin(phic)]))                 # g1 e^{i phi1} + g2 e^{i phi2} = g e^{i phic}
+    S_B = Nn.astype(complex)
+    for gk, ph in ((g1, phi1), (g2, phi2)):
+        v = np.sqrt(pa) * A[:, 0] + np.sqrt(pb) * np.exp(-1j * ph) * A[:, 1]
+        S_B = S_B + gk * np.outer(v, v.conj())
+    S_B = S_B + (1 - g1 - g2) * (pa * np.outer(A[:, 0], A[:, 0]) + pb * np.outer(A[:, 1], A[:, 1]))
+    worst, gmin = max(worst, rel(S_A, S_B)), min(gmin, g1, g2, 1 - g1 - g2)
+print("   lag differs by class       max rel |S_coupling - S_gains|:  ", f"{worst:.1e}  (smallest gain {gmin:.2f} >= 0)")

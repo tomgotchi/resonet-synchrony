@@ -1,0 +1,101 @@
+{
+ "subject": 5,
+ "config": {
+  "n_bands": 12,
+  "n_spatial": 8,
+  "band": [
+   4.0,
+   100.0
+  ],
+  "order": 4
+ },
+ "folds": {
+  "0": {
+   "power": 0.984375,
+   "power+re": 0.984375,
+   "power+re+im": 0.984375,
+   "power+re+im_null": 0.96875,
+   "im": 0.765625,
+   "im_null": 0.234375,
+   "im_evoked": 0.296875,
+   "im_raw": 0.8125,
+   "im_raw_null": 0.1875,
+   "L": 0.015625,
+   "R": 0.0,
+   "FBCSP_LDA": 0.921875,
+   "FBLV_LDA": 0.84375
+  },
+  "1": {
+   "power": 1.0,
+   "power+re": 1.0,
+   "power+re+im": 1.0,
+   "power+re+im_null": 1.0,
+   "im": 0.75,
+   "im_null": 0.1875,
+   "im_evoked": 0.25,
+   "im_raw": 0.75,
+   "im_raw_null": 0.234375,
+   "L": 0.0,
+   "R": 0.0,
+   "FBCSP_LDA": 0.859375,
+   "FBLV_LDA": 0.765625
+  },
+  "2": {
+   "power": 1.0,
+   "power+re": 0.953125,
+   "power+re+im": 0.984375,
+   "power+re+im_null": 0.953125,
+   "im": 0.75,
+   "im_null": 0.265625,
+   "im_evoked": 0.328125,
+   "im_raw": 0.6875,
+   "im_raw_null": 0.328125,
+   "L": 0.03125,
+   "R": -0.046875,
+   "FBCSP_LDA": 0.9375,
+   "FBLV_LDA": 0.765625
+  },
+  "3": {
+   "power": 1.0,
+   "power+re": 1.0,
+   "power+re+im": 0.984375,
+   "power+re+im_null": 0.96875,
+   "im": 0.84375,
+   "im_null": 0.21875,
+   "im_evoked": 0.1875,
+   "im_raw": 0.765625,
+   "im_raw_null": 0.28125,
+   "L": 0.015625,
+   "R": 0.0,
+   "FBCSP_LDA": 0.875,
+   "FBLV_LDA": 0.828125
+  },
+  "4": {
+   "power": 0.984375,
+   "power+re": 0.96875,
+   "power+re+im": 0.96875,
+   "power+re+im_null": 0.96875,
+   "im": 0.828125,
+   "im_null": 0.21875,
+   "im_evoked": 0.25,
+   "im_raw": 0.765625,
+   "im_raw_null": 0.375,
+   "L": 0.0,
+   "R": -0.015625,
+   "FBCSP_LDA": 0.859375,
+   "FBLV_LDA": 0.703125
+  }
+ },
+ "provenance": {
+  "git": "18b1ccbbb933e4941e7102d4794a7f677c7c9225",
+  "code_dirty": true,
+  "utc": "2026-11-14T04:33:58+00:00",
+  "device": "cpu",
+  "gpu": null,
+  "torch": "2.14.1+cu130",
+  "cuda": "13.0",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "python": "3.13.17"
+ }
+}

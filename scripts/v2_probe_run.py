@@ -24,6 +24,12 @@ SYN = dict(n_bands=8, n_spatial=4, band=[4.0, 40.0])
 HGD = dict(n_bands=12, n_spatial=8, band=[4.0, 100.0])
 SYN_SEEDS = list(range(3700, 3710))
 MARGIN = 0.05
+# The 44 sensors over sensorimotor cortex used by Schirrmeister et al. (2017), as indices into the 128 EEG channels
+# in the order of the HGD recordings (checked against the channel names of the training recordings of subjects 1-6:
+# FC5 FC1 FC2 FC6 C3 C4 CP5 CP1 CP2 CP6 FC3 FCz FC4 C5 C1 C2 C6 CP3 CPz CP4, the FFC/FCC/CCP/CPP 5h 3h 4h 6h rows,
+# and FFC/FCC/CCP/CPP 1h 2h). DEVIATION 27, addendum 5.
+CENTRAL44 = [8, 9, 10, 11, 14, 16, 19, 20, 21, 22, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 75, 76, 77, 78, 79, 80, 81, 82,
+             83, 84, 85, 86, 87, 88, 89, 90, 101, 102, 106, 107, 111, 112, 115, 116]
 
 
 def syn_one(job):
@@ -110,7 +116,7 @@ def hgd(a):
     if a.order != 1:                                   # order 1 keeps the earlier configs and tags unchanged
         cfg["order"] = a.order
     tag = f"b{a.bands}s{a.spatial}_{a.fmin:g}-{a.fmax:g}Hz" + (f"_o{a.order}" if a.order != 1 else "") + \
-        (f"_{a.tag}" if a.tag else "")
+        ("_c44" if a.channels == "central44" else "") + (f"_{a.tag}" if a.tag else "")
     out = OUT / f"hgd_{tag}"; out.mkdir(parents=True, exist_ok=True)
     cache = a.cache or load_config().get("paths", {}).get("hgd_cache_hg")
     fs = data_hgd.FS_NATIVE / P1["decim"]
@@ -121,6 +127,10 @@ def hgd(a):
         if len(rec["folds"]) == a.folds:
             continue
         X, y, _, _ = data_hgd.load(cache, s, P1["decim"], P1["cap"], P1["seed"])          # test split never used
+        if a.channels == "central44":
+            assert X.shape[1] == 128, X.shape
+            X = X[:, CENTRAL44]
+            rec["channels"] = "central44"
         fold = dev.folds(y, a.folds, P1["seed"])
         for k in range(a.folds):
             if str(k) in rec["folds"]:
@@ -153,6 +163,7 @@ def main(argv=None):
     ap.add_argument("--subjects", default="1-6"); ap.add_argument("--cache", default=None)
     ap.add_argument("--folds", type=int, default=5)
     ap.add_argument("--order", type=int, default=1, help="resonator order (cascaded poles); HGD path only")
+    ap.add_argument("--channels", default="all", choices=["all", "central44"], help="HGD path: sensor subset")
     ap.add_argument("--bands", type=int, default=HGD["n_bands"]); ap.add_argument("--spatial", type=int, default=HGD["n_spatial"])
     ap.add_argument("--fmin", type=float, default=HGD["band"][0]); ap.add_argument("--fmax", type=float, default=HGD["band"][1])
     a = ap.parse_args(argv)

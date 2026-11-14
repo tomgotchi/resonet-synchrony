@@ -352,10 +352,10 @@ def fig_v2():
     if not fx.exists():
         return
     fig, axes = plt.subplots(2, 2, figsize=(13, 8.6))
-    fig.subplots_adjust(left=0.13, right=0.98, top=0.86, bottom=0.08, wspace=0.24, hspace=0.42)
+    fig.subplots_adjust(left=0.13, right=0.98, top=0.86, bottom=0.10, wspace=0.24, hspace=0.42)
     _title(fig, "ResoNet: where the oscillators are, what the published contrast measures, and v2",
            "(a) published checkpoints; (b) published code on simulated data with NO phase information; "
-           "(c) v2 on simulated ground truth; (d) v2 on real EEG, cross-validation inside the training recordings.")
+           "(c) v2's lag block on four simulated worlds; (d) v2 on real EEG (development folds).")
     # (a) frequencies
     ax = axes[0, 0]
     F = json.loads(fx.read_text())
@@ -392,43 +392,48 @@ def fig_v2():
         ax.text(0.5, 0.93, f"sync - surrogate = {d.mean():+.2f} ({int((d > 0).sum())}/{len(d)} datasets)\nalthough the classes differ ONLY in source power",
                 transform=ax.transAxes, ha="center", va="top", fontsize=9.5, color=CRIT)
     ax.set_title("(b) Published code, power-only data: the \"phase\" contrast fires", loc="left", fontsize=10)
-    # (c) v2 on synthetic ground truth (closed-form path)
+    # (c) what the lag block can and cannot tell apart (closed-form path; board 2026-11-13)
     ax = axes[1, 0]
-    vp = ROOT / "results" / "v2_probe" / "synthetic.json"
-    if vp.exists():
-        V = json.loads(vp.read_text())["summary"]
-        gens = [g for g in ("G1", "G2", "G2i") if g in V]
-        arms = [("FBCSP_LDA", "FBCSP + LDA", MUTED), ("power+re", "v2 power + zero-lag", S3),
-                ("im", "v2 lag block alone", S1), ("im_null", "its null (shifted)", "#9dbfe8")]
-        w = 0.2
-        for gi, g in enumerate(gens):
+    vp, tp = ROOT / "results" / "v2_probe" / "synthetic.json", ROOT / "results" / "v2_probe" / "traps.json"
+    if vp.exists() and tp.exists():
+        V = dict(json.loads(vp.read_text())["summary"], **json.loads(tp.read_text())["summary"])
+        worlds = [("G1", "power only,\nno lags\nanywhere"), ("T_bg", "power only +\na fixed lagged\nbackground"),
+                  ("T_amp", "SAME coupling\nin every class,\namplitude differs"), ("G2i", "coupling\ndiffers between\nclasses")]
+        worlds = [w_ for w_ in worlds if w_[0] in V]
+        arms = [("im", "lag block (coherency)", S1), ("im_raw", "lag block, unnormalised", S3), ("im_null", "shift-null", "#9dbfe8")]
+        w = 0.26
+        for gi, (g, _) in enumerate(worlds):
             for k_, (k, lab, col) in enumerate(arms):
+                if k not in V[g]["means"]:
+                    continue
                 m = V[g]["means"][k]
-                ax.bar(gi + (k_ - 1.5) * w, m, w * 0.92, color=col, label=lab if gi == 0 else None)
-                ax.text(gi + (k_ - 1.5) * w, m - 0.045, f"{m:.2f}", ha="center", fontsize=7.5, color="white" if k != "im_null" else INK)
-            ax.plot([gi - 0.45, gi + 0.45], [V[g]["means"]["oracle"]] * 2, color=INK, lw=1.2, ls=":")
+                ax.bar(gi + (k_ - 1) * w, m, w * 0.92, color=col, label=lab if gi == 0 else None)
+                ax.text(gi + (k_ - 1) * w, m + 0.015, f"{m:.2f}", ha="center", fontsize=8, color=INK)
         ax.axhline(0.25, color=MUTED, ls="--", lw=1)
-        names = dict(G1="source power only", G2="coupling, mixed lags", G2i="lagged coupling only")
-        ax.set_xticks(range(len(gens)), [names[g] for g in gens], fontsize=9); ax.set_ylim(0, 1.0); ax.grid(axis="x", visible=False)
-        ax.set_ylabel("balanced accuracy (dotted: oracle)"); ax.legend(ncol=2, fontsize=8, loc="upper left")
-    ax.set_title("(c) v2 on simulated ground truth: the lag block ignores power, finds lags", loc="left", fontsize=10)
+        ax.axvspan(1.5, 3.5, color=CRIT, alpha=0.07, lw=0)
+        ax.text(2.5, 0.93, "indistinguishable: both decode", ha="center", fontsize=9, color=CRIT)
+        ax.set_xticks(range(len(worlds)), [w_[1] for w_ in worlds], fontsize=8.5); ax.set_ylim(0, 1.0); ax.grid(axis="x", visible=False)
+        ax.set_ylabel("balanced accuracy, lag block alone"); ax.legend(ncol=1, fontsize=8, loc="upper left")
+    ax.set_title("(c) Simulated: a decoding lag block does not show a coupling change", loc="left", fontsize=10)
     # (d) HGD development subjects (closed-form path)
     ax = axes[1, 1]
-    hp = sorted((ROOT / "results" / "v2_probe").glob("hgd_*/summary.json"))
+    hd = ROOT / "results" / "v2_probe" / "hgd_b12s8_4-100Hz_raw" / "summary.json"       # same folds, adds im_raw
+    hp = [hd] if hd.exists() else sorted((ROOT / "results" / "v2_probe").glob("hgd_*/summary.json"))
     if hp:
         H = json.loads(hp[-1].read_text())
         arms = [("FBCSP_LDA", "FBCSP\n+ LDA", MUTED), ("power", "v2\npower", S3), ("power+re+im", "v2 all\nblocks", S1),
-                ("power+re+im_null", "v2, null\nlag block", "#9dbfe8"), ("im", "lag block\nalone", S1),
-                ("im_null", "its null", "#9dbfe8"), ("im_evoked", "evoked\ncontrol", "#b9b8b2")]
+                ("im", "lag\nblock", S1), ("im_raw", "same, un-\nnormalised", S3),
+                ("im_null", "shift-\nnull", "#9dbfe8"), ("im_evoked", "evoked\ncontrol", "#b9b8b2")]
+        arms = [a_ for a_ in arms if a_[0] in H["mean_over_subjects"]]
         subs = sorted(H["per_subject"], key=int)
         for k_, (k, lab, col) in enumerate(arms):
-            x = k_ + (0.5 if k_ >= 4 else 0)
+            x = k_ + (0.5 if k_ >= 3 else 0)
             v = np.array([H["per_subject"][s_][k] for s_ in subs])
             ax.bar(x, v.mean(), 0.66, color=col)
             ax.plot(np.full(len(v), x) + np.linspace(-0.17, 0.17, len(v)), v, "o", ms=3.5, color=INK, alpha=0.55)
             ax.text(x, max(v.max(), v.mean()) + 0.025, f"{v.mean():.2f}", ha="center", fontsize=9, fontweight="bold")
         ax.axhline(0.25, color=MUTED, ls="--", lw=1)
-        ax.set_xticks([k_ + (0.5 if k_ >= 4 else 0) for k_ in range(len(arms))], [a_[1] for a_ in arms], fontsize=8)
+        ax.set_xticks([k_ + (0.5 if k_ >= 3 else 0) for k_ in range(len(arms))], [a_[1] for a_ in arms], fontsize=8)
         ax.set_ylim(0, 1.08); ax.grid(axis="x", visible=False); ax.set_ylabel("balanced accuracy, held-out folds")
         ax.set_title(f"(d) Real EEG: HGD subjects {subs[0]}-{subs[-1]}, CV inside the training data", loc="left", fontsize=10)
     else:

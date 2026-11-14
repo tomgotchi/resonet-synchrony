@@ -10,7 +10,13 @@ leaked into it (e.g. a fixed timing offset between channels turns Re coherency i
                frequency; mu/beta lagged coupling does not.)
   re_from_im   the converse: how much of Im is linearly predictable from [power, Re] (median R^2 over features).
 
-  python scripts/v2_probe_controls.py --subjects 1-6 --cache DIR   -> results/v2_probe/hgd_<tag>/controls.json"""
+  python scripts/v2_probe_controls.py --subjects 1-6 --cache DIR   -> results/v2_probe/hgd_<tag>/controls.json
+
+Review board 2026-11-13 (docs/REVIEW_BOARD.md): `im_resid` decides nothing. On toy data it scores 0.32-0.35 both
+when the lag block has class information of its own and when it has none (Zhao; judge), so it must not be read
+as "the lag information is shared with power" or as the opposite. The per-band profile is measured with
+one-pole resonators, whose band labels are approximate on 1/f data (scripts/resonator_leakage.py). Neither
+control can show that coupling differs between classes (docs/NONIDENTIFIABILITY.md, construction 3)."""
 import argparse
 import importlib.util
 import json
@@ -48,10 +54,11 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--subjects", default="1-6"); ap.add_argument("--cache", required=True)
     ap.add_argument("--folds", type=int, default=5)
+    ap.add_argument("--order", type=int, default=1, help="resonator order (DEVIATION 27, addendum 4)")
     a = ap.parse_args(argv)
     torch.set_num_threads(1)
     cfg = dict(PR.HGD)
-    tag = f"b{cfg['n_bands']}s{cfg['n_spatial']}_{cfg['band'][0]:g}-{cfg['band'][1]:g}Hz"
+    tag = f"b{cfg['n_bands']}s{cfg['n_spatial']}_{cfg['band'][0]:g}-{cfg['band'][1]:g}Hz" + (f"_o{a.order}" if a.order != 1 else "")
     out = PR.OUT / f"hgd_{tag}" / "controls.json"
     res = json.loads(out.read_text()) if out.exists() else {}
     fs = data_hgd.FS_NATIVE / P1["decim"]
@@ -68,7 +75,8 @@ def main(argv=None):
             tr, ho = np.flatnonzero(fold != k), np.flatnonzero(fold == k)
             Xa, ya, Xh, yh = X[tr], y[tr], X[ho], y[ho]
             vmask = data_hgd.train_val_split(ya, P1["val_frac"], P1["seed"])
-            bank = CrossSpectralBank(X.shape[1], cfg["n_bands"], cfg["n_spatial"], fs, tuple(cfg["band"]), seed=42).eval()
+            bank = CrossSpectralBank(X.shape[1], cfg["n_bands"], cfg["n_spatial"], fs, tuple(cfg["band"]), seed=42,
+                                     order=a.order).eval()
             csp_init_(bank, Xa[~vmask], ya[~vmask])
             head = V2Readout(cfg["n_bands"], cfg["n_spatial"], fs, kind="cov+lag", skip_s=0.5)
             A, B = blocks(bank, head, Xa, ya, 42), blocks(bank, head, Xh, yh, 43)
@@ -86,6 +94,10 @@ def main(argv=None):
                        power_by_band={f"{f0[b]:.1f}": BL.lda(A["power"][:, b * cfg["n_spatial"]:(b + 1) * cfg["n_spatial"]], ya,
                                                             B["power"][:, b * cfg["n_spatial"]:(b + 1) * cfg["n_spatial"]], yh, vmask)
                                       for b in range(cfg["n_bands"])})
+            if a.order != 1:                           # added with the order option; the order-1 file is left as it is
+                rec["im_raw_by_band"] = {f"{f0[b]:.1f}": BL.lda(A["im_raw"][:, b * P:(b + 1) * P], ya,
+                                                                B["im_raw"][:, b * P:(b + 1) * P], yh, vmask)
+                                         for b in range(cfg["n_bands"])}
             res[str(s)][str(k)] = rec
             write_json_atomic(out, res)
             print(f"S{s:02d} fold {k} im {rec['im']:.3f} im_resid {rec['im_resid']:.3f} null_resid {rec['im_null_resid']:.3f} "

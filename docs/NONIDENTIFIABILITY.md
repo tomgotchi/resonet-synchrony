@@ -2,7 +2,8 @@
 
 Review board, 2026-11-09 (Zhao, Volkov; judge-verified). This note gives the formal reason for retiring the
 within-session coupling rule after screen 11 (DEVIATION 21). Numerical check: `python scripts/nonident_check.py`
-(all three constructions agree to about 1e-15).
+(all constructions agree to about 1e-15). Construction 3 was added on 2026-11-14, after the review board of
+2026-11-13 asked whether any statistic could tell "coupling differs between classes" from "amplitudes differ".
 
 ## Claim
 For linear, Gaussian, stationary dynamics observed passively, **there exist** uncoupled networks driven by latent
@@ -59,6 +60,44 @@ which is the assumption that failed under 1/f and spatially correlated noise in 
 L is **not observed** in model B: unit 1 is L plus a private rhythm plus noise. The construction is general for
 any minimum-phase path L -> unit 1.
 
+## Construction 3: a class-dependent coupling equals class-dependent gains of fixed generators (2026-11-14)
+This is the decoding version of the same problem. It concerns ResoNet v2's lag block and any other second-order
+readout (`docs/CRITIQUE_AND_V2.md`, 4.4).
+
+**World A, "coupling changes".** In one frequency band, two sources a and b have class-invariant powers p_a, p_b
+and a coherency g_c e^{i phi} whose magnitude g_c depends on the class c.
+
+**World B, "only amplitudes change".** Three mutually independent generators, each with a class-invariant pattern:
+- a private generator of a, with gain (1 - g_c) p_a;
+- a private generator of b, with gain (1 - g_c) p_b;
+- one shared generator that appears in a with amplitude sqrt(p_a) and in b with amplitude sqrt(p_b) and lag phi,
+  with gain g_c.
+
+No coupling parameter differs between classes in world B; only three non-negative gains do. The two worlds have
+**the same cross-spectral matrix in every class**, at the sources and therefore at the sensors, for any mixing and
+any class-invariant background (`nonident_check.py`, check 4: relative difference 2e-16).
+- For Gaussian stationary signals the cross-spectrum fixes the joint law. Every statistic then has the same
+  distribution in both worlds: power, coherency, its imaginary part, PLV, any decoder's accuracy.
+- A class-dependent **lag** is covered as well: two shared generators with fixed lags on either side of the
+  class lags reproduce it with non-negative gains (same check, second line).
+- If the source powers also depend on the class, one shared generator still suffices while
+  g_c max(r_c, 1 / r_c) <= 1, where r_c^2 is the class's power ratio p_b / p_a relative to the shared generator's.
+  Beyond that, more shared generators are needed.
+
+**What it means.**
+- "Does coupling change with the class?" has no answer at second order unless one first fixes what counts as a
+  generator. A coupling strength *is* the share of a rhythm that two sites have in common; a change in that share
+  and a change in the gain of a shared generator are one and the same distribution.
+- The board's trap world `T_amp` (one coupled pair, scaled as a whole) is the one-gain corner of this family. A
+  statistic can at best count **how many independent gains** the class difference needs. In `T_amp` the lag block
+  changes in proportion to the power of its sources (one gain). A lag block that changes without a matching power
+  change needs at least two. Neither count is "coupling".
+- The open item in the board record asks for "a statistic that stays at chance on both traps and still detects a
+  real coupling change". A statistic may well exclude the one-gain world `T_amp`. But whatever fires in world A
+  fires identically in world B, where no coupling parameter changes. So a positive result could support "the class
+  difference needs more than one gain", never "coupling changes". The second sentence needs one of the conditions
+  under "What breaks these constructions" below.
+
 ## Assumptions (all needed)
 1. Linear dynamics. For the nl_coupled bank and the screen generators, report the cubic-to-linear damping ratio.
    Construction 1 additionally needs identical units (same lambda, omega_0) and symmetric coupling.
@@ -66,7 +105,8 @@ any minimum-phase path L -> unit 1.
 3. Stationarity, with stable poles (lambda < 0).
 4. Strictly positive private noise, so S(omega) is positive definite.
 5. Passive observation; the drivers are not observed.
-6. No limit on the number of latent drivers.
+6. No limit on the number of latent drivers (construction 3: no limit on the number of generators; it needs three
+   for one pair).
 
 ## What breaks these constructions
 These conditions break the **linear-Gaussian constructions above**. They have **not** been shown to identify coupling:

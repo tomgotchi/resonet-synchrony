@@ -740,3 +740,35 @@ Full account with tables: `docs/CRITIQUE_AND_V2.md`; fig 10; protocol and outcom
   (6/6); after regressing out power-type features the lag block scores 0.327.
 - Earlier trained real-data development runs (random or CSP-initialised 4 filters per band, stopped):
   `results/v2_hgd_dev/`. Subject 1, 5 folds: v1 `lin:sync+power` 0.516, trained v2 0.65-0.68, FBCSP 0.887.
+
+## 2026-11-13/14: review board on the critique and v2; reruns that followed
+Record: `docs/REVIEW_BOARD.md` (session 2026-11-13). Corrected account: `docs/CRITIQUE_AND_V2.md`. Protocol notes:
+DEVIATION 27 addenda 3-4, DEVIATION 28. All real-data numbers are development numbers (subjects 1-6,
+cross-validation inside the training recordings; no inference; no test recording used).
+- **Board decisions:** tell the co-authors about the published-model findings; do not run a confirmatory v2 test;
+  Phase 1 stopped at 6 of 14 subjects (the interim section above stays as a descriptive, incomplete record).
+- **Trap worlds** (`results/v2_probe/traps.json`, seeds 3800-3809). No coupling parameter differs between classes.
+  - `T_amp` (same lagged coupling in every class, pair amplitude differs): lag block alone 0.737, unnormalised
+    0.733, L +0.034 [+0.022, +0.045], 9/10.
+  - `T_bg` (power-only classes + one fixed lagged pair in the background): lag block alone 0.618, unnormalised 0.244.
+  - Consequence: neither the lag block above its null nor L > 0 is evidence of class-dependent coupling. L is
+    withdrawn as a contrast. The "regress out power" control (0.327 above) is withdrawn as uninformative.
+- **HGD rerun with the unnormalised lag block** (`results/v2_probe/hgd_b12s8_4-100Hz_raw/`; reading fixed in
+  DEVIATION 27 addendum 3 before the run). Unnormalised lag block alone 0.693 (0.58-0.84 per subject), its
+  shift-null 0.285; coherency lag block 0.736, shift-null 0.250, evoked control 0.252. All shared values equal the
+  first run exactly. Reading: the sources that movement modulates have lagged structure themselves; no change in
+  coupling is shown.
+- **Resonator leakage** (`results/v2_probe/resonator_leakage.json`). Share of a resonator's output power from its
+  own -3 dB band: order 1 0.17-0.77, order 4 0.56-0.86, 4th-order Butterworth 0.86-0.98. Share from below 40 Hz in
+  the four bands above 40 Hz: order 1 68-81%, order 4 10-56%.
+- **HGD rerun with order-4 resonators** (`results/v2_probe/hgd_b12s8_4-100Hz_o4/`; reading fixed in addendum 4
+  before the run). v2 power 0.908 (order 1: 0.881); minus FBCSP +0.017, SD 0.047 (order 1: -0.010, SD 0.033);
+  subject 5 alone moves from 0.881 to 0.994. Lag block alone 0.732, unnormalised 0.691, nulls 0.239 and 0.277;
+  L +0.016 (6/6). The lag results do not depend on the leak; the decoder comparison depends on the resonator shape.
+- **Synthetic study rerun on seeds 3700-3709** to add the unnormalised block (`results/v2_probe/synthetic.json`):
+  all stored values reproduced exactly; unnormalised block alone G0 0.246, G1 0.260, G1r 0.248, G2 0.464, G2i 0.694.
+- **Non-identifiability, construction 3** (`docs/NONIDENTIFIABILITY.md`; `scripts/nonident_check.py`, check 4): a
+  class-dependent coupling strength (or lag) and class-dependent gains of fixed generators give identical
+  cross-spectra (relative difference 2e-16, all gains non-negative).
+- **Not run here (needs the full cache and a GPU):** the band x sampling-rate control for the manuscript
+  (`scripts/bandwidth_control.py`, notebook section 4b).

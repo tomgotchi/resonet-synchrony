@@ -1,0 +1,135 @@
+{
+ "note": "DEVELOPMENT: 5-fold CV inside the training split; descriptive means; no inference",
+ "config": {
+  "n_bands": 12,
+  "n_spatial": 8,
+  "band": [
+   4.0,
+   100.0
+  ],
+  "order": 4
+ },
+ "subjects": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6
+ ],
+ "mean_over_subjects": {
+  "power": 0.9083333333333333,
+  "power+re": 0.8932291666666666,
+  "power+re+im": 0.8901041666666666,
+  "power+re+im_null": 0.8744791666666666,
+  "im": 0.7322916666666667,
+  "im_null": 0.23854166666666668,
+  "im_evoked": 0.2536458333333333,
+  "im_raw": 0.6911458333333332,
+  "im_raw_null": 0.2765625,
+  "L": 0.015625,
+  "R": -0.015104166666666669,
+  "FBCSP_LDA": 0.8911458333333334,
+  "FBLV_LDA": 0.7713541666666667
+ },
+ "per_subject": {
+  "1": {
+   "power": 0.896875,
+   "power+re": 0.8875,
+   "power+re+im": 0.865625,
+   "power+re+im_null": 0.8625,
+   "im": 0.6875,
+   "im_null": 0.24375,
+   "im_evoked": 0.246875,
+   "im_raw": 0.603125,
+   "im_raw_null": 0.284375,
+   "L": 0.003125,
+   "R": -0.009375,
+   "FBCSP_LDA": 0.8875,
+   "FBLV_LDA": 0.74375
+  },
+  "2": {
+   "power": 0.771875,
+   "power+re": 0.746875,
+   "power+re+im": 0.759375,
+   "power+re+im_null": 0.740625,
+   "im": 0.6375,
+   "im_null": 0.25625,
+   "im_evoked": 0.253125,
+   "im_raw": 0.553125,
+   "im_raw_null": 0.284375,
+   "L": 0.01875,
+   "R": -0.025,
+   "FBCSP_LDA": 0.8125,
+   "FBLV_LDA": 0.7
+  },
+  "3": {
+   "power": 0.953125,
+   "power+re": 0.94375,
+   "power+re+im": 0.94375,
+   "power+re+im_null": 0.91875,
+   "im": 0.859375,
+   "im_null": 0.240625,
+   "im_evoked": 0.278125,
+   "im_raw": 0.834375,
+   "im_raw_null": 0.284375,
+   "L": 0.025,
+   "R": -0.009375,
+   "FBCSP_LDA": 0.94375,
+   "FBLV_LDA": 0.84375
+  },
+  "4": {
+   "power": 0.95625,
+   "power+re": 0.940625,
+   "power+re+im": 0.9375,
+   "power+re+im_null": 0.921875,
+   "im": 0.83125,
+   "im_null": 0.2125,
+   "im_evoked": 0.25625,
+   "im_raw": 0.778125,
+   "im_raw_null": 0.246875,
+   "L": 0.015625,
+   "R": -0.015625,
+   "FBCSP_LDA": 0.94375,
+   "FBLV_LDA": 0.828125
+  },
+  "5": {
+   "power": 0.99375,
+   "power+re": 0.98125,
+   "power+re+im": 0.984375,
+   "power+re+im_null": 0.971875,
+   "im": 0.7875,
+   "im_null": 0.225,
+   "im_evoked": 0.2625,
+   "im_raw": 0.75625,
+   "im_raw_null": 0.28125,
+   "L": 0.0125,
+   "R": -0.0125,
+   "FBCSP_LDA": 0.890625,
+   "FBLV_LDA": 0.78125
+  },
+  "6": {
+   "power": 0.878125,
+   "power+re": 0.859375,
+   "power+re+im": 0.85,
+   "power+re+im_null": 0.83125,
+   "im": 0.590625,
+   "im_null": 0.253125,
+   "im_evoked": 0.225,
+   "im_raw": 0.621875,
+   "im_raw_null": 0.278125,
+   "L": 0.01875,
+   "R": -0.01875,
+   "FBCSP_LDA": 0.86875,
+   "FBLV_LDA": 0.73125
+  }
+ },
+ "n_folds": {
+  "1": 5,
+  "2": 5,
+  "3": 5,
+  "4": 5,
+  "5": 5,
+  "6": 5
+ }
+}

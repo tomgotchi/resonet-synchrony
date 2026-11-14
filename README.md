@@ -3,19 +3,29 @@
 ResoNet follow-up "Pitch 1": does nonlinear coupling between oscillators earn its cost where the rhythm is
 generated internally (hippocampal wheel running), and not where it is stimulus-driven?
 
-**Where things stand (2026-11-10):**
-- **Critique of the published model** ([docs/CRITIQUE_AND_V2.md](docs/CRITIQUE_AND_V2.md), fig 10):
+**Where things stand (2026-11-14), after the review board of 2026-11-13:**
+- **Critique of the published model** ([docs/CRITIQUE_AND_V2.md](docs/CRITIQUE_AND_V2.md), fig 10). Re-derived
+  independently by the board; it holds.
   - In all 14 published checkpoints the trained oscillators sit at 0.36-1.55 Hz, while the data are 4-125 Hz.
   - The paper's "phase" contrast (sync - surrogate) is +0.31 on simulated data with no phase information.
   - The high-gamma comparison also changed the sampling rate.
+- **Board decisions** ([docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md)):
+  1. Tell the co-authors now; correct the interpretation or withdraw. Run the missing band x sampling-rate
+     control (`scripts/bandwidth_control.py`, notebook section 4b; needs the full cache and a GPU).
+  2. Do **not** run a confirmatory v2 test. HGD test recordings and subjects 7-14 stay untouched.
+  3. **Phase 1 is stopped** at 6 of 14 subjects (DEVIATION 28).
 - **ResoNet v2** (`resonet_sync/v2.py`, DEVIATION 27): resonators that tile the band, real spatial filters per
   band, and a readout split into power, zero-lag and lagged blocks.
-  - Ground truth: its lag contrast passes all pre-set criteria (ignores source power, finds lagged coupling).
   - Real EEG, HGD subjects 1-6, cross-validation inside the training recordings (development only): v2 0.88 against
-    FBCSP 0.89; the lag block alone 0.74 with its nulls at chance; it adds little once power is in the model.
-  - A confirmatory test on untouched data is specified but not run.
-- **Phase 1** (replication of the published arms) is stopped at 6/14 subjects on Colab. Its wording is fixed in
-  advance (DEVIATIONS 23-24): no Phase 1 result can be called "phase".
+    FBCSP 0.89. The lag block alone decodes at 0.74 (unnormalised: 0.69) with its nulls at chance, and adds nothing
+    once power is in the model.
+  - **The lag result does not show that coupling changes with the movement.** A simulated world with the same
+    coupling in every class and class-dependent amplitudes gives the same numbers.
+  - This is a limit in principle, not of v2: at second order, a class-dependent coupling and class-dependent gains
+    of fixed generators have identical cross-spectra ([docs/NONIDENTIFIABILITY.md](docs/NONIDENTIFIABILITY.md),
+    construction 3).
+  - Its one-pole resonators leak across bands on real EEG. A higher-order option (`order = 4`) fixes most of that;
+    the lag results do not change, v2 power moves from 0.881 to 0.908 (mostly one subject).
 - **Synthetic mechanism programme (screens 1-11)** is closed; **hc-5** waits for its QC (Gate 0), and Gate 1 v2
   fails (DEVIATION 26).
 
@@ -27,9 +37,9 @@ generated internally (hippocampal wheel running), and not where it is stimulus-d
 | [DEVIATIONS.md](DEVIATIONS.md) | every departure and judgement call; **frozen protocols** for each screen (append-only) |
 | [results/README_results.md](results/README_results.md) | all results, phase by phase and screen by screen |
 | [results/figures/](results/figures/) | figures (regenerate: `scripts/make_figures.py`) |
-| [docs/CRITIQUE_AND_V2.md](docs/CRITIQUE_AND_V2.md) | **start here**: what the published model computes, what that means for the manuscript, and ResoNet v2 with its ground-truth and real-data results |
-| [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md) | review board sessions: findings, verdicts, overturns, plans (latest 2026-11-09) |
-| [docs/NONIDENTIFIABILITY.md](docs/NONIDENTIFIABILITY.md) | why passive phase statistics cannot separate coupling from rhythmic common input (two constructions, checked by `scripts/nonident_check.py`) |
+| [docs/CRITIQUE_AND_V2.md](docs/CRITIQUE_AND_V2.md) | **start here**: what the published model computes, what that means for the manuscript, ResoNet v2 with its ground-truth and real-data results, and what the board corrected |
+| [docs/REVIEW_BOARD.md](docs/REVIEW_BOARD.md) | review board sessions: findings, verdicts, overturns, decisions (latest 2026-11-13) |
+| [docs/NONIDENTIFIABILITY.md](docs/NONIDENTIFIABILITY.md) | why passive phase statistics cannot separate coupling from rhythmic common input, or a class-dependent coupling from class-dependent gains (three constructions, checked by `scripts/nonident_check.py`) |
 | [docs/PREREG_H3_GENERATOR_MIX_DRAFT.md](docs/PREREG_H3_GENERATOR_MIX_DRAFT.md) | **adopted** hc-5 plan: generator mix (CA3 radiatum vs EC3 l-m CSD), frozen after Gate 0 (laminar coverage) + Gate 1 (forward-model null) |
 | [docs/PREREG_H3_REDESIGN_DRAFT.md](docs/PREREG_H3_REDESIGN_DRAFT.md) | superseded H3' draft (coupling between sites) |
 | [docs/RUN_PHASE1_LOCAL.md](docs/RUN_PHASE1_LOCAL.md) | exact commands for the Phase 1 GPU run |
@@ -59,6 +69,7 @@ scripts/make_figures.py  all figures in results/figures/
 scripts/                 phase1_posthoc.py (F5, D2, baselines), nonident_check.py, whittle_phase2.py
                          published_forensics.py, published_null_test.py (critique of the published model)
                          build_hgd_dev_cache.py, v2_hgd_dev.py, v2_probe_run.py, v2_probe_controls.py (v2 on HGD)
+                         resonator_leakage.py (band isolation of the resonators), bandwidth_control.py (the paper's missing control)
 notebooks/               Colab: full pipeline (resonet_synchrony_full_colab) and hc-5 QC only
 vendor/                  unmodified published code (hashes checked by tests)
 tests/                   pytest suite
