@@ -11,11 +11,19 @@ subjects, with two controls:
              (shift predictor). Only structure that is time-locked to the trial start survives. Partner selection
              needs the label, also in the held-out fold, so this is an analysis control, not a decoder.
 
+  im_raw     UNNORMALISED imaginary cross-spectrum (and im_raw_null, its shifted version). Unlike `im`, it does
+             not respond to the power of sources that are unrelated to the lagged structure.
+
 Contrasts (per fold or dataset):
-  L   = acc(power + re + im) - acc(power + re + im_null)      lagged coupling beyond band covariance
+  L   = acc(power + re + im) - acc(power + re + im_null)      what the real lag block adds over a noise block
   R   = acc(power + re) - acc(power)                          zero-lag covariance beyond power
   im, im_null, im_evoked alone                                is there class information in the lag block at all,
-                                                              and is it time-locked?"""
+                                                              and is it time-locked?
+
+Reading (review board 2026-11-13): neither L > 0 nor `im` above chance shows that coupling differs between classes.
+Both occur when the same lagged coupling is present in every class and only source amplitudes change
+(screens/v2_study.py `make_trap("T_amp")`), and L is also positive when the lag block is a noisy function of power
+with no information of its own. They are descriptive quantities."""
 from __future__ import annotations
 
 import numpy as np
@@ -74,9 +82,9 @@ def blocks(bank, head, X, y, seed, batch=64):
     return {k: torch.cat(v).numpy() for k, v in out.items()}
 
 
-def probe(Xtr, ytr, Xte, yte, vmask, fs, n_bands, n_spatial, band, skip_s=0.5, seed=42, csp=True):
+def probe(Xtr, ytr, Xte, yte, vmask, fs, n_bands, n_spatial, band, skip_s=0.5, seed=42, csp=True, order=1):
     """CSP filters and LDA are fitted on Xtr[~vmask] only. Returns {feature set: balanced accuracy on (Xte, yte)}."""
-    bank = CrossSpectralBank(Xtr.shape[1], n_bands, n_spatial, fs, tuple(band), seed=seed).eval()
+    bank = CrossSpectralBank(Xtr.shape[1], n_bands, n_spatial, fs, tuple(band), seed=seed, order=order).eval()
     if csp:
         csp_init_(bank, Xtr[~vmask], ytr[~vmask])
     head = V2Readout(n_bands, n_spatial, fs, kind="cov+lag", skip_s=skip_s)

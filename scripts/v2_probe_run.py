@@ -107,7 +107,10 @@ def hgd(a):
     spec = importlib.util.spec_from_file_location("dev", ROOT / "scripts" / "v2_hgd_dev.py")
     dev = importlib.util.module_from_spec(spec); spec.loader.exec_module(dev)
     cfg = dict(HGD, n_bands=a.bands, n_spatial=a.spatial, band=[a.fmin, a.fmax])
-    tag = f"b{a.bands}s{a.spatial}_{a.fmin:g}-{a.fmax:g}Hz" + (f"_{a.tag}" if a.tag else "")
+    if a.order != 1:                                   # order 1 keeps the earlier configs and tags unchanged
+        cfg["order"] = a.order
+    tag = f"b{a.bands}s{a.spatial}_{a.fmin:g}-{a.fmax:g}Hz" + (f"_o{a.order}" if a.order != 1 else "") + \
+        (f"_{a.tag}" if a.tag else "")
     out = OUT / f"hgd_{tag}"; out.mkdir(parents=True, exist_ok=True)
     cache = a.cache or load_config().get("paths", {}).get("hgd_cache_hg")
     fs = data_hgd.FS_NATIVE / P1["decim"]
@@ -149,6 +152,7 @@ def main(argv=None):
     ap.add_argument("--workers", type=int, default=3); ap.add_argument("--threads", type=int, default=1)
     ap.add_argument("--subjects", default="1-6"); ap.add_argument("--cache", default=None)
     ap.add_argument("--folds", type=int, default=5)
+    ap.add_argument("--order", type=int, default=1, help="resonator order (cascaded poles); HGD path only")
     ap.add_argument("--bands", type=int, default=HGD["n_bands"]); ap.add_argument("--spatial", type=int, default=HGD["n_spatial"])
     ap.add_argument("--fmin", type=float, default=HGD["band"][0]); ap.add_argument("--fmax", type=float, default=HGD["band"][1])
     a = ap.parse_args(argv)

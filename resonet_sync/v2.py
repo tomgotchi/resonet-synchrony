@@ -17,10 +17,20 @@ v2 keeps what works (learned spatial filters + resonators + second-order readout
         re     Re coherency(s, s'), s < s'           (F*S(S-1)/2) zero-lag covariance (what CSP uses)
         im     Im coherency(s, s'), s < s'           (F*S(S-1)/2) LAGGED coupling
     For real weights, Re C = w^T Re(S_x) w' and Im C = w^T Im(S_x) w'. Instantaneous mixing of independent
-    sources has Im(S_x) = 0 whatever the source powers (Nolte et al. 2004), so `im` cannot respond to source
-    power or volume conduction; it responds only to time-lagged interactions.
+    sources has Im(S_x) = 0 whatever the source powers (Nolte et al. 2004), so `im` is zero for data WITHOUT any
+    lagged structure.
   * `cov+lag_null` replaces `im` by the same quantity after a fresh circular shift per trial and projection: the
-    dimension-matched control for "lagged coupling adds beyond band covariance".
+    dimension-matched control for the lag block.
+
+Limits (review board 2026-11-13, docs/REVIEW_BOARD.md; do not read more into the lag block than this):
+  * `im` is a COHERENCY: it divides by the projections' powers. As soon as the data contain any lagged structure,
+    even one that is the same in every class, the power of unrelated sources changes it. The unnormalised
+    imaginary cross-spectrum (`im_raw` in v2_probe.py) does not have that leak.
+  * No version of the lag block separates "the coupling changed" from "the amplitude of sources with a fixed
+    lagged coupling changed". A lag block that decodes the class is therefore NOT evidence of class-dependent
+    coupling, and neither is the contrast against `cov+lag_null`.
+  * The one-pole resonator has a Lorentzian skirt (6 dB per octave), so on 1/f data much of a high band's output
+    comes from lower frequencies. `order > 1` cascades the pole (a complex gammatone) for steeper skirts.
 """
 from __future__ import annotations
 
@@ -31,16 +41,23 @@ import torch
 import torch.nn as nn
 
 V2_READOUTS = ("power", "cov", "cov+lag", "cov+lag_null", "lag")
-V2_DEFAULT = dict(n_bands=8, n_spatial=4, band=(4.0, 40.0), skip_s=0.5)
+V2_DEFAULT = dict(n_bands=8, n_spatial=4, band=(4.0, 40.0), skip_s=0.5, order=1)
 
 
 class CrossSpectralBank(nn.Module):
     """x (B, C, T) real -> z (B, T, F, S) complex: S real spatial projections per band, each through that band's
-    resonator (exact one-pole complex kernel, causal, unit gain at resonance)."""
+    resonator (exact one-pole complex kernel, causal, unit gain at resonance).
+
+    order > 1 cascades the pole `order` times (a complex gammatone filter). Each pole is widened by
+    1 / sqrt(2^(1/order) - 1), so the cascade keeps the same -3 dB half-width `bw_hz()`; its skirt falls
+    6 * order dB per octave instead of 6. order = 1 is the original resonator, bit for bit."""
     kind = "v2"
 
-    def __init__(self, n_channels, n_bands=8, n_spatial=4, fs=250.0, band=(4.0, 40.0), seed=42, kernel_tau=8.0):
+    def __init__(self, n_channels, n_bands=8, n_spatial=4, fs=250.0, band=(4.0, 40.0), seed=42, kernel_tau=8.0,
+                 order=1):
         super().__init__()
+        assert int(order) == order and order >= 1, order
+        self.order = int(order)
         self.C, self.F, self.S, self.fs = n_channels, n_bands, n_spatial, float(fs)
         self.f_max, self.kernel_tau = 0.45 * self.fs, kernel_tau
         g = torch.Generator().manual_seed(seed)
@@ -65,13 +82,17 @@ class CrossSpectralBank(nn.Module):
         y = torch.einsum("fsc,bct->btfs", self.W, x)                                        # real projections
         f0, bw = self._band_params()
         decay = 2 * math.pi * bw / self.fs
+        if self.order > 1:                                                                  # same -3 dB width
+            decay = decay / math.sqrt(2.0 ** (1.0 / self.order) - 1.0)
         lam = torch.complex(-decay, 2 * math.pi * f0 / self.fs)                             # per sample
         kn = int(min(T, math.ceil(self.kernel_tau / float(decay.detach().min()))))                 # kernel down to e^-tau
         n = torch.arange(kn, device=x.device, dtype=torch.float32)
         k = torch.exp(lam[None, :] * n[:, None]) * (1 - torch.exp(-decay))[None, :]         # (kn, F)
-        L = 1 << (T + kn - 1).bit_length()
-        Z = torch.fft.ifft(torch.fft.fft(y.to(torch.complex64), n=L, dim=1) *
-                           torch.fft.fft(k, n=L, dim=0)[None, :, :, None], dim=1)
+        L = 1 << (T + self.order * (kn - 1)).bit_length()                                   # no circular wrap-around
+        K = torch.fft.fft(k, n=L, dim=0)
+        if self.order > 1:
+            K = K ** self.order                                                             # cascade of equal poles
+        Z = torch.fft.ifft(torch.fft.fft(y.to(torch.complex64), n=L, dim=1) * K[None, :, :, None], dim=1)
         return Z[:, :T]                                                                     # (B, T, F, S)
 
 
@@ -127,7 +148,8 @@ class V2Readout(nn.Module):
 def build_v2(readout, n_channels, fs, cfg=None, seed=42, n_classes=4):
     from .readouts import RNModel
     c = dict(V2_DEFAULT, **(cfg or {}))
-    bank = CrossSpectralBank(n_channels, c["n_bands"], c["n_spatial"], fs, tuple(c["band"]), seed=seed)
+    bank = CrossSpectralBank(n_channels, c["n_bands"], c["n_spatial"], fs, tuple(c["band"]), seed=seed,
+                             order=c.get("order", 1))
     torch.manual_seed(seed)                                   # head init independent of the bank's generator
     return RNModel(bank, V2Readout(c["n_bands"], c["n_spatial"], fs, n_classes, readout, c["skip_s"], seed=seed))
 

@@ -173,3 +173,39 @@ def test_unnormalised_lag_block_ignores_unrelated_power_but_coherency_does_not()
     assert t(f["im_raw"]).max() < 3.0                                # unnormalised: not
     t0 = lambda v: np.abs(stats.ttest_1samp(v, 0.0, axis=0).statistic)
     assert t0(f["im_raw"]).max() > 10.0 and t0(f["im_raw_null"]).max() < 4.0    # the lag structure itself is there
+
+
+def test_higher_order_resonator_is_a_cascade_with_the_same_3db_width_and_steeper_skirts():
+    """order = n: n equal poles in series, each widened so that the cascade keeps the -3 dB half-width bw_hz()."""
+    fs, n = 250.0, 4
+    b1 = CrossSpectralBank(1, n_bands=5, n_spatial=1, fs=fs, band=(20.0, 40.0), kernel_tau=40.0)
+    b4 = CrossSpectralBank(1, n_bands=5, n_spatial=1, fs=fs, band=(20.0, 40.0), kernel_tau=40.0, order=n)
+    f0, bw = [v.detach().numpy() for v in b4._band_params()]
+    with torch.no_grad():
+        b1.W.fill_(1.0); b4.W.fill_(1.0)
+        x = _x(B=2, C=1, T=600, seed=3)
+        z = b4(x)
+        x2 = x.clone(); x2[:, :, 400:] += 3.0
+        assert torch.allclose(b4(x2)[:, :400], z[:, :400], atol=1e-5)                 # still causal
+        dec = 2 * np.pi * bw / fs / np.sqrt(2 ** (1 / n) - 1)                         # the widened pole
+        lam = torch.tensor(np.exp(-dec + 2j * np.pi * f0 / fs), dtype=torch.complex64)
+        g = torch.tensor(1 - np.exp(-dec), dtype=torch.complex64)
+        ref = x[:, 0, :, None].to(torch.complex64).repeat(1, 1, 5)                    # (B, T, F)
+        for _ in range(n):                                                            # n one-pole recursions in series
+            out = torch.zeros_like(ref); acc = torch.zeros_like(ref[:, 0])
+            for t in range(ref.shape[1]):
+                acc = lam[None] * acc + g[None] * ref[:, t]
+                out[:, t] = acc
+            ref = out
+        assert torch.allclose(z[..., 0], ref, atol=5e-4)
+
+        def gain(bank, f):                                                            # steady-state amplitude at f Hz
+            t = torch.arange(5000) / fs
+            return bank(torch.cos(2 * np.pi * f * t)[None, None])[0, -1].abs().numpy().ravel() * 2
+
+        for k in (0, 4):
+            g0, gup, gdn = gain(b4, f0[k])[k], gain(b4, f0[k] + bw[k])[k], gain(b4, f0[k] - bw[k])[k]
+            assert abs(g0 - 1) < 0.02                                                 # unit gain at resonance
+            assert abs(gup ** 2 - 0.5) < 0.03 and abs(gdn ** 2 - 0.5) < 0.03          # -3 dB at f0 +/- bw
+        far1, far4 = gain(b1, 5.0)[0], gain(b4, 5.0)[0]                               # two octaves below the 20 Hz band
+        assert far4 < 0.2 * far1                                                      # much steeper skirt

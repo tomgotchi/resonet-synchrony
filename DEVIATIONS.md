@@ -732,6 +732,25 @@ Board session 2026-11-13 (`docs/REVIEW_BOARD.md`). Its checks, re-run by the jud
     chance, the sources that movement modulates have lagged structure themselves. Neither outcome shows a change
     in coupling.
 
+#### DEVIATION 27, addendum 4 (2026-11-14): higher-order resonators, written before the decoding run
+- **Why.** Board finding (Asante): on real EEG the one-pole resonator isolates its band poorly, because its skirt
+  falls only 6 dB per octave and the spectrum falls faster. Reproduced on the training recordings of subjects 1-6
+  (`scripts/resonator_leakage.py`, `results/v2_probe/resonator_leakage.json`): the share of a resonator's output
+  power that comes from its own -3 dB band is 0.17-0.77, and for the four bands above 40 Hz 68-81% of the output
+  comes from below 40 Hz.
+- **Change.** `CrossSpectralBank(order=n)` cascades the pole n times (a complex gammatone), each pole widened so
+  that the -3 dB half-width is unchanged. Default `order = 1` reproduces every earlier number bit for bit. With
+  order 4 the in-band share is 0.56-0.86 and the share from below 40 Hz in the bands above 40 Hz falls to 10-56%
+  (a 4th-order Butterworth band-pass: in-band 0.86-0.98).
+- **Run.** The development analysis on HGD subjects 1-6 is repeated with `--order 4` (same folds, same 12 bands x 8
+  CSP filters; descriptive, no inference; test recordings not used).
+- **Reading fixed in advance.** This is a check of the front end, not a new test of anything.
+  - If the feature-set accuracies stay within about 0.02 of the order-1 values, the leak did not drive the earlier
+    development numbers, and order 4 becomes the recommended setting because its bands mean what their labels say.
+  - If v2 power moves by more than that in either direction, the earlier "v2 matches FBCSP" statement is tied to
+    the resonator shape and is reported as such.
+  - Nothing in this run can support a statement about coupling (addendum 3).
+
 | # | date | where | decision | reason |
 |---|---|---|---|---|
 | 28 | 2026-11-13 | **Phase 1 is stopped at 6 of 14 subjects** (review board 2026-11-13, decision 3; Tom delegated the decision to the board). The interim section of `results/README_results.md` stays as a descriptive, incomplete record. No capacity-matched arm was ever run. The notebook keeps the code but its Phase 1 switches now default to off. | The reasons are independent of the interim outcome: (a) DEVIATION 24 fixed in advance that no Phase 1 result can be called "phase"; (b) the checkpoint forensics show that the published model, which Phase 1 replicates, does not resonate with the data, so the replication cannot inform Pitch 1; (c) the remaining GPU time is better spent on the control the manuscript lacks (`scripts/bandwidth_control.py`). Counter-position recorded in `docs/REVIEW_BOARD.md`. |

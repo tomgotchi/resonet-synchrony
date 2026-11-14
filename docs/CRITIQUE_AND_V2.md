@@ -55,10 +55,21 @@ as much: "the abstract omega timescale does not align with literal EEG-band Hz".
     two different spatial projections of the EEG (the complex encoder). Its angle is the ratio of those two
     projections.
 
-So `C_ij = <u_i conj(u_j)>` is an amplitude-normalised cross-moment between pairs of learned spatial projections
-of low-passed EEG. That is the information class that CSP and Riemannian (covariance) decoders use. It is how
+So `C_ij = <u_i conj(u_j)>` is a zero-lag cross-moment between pairs of amplitude-normalised, learned spatial
+projections of low-passed EEG. (The unit-phasor normalisation is nonlinear, so it is not strictly a second-order
+statistic; the information it carries is of the covariance type.) That is the information class that CSP and
+Riemannian (covariance) decoders use. It is how
 **source power** appears at the sensors: a source that gets stronger changes the covariance between every pair of
 projections that see it.
+
+**Checked on the trained nonlinear model** (review board 2026-11-13, Volkov; subject 1's checkpoint driven with
+128-channel 1/f noise in 4-124 Hz):
+- The linear analysis applies. The trained operator is contracting in all 14 subjects, the cubic term is 0.5%
+  (median) to 20% (maximum) of the damping, nothing self-sustains after the input is switched off, and the sync
+  features correlate 0.994 with those of an uncoupled linear bank on the same drive.
+- One nuance: 14% of the output power lies below 3 Hz (41% if the input saturates the tanh), although the input has
+  none there. The tanh encoder creates slow intermodulation products, and at those frequencies the oscillators do
+  resonate. These products follow the input's amplitude envelope, so this pathway is power-type information too.
 
 ### 1.3 The surrogate control does not isolate phase
 The paper's central contrast is `sync - sync_surrogate` (+0.163, 14/14, nonlinear bank). The surrogate rolls
@@ -109,6 +120,9 @@ is no phase relation between anything.)
 - **`sync_imag` is not robust to volume conduction here.** The imaginary-coherence readout that the code calls
   "volume-conduction-robust" decodes power-only data at 0.61. With a complex encoder, real and imaginary parts
   of the coherence both mix zero-lag covariances.
+- **What this does and does not establish** (review board, Halvorsen): the contrast is not specific to phase. It does
+  not establish that the HGD effect is a power effect. The supported statement is that the control cannot tell
+  the two apart.
 - A first run without the 4 Hz high-pass was discarded (`partial_UNFILTERED_discarded.json`): the simulated sensor
   noise then drove the 0.2-1.6 Hz oscillators at resonance, which cannot happen on the real cache.
 
@@ -157,11 +171,20 @@ These are the authors' decisions. My reading of what the evidence supports:
 |---|---|---|---|
 | power | log band power of each projection | yes | only through mixing |
 | re | real part of the coherency between projections (zero lag) | yes | through cos(lag) |
-| **im** | imaginary part of the coherency (the lag block) | **no** | **yes**, through sin(lag) |
+| **im** | imaginary part of the coherency (the lag block) | no, **if the data contain no lagged structure at all** | yes, through sin(lag) |
+| **im_raw** | unnormalised imaginary cross-spectrum (added after the review board) | only to the power of sources that are themselves lagged | yes |
 
 For real weights, `Im C = w^T Im(S_x) w'`, and instantaneous mixing of independent sources has `Im(S_x) = 0`
 whatever the source powers (Nolte et al. 2004). The dimension-matched control replaces the lag block by the same
 quantity after a fresh circular shift per trial and projection (`im_null`).
+
+**Corrected by the review board (2026-11-13).** The original claim here, "the lag block cannot respond to source
+power", was too strong.
+- With coherency normalisation, the block divides by the projections' powers. If the data contain any lagged
+  structure, even one that is the same in every class, the power of unrelated sources changes the block
+  (trap `T_bg`: 0.62 on power-only classes). The unnormalised block `im_raw` stays at chance there (0.24).
+- No version of the block separates "the coupling changed" from "the amplitude of sources with a fixed lagged
+  coupling changed" (trap `T_amp`: 0.74 for both versions, with the same coupling in every class).
 
 ### 4.2 Exact properties (unit tests, `tests/test_v2.py`)
 - The bank is linear and causal and equals the one-pole recursion; unit gain at resonance.
