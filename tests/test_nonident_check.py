@@ -17,3 +17,7 @@ def test_all_constructions_agree_to_rounding_error():
         assert float(re.search(r"max rel [^:]*:\s+([0-9.e+-]+)", ln).group(1)) < 1e-12, ln
     gains = [float(g) for g in re.findall(r"smallest gain ([0-9.e+-]+)", out)]
     assert len(gains) == 2 and min(gains) >= 0, out                # world B uses gains only, all non-negative
+    assert "-> infeasible" in out, out                             # side condition (a): g1 + g2 <= 1 is needed
+    assert re.search(r"side condition \(a\): \|g1 \+ g2 - formula\| ([0-9.e+-]+)", out) and \
+        float(re.search(r"formula\| ([0-9.e+-]+)", out).group(1)) < 1e-12
+    assert "agrees with feasibility in 2000/2000" in out, out      # side condition (b)

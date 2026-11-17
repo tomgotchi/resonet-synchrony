@@ -61,8 +61,10 @@ L is **not observed** in model B: unit 1 is L plus a private rhythm plus noise. 
 any minimum-phase path L -> unit 1.
 
 ## Construction 3: a class-dependent coupling equals class-dependent gains of fixed generators (2026-11-14)
-This is the decoding version of the same problem. It concerns ResoNet v2's lag block and any other second-order
-readout (`docs/CRITIQUE_AND_V2.md`, 4.4).
+This is the decoding version of the same problem: the class-dependent form of the common-input confound of
+construction 1, and not a new idea. It concerns ResoNet v2's lag block and any other readout
+(`docs/CRITIQUE_AND_V2.md`, 4.4). Reviewed by the board on 2026-11-17, which corrected its scope and added the side
+conditions below.
 
 **World A, "coupling changes".** In one frequency band, two sources a and b have class-invariant powers p_a, p_b
 and a coherency g_c e^{i phi} whose magnitude g_c depends on the class c.
@@ -76,16 +78,22 @@ and a coherency g_c e^{i phi} whose magnitude g_c depends on the class c.
 No coupling parameter differs between classes in world B; only three non-negative gains do. The two worlds have
 **the same cross-spectral matrix in every class**, at the sources and therefore at the sensors, for any mixing and
 any class-invariant background (`nonident_check.py`, check 4: relative difference 2e-16).
-- For Gaussian stationary signals the cross-spectrum fixes the joint law. Every statistic then has the same
-  distribution in both worlds: power, coherency, its imaginary part, PLV, any decoder's accuracy.
-- A class-dependent **lag** is covered as well: two shared generators with fixed lags on either side of the
-  class lags reproduce it with non-negative gains (same check, second line).
-- If the source powers also depend on the class, one shared generator still suffices while
-  g_c max(r_c, 1 / r_c) <= 1, where r_c^2 is the class's power ratio p_b / p_a relative to the shared generator's.
+- **Scope.** For Gaussian stationary signals the cross-spectrum fixes the joint law. Then **no statistic at all**, of any
+  order, separates the two worlds: power, coherency, its imaginary part, PLV, any decoder's accuracy. Real EEG is
+  neither Gaussian nor stationary within a trial. That is where identification could come from, and it is also why
+  this note says nothing about real data beyond "second-order structure alone cannot decide".
+- A class-dependent **lag** is covered as well, under a condition: two shared generators with fixed lags phi_1 < phi_c <
+  phi_2 reproduce it with gains g_1, g_2 >= 0 and private gains 1 - g_1 - g_2, where
+  g_1 + g_2 = g cos(phi_c - mid) / cos(half-separation). This needs **g_1 + g_2 <= 1**. Example: g = 0.95 at the midpoint
+  of lags 0.2 and 1.4 rad needs 1.151 and is not reproduced by these two generators (it would need lags closer
+  together).
+- If the source powers also depend on the class, one shared generator with amplitude ratio rho suffices **exactly
+  when g_c max(r_c, 1 / r_c) <= 1**, with r_c = sqrt(p_b / p_a) / rho for that class (the private gains
+  p_a - g_c sqrt(p_a p_b) / rho and p_b - g_c sqrt(p_a p_b) rho must be non-negative; checked on 2000 random cases).
   Beyond that, more shared generators are needed.
 
 **What it means.**
-- "Does coupling change with the class?" has no answer at second order unless one first fixes what counts as a
+- "Does coupling change with the class?" has no answer for Gaussian stationary data unless one first fixes what counts as a
   generator. A coupling strength *is* the share of a rhythm that two sites have in common; a change in that share
   and a change in the gain of a shared generator are one and the same distribution.
 - The board's trap world `T_amp` (one coupled pair, scaled as a whole) is the one-gain corner of this family. A

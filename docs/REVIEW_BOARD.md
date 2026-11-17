@@ -654,3 +654,19 @@ Implementation order and acceptance checks: `docs/FIX_BRIEF.md`. Short form: (1)
 when complete; (2) fix the notebook and scripts (labels, all-14 forensics, `repro_lp48_decim4`, analysis script for the amended
 rule, DEVIATION 31 script); (3) revise the redline and the note; (4) correct `NONIDENTIFIABILITY.md`; (5) full test run; (6) commit
 and push. `PAPER_DRAFT.md` and `vendor/` are not touched.
+
+## Fixed after the session (2026-11-17, implementing pass; `docs/FIX_BRIEF.md`)
+- **Step 1 (scripts, notebook, tests; commit c9c6b10).**
+  - `published_forensics.py`: gain-curve correlation, +f/-f selectivity and the Hermitian bound for all 14 checkpoints
+    (minimum correlation 0.9996; selectivity 1.9 dB; largest Hermitian eigenvalue -0.258 to -0.377). Old fields unchanged.
+  - `bandwidth_analysis.py`: the reading rule of DEVIATION 29 addendum 1. Tested on synthetic stand-ins only; **not run on any
+    new cell**.
+  - Notebook: 4a prints all-14 numbers; 4b adds `repro_lp48_decim4` and the analysis line; new optional 4c (DEVIATION 31).
+  - `surrogate_retention.py` (DEVIATION 31): reproduces the prototype (rms 0.170 unshifted, 0.154 shifted, checkpoint 1,
+    synthetic input). Not run on real data.
+  - Tests for all of the above and for the `--model nl` switch of the null test.
+- **Step 2 (documents).** Redline revised on the nine points; note to the co-authors revised; construction 3 given its scope
+  and side conditions, with numeric checks (`nonident_check.py`: the infeasible lag case is reported; the power rule agrees
+  with feasibility in 2000/2000 cases); `TODO.md` updated. `PAPER_DRAFT.md` and `vendor/` untouched.
+- **Still pending:** the nonlinear null test (running, unread); Tom's Colab run and whether it is the current notebook;
+  `repro_lp48_decim4` and DEVIATION 31 on Colab; the "[nonlinear network]" and "[DEVIATION 31]" placeholders in the redline.

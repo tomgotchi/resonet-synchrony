@@ -112,3 +112,27 @@ for phic in (0.3, 0.6, 0.9, 1.2):
     S_B = S_B + (1 - g1 - g2) * (pa * np.outer(A[:, 0], A[:, 0]) + pb * np.outer(A[:, 1], A[:, 1]))
     worst, gmin = max(worst, rel(S_A, S_B)), min(gmin, g1, g2, 1 - g1 - g2)
 print("   lag differs by class       max rel |S_coupling - S_gains|:  ", f"{worst:.1e}  (smallest gain {gmin:.2f} >= 0)")
+
+#    Side conditions (review board 2026-11-17).
+#    (a) lag case: the private gains are 1 - g1 - g2, and g1 + g2 = g cos(phi_c - mid) / cos(half-separation), so the
+#        construction needs g1 + g2 <= 1. A strong coupling at the midpoint lag is NOT reproduced by these two generators.
+mid, half = (phi1 + phi2) / 2, (phi2 - phi1) / 2
+worst_sum = 0.0
+for gg, phic in ((0.4, 0.8), (0.8, 0.8), (0.95, 0.25), (0.95, 0.8)):
+    g1, g2 = np.linalg.solve(np.array([[np.cos(phi1), np.cos(phi2)], [np.sin(phi1), np.sin(phi2)]]),
+                             gg * np.array([np.cos(phic), np.sin(phic)]))
+    worst_sum = max(worst_sum, abs(g1 + g2 - gg * np.cos(phic - mid) / np.cos(half)))
+g1, g2 = np.linalg.solve(np.array([[np.cos(phi1), np.cos(phi2)], [np.sin(phi1), np.sin(phi2)]]),
+                         0.95 * np.array([np.cos(mid), np.sin(mid)]))
+print(f"   side condition (a): |g1 + g2 - formula| {worst_sum:.1e}; g = 0.95 at the midpoint lag needs g1 + g2 = {g1 + g2:.3f}"
+      f" -> {'infeasible' if g1 + g2 > 1 else 'feasible'}")
+#    (b) class-dependent source powers, ONE shared generator with amplitude ratio rho: feasible exactly when
+#        g_c * max(r_c, 1 / r_c) <= 1 with r_c = sqrt(p_b / p_a) / rho.
+rho, agree, n_feas = 1.0, 0, 0
+for _ in range(2000):
+    qa, qb = np.exp(rng.normal(0, 0.7, 2)); gg = rng.uniform(0, 1)
+    gam = gg * np.sqrt(qa * qb) / rho                                   # gain of the shared generator
+    feas = (qa - gam >= -1e-12) and (qb - gam * rho ** 2 >= -1e-12)     # private gains non-negative
+    r = np.sqrt(qb / qa) / rho
+    agree += int(feas == (gg * max(r, 1 / r) <= 1)); n_feas += int(feas)
+print(f"   side condition (b): rule agrees with feasibility in {agree}/2000 random cases ({n_feas} feasible)")

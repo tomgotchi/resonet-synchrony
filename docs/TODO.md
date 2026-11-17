@@ -29,6 +29,15 @@ notebook > GitHub* or download `notebooks/resonet_synchrony_full_colab.ipynb` fr
    - [ ] the raw hc-2 files;
    - [ ] the closed-loop target.
 
+## Added by the review board of 2026-11-17
+- [ ] **Tom:** does the Colab copy you are running have a section 4a? If not, it is an older copy: the control's JSONs stay on
+      Drive (`ResonanceNetwork_OFFICIAL/resonet_synchrony_runs/bandwidth_control/`) and are not pushed. Then either re-run
+      section 9 from the current notebook, or download that folder and put it in `results/bandwidth_control/`.
+- [ ] **Tom, next Colab session (current notebook):** the second pipeline check `repro_lp48_decim4` runs by itself in 4b. For
+      DEVIATION 31 set `RUN_SURROGATE_RETENTION = True` (section 4c; GPU, no training).
+- [ ] Nonlinear null test (DEVIATION 30): running on CPU here; read only when complete.
+- [ ] Read the control with `scripts/bandwidth_analysis.py` (DEVIATION 29, addendum 1) once the Colab run has finished.
+
 ## Claude (no input needed)
 - [ ] Analysis script that applies the reading rule of DEVIATION 29 to the four cells and the pipeline check.
 - [ ] Read the hc-5 QC reports when they arrive (Gate 0: probe geometry and laminar coverage).
@@ -40,5 +49,5 @@ notebook > GitHub* or download `notebooks/resonet_synchrony_full_colab.ipynb` fr
 ## Decided: not doing
 - A confirmatory v2 lag test. The HGD test recordings and subjects 7-14 stay untouched for any v2 work.
 - Phase 1 (stopped at 6 of 14 subjects, DEVIATION 28). Its switches in the notebook are off.
-- A second-order test of whether coupling changes with the class: it cannot be done
-  (`docs/NONIDENTIFIABILITY.md`, construction 3).
+- A test of whether coupling changes with the class: it cannot be done for Gaussian stationary data without further
+  assumptions (`docs/NONIDENTIFIABILITY.md`, construction 3).

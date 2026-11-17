@@ -439,7 +439,8 @@ its decisions replace my list. Full record: `docs/REVIEW_BOARD.md`.
    coupling claim (4.4, 4.6). HGD test recordings and subjects 7-14 stay untouched.
 4. **Phase 1: stopped at 6 of 14 subjects** (DEVIATION 28). The reasons do not depend on the interim outcome: no
    Phase 1 result could be called "phase" (DEVIATION 24), and the model it replicates does not resonate (Part 1).
-5. **The phase question at second order is closed, in the negative** (added 2026-11-14;
+5. **The phase question is closed in the negative for Gaussian stationary data** (the scope the board fixed on
+   2026-11-17; real EEG is neither, so this limits second-order readouts and does not describe the brain) (added 2026-11-14;
    `docs/NONIDENTIFIABILITY.md`, construction 3; `scripts/nonident_check.py`, check 4).
    - The board asked for a statistic that stays at chance on both trap worlds and still detects a real coupling
      change.
