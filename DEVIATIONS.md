@@ -850,3 +850,22 @@ script does not match the authors' pipeline, and the new cells are not interpret
 **What no outcome would show.** A band effect would show that the published gain needs the 4-125 Hz content. It would not
 show that the model uses it through resonance or phase. The oscillators sit at 0.36-1.55 Hz (Part 1), and the paper
 itself places the benefit in the encoder.
+
+### DEVIATION 30: the surrogate contrast on power-only data, for the published NONLINEAR network (frozen 2026-11-17, before any run)
+- **Why.** The published-code null test (`results/published_null/`, +0.309 on power-only data) used the published
+  *linear* bank. The paper's headline contrast (+0.163, 14/14) is for the *nonlinear* network. The checkpoint
+  forensics and the board's checks say the two behave alike, but that is not the same test.
+- **Run.** `scripts/published_null_test.py --model nl --gens G1`: vendor `ResonanceNetwork` (RK4 Hopf oscillators),
+  N = 16, the published training loop, generator G1 (classes differ only in source power; no phase information),
+  frozen difficulty, the same seeds 3200-3209 as the linear test, the same 4 Hz high-pass. Arms: `power`, `sync`,
+  `sync_surrogate`. Then, if time allows, G0 (classes carry nothing) as the false-positive baseline.
+- **Statistic.** Per seed, sync - surrogate (balanced accuracy); mean, 90% t interval, exact sign-flip p, count positive.
+- **Reading, fixed now** (margin 0.05 as in DEVIATIONS 24 and 27):
+  - *Fires:* the lower end of the interval is above +0.05. The contrast cannot separate phase from power in the
+    nonlinear network either.
+  - *Valid on this world:* the interval lies inside (-0.05, +0.05). Then the linear result does not transfer, and
+    the paper's contrast has to be judged on the nonlinear network separately.
+  - *Inconclusive:* anything else.
+- **What no outcome would show.** A "fires" result does not show that the paper's +0.163 on real EEG is a power
+  effect. It shows that the contrast cannot tell. A "valid" result on G1 would not show that the contrast isolates
+  phase either, because G1 is one world.
