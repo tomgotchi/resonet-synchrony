@@ -813,3 +813,40 @@ Board session 2026-11-13 (`docs/REVIEW_BOARD.md`). Its checks, re-run by the jud
 | # | date | where | decision | reason |
 |---|---|---|---|---|
 | 28 | 2026-11-13 | **Phase 1 is stopped at 6 of 14 subjects** (review board 2026-11-13, decision 3; Tom delegated the decision to the board). The interim section of `results/README_results.md` stays as a descriptive, incomplete record. No capacity-matched arm was ever run. The notebook keeps the code but its Phase 1 switches now default to off. | The reasons are independent of the interim outcome: (a) DEVIATION 24 fixed in advance that no Phase 1 result can be called "phase"; (b) the checkpoint forensics show that the published model, which Phase 1 replicates, does not resonate with the data, so the replication cannot inform Pitch 1; (c) the remaining GPU time is better spent on the control the manuscript lacks (`scripts/bandwidth_control.py`). Counter-position recorded in `docs/REVIEW_BOARD.md`. |
+
+### DEVIATION 29: protocol for reading the band x sampling-rate control (frozen 2026-11-17, before any cell of it is run)
+Decision 1 of the review board (2026-11-13) asked for the control the manuscript lacks. `scripts/bandwidth_control.py`
+(notebook section 4b) runs the published model, loader, training loop and evaluation. It uses the authors' own test
+sessions of all 14 subjects. No v2 model is involved, and it does not touch the data reserved for any v2 test.
+
+**Design.** Four cells per arm and subject (arms: `nl_sync`, `nl_power`, `lin_sync`, `lin_power`, `eegnet`, `shallow`):
+
+| | decim 4 (125 Hz) | decim 2 (250 Hz) |
+|---|---|---|
+| band to about 48 Hz | R: published "restricted" (`RESULTS_n14_COMPLETE/ablation_results.json`) | A: new, `lp48_decim2` |
+| band 4-125 Hz | B: new, `full_decim4` | F: published "full" (`results_hg/ablation_results.json`) |
+
+**Quantities** (paired by subject, n = 14; mean difference, 95% t interval, exact sign-flip p; descriptive, with no
+correction across arms):
+- total, as published: F - R
+- band at 250 Hz: F - A; band at 125 Hz: B - R
+- sampling rate at the low-passed band: A - R; at the full band: F - B
+- identities: F - R = (F - A) + (A - R) = (B - R) + (F - B)
+
+**Reading, per arm, fixed now.**
+- *Mostly band:* both band effects have an interval excluding 0 and each is at least half of F - R.
+- *Mostly sampling rate:* A - R has an interval excluding 0 and is at least half of F - R, and F - A has an interval
+  including 0.
+- *Mixed or unresolved:* anything else.
+- The four RN arms are the ones the paper's claim concerns (it reports +0.12 to +0.17). `eegnet` and `shallow` are
+  references (published gains +0.017 and +0.025).
+
+**Pipeline check, run first.** Rerun a published cell with the new script: `--run --cache <full cache> --decim 2
+--tag repro_full_decim2 --subjects 1-2` (12 arm x subject cells against `results_hg/ablation_results.json`). It
+is reported, not a gate. GPU runs are not bit-exact, and a test set of 160 trials gives a standard error of about 0.04
+per accuracy. If the mean signed difference is outside +/-0.03 or the mean absolute difference exceeds 0.05, the
+script does not match the authors' pipeline, and the new cells are not interpreted until that is resolved.
+
+**What no outcome would show.** A band effect would show that the published gain needs the 4-125 Hz content. It would not
+show that the model uses it through resonance or phase. The oscillators sit at 0.36-1.55 Hz (Part 1), and the paper
+itself places the benefit in the encoder.
