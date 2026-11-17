@@ -18,7 +18,8 @@ script you can rerun.
    - "Resonance", "Hopf oscillator" and "PLV" therefore describe the equations, not what the trained model does.
 2. **The surrogate control does not isolate phase.**
    - I simulated data in which the classes differ only in source power, with no phase information. The published
-     code still gives sync - surrogate = **+0.31** (95% CI +0.27 to +0.35; 10 of 10 datasets).
+     code (its linear bank) still gives sync - surrogate = **+0.31** (95% CI +0.27 to +0.35; 10 of 10 datasets). The
+     same test on the nonlinear network, which produced the headline numbers, is running now; I will send it.
    - The surrogate removes the cross-terms between learned spatial projections, and source power reaches the sensors
      through those terms. So the +0.163 shows the control cannot tell phase from power.
    - It does **not** show that the high-gamma effect is a power effect.
