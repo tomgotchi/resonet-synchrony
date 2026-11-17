@@ -246,7 +246,10 @@
    "f0_hz_max": 1.5301048755645752,
    "bw_hz_min": 0.18357665836811066,
    "bw_hz_max": 0.38743478059768677,
-   "max_re_eig": -0.5027814507484436
+   "max_re_eig": -0.5027814507484436,
+   "max_hermitian_eig": -0.3026966154575348,
+   "min_correlation_between_gain_curves": 0.9995750132903864,
+   "plus_minus_selectivity_db_10hz": 1.9041845421664558
   },
   {
    "subject": 2,
@@ -254,7 +257,10 @@
    "f0_hz_max": 1.533383846282959,
    "bw_hz_min": 0.17424459755420685,
    "bw_hz_max": 0.390975683927536,
-   "max_re_eig": -0.5030236840248108
+   "max_re_eig": -0.5030236840248108,
+   "max_hermitian_eig": -0.35330724716186523,
+   "min_correlation_between_gain_curves": 0.9995770274041506,
+   "plus_minus_selectivity_db_10hz": 1.9064306657863828
   },
   {
    "subject": 3,
@@ -262,7 +268,10 @@
    "f0_hz_max": 1.5285638570785522,
    "bw_hz_min": 0.17252571880817413,
    "bw_hz_max": 0.4053422212600708,
-   "max_re_eig": -0.4982442855834961
+   "max_re_eig": -0.4982442855834961,
+   "max_hermitian_eig": -0.3489586412906647,
+   "min_correlation_between_gain_curves": 0.9995886375963893,
+   "plus_minus_selectivity_db_10hz": 1.9043181351498664
   },
   {
    "subject": 4,
@@ -270,7 +279,10 @@
    "f0_hz_max": 1.527917504310608,
    "bw_hz_min": 0.1754191815853119,
    "bw_hz_max": 0.4122505486011505,
-   "max_re_eig": -0.5643495321273804
+   "max_re_eig": -0.5643495321273804,
+   "max_hermitian_eig": -0.3765811324119568,
+   "min_correlation_between_gain_curves": 0.999587833086062,
+   "plus_minus_selectivity_db_10hz": 1.9041633431725475
   },
   {
    "subject": 5,
@@ -278,7 +290,10 @@
    "f0_hz_max": 1.5292179584503174,
    "bw_hz_min": 0.1613817662000656,
    "bw_hz_max": 0.4001578390598297,
-   "max_re_eig": -0.49284738302230835
+   "max_re_eig": -0.49284738302230835,
+   "max_hermitian_eig": -0.3375339210033417,
+   "min_correlation_between_gain_curves": 0.999593573397342,
+   "plus_minus_selectivity_db_10hz": 1.9037263911249669
   },
   {
    "subject": 6,
@@ -286,7 +301,10 @@
    "f0_hz_max": 1.5282775163650513,
    "bw_hz_min": 0.1682647466659546,
    "bw_hz_max": 0.406392365694046,
-   "max_re_eig": -0.5213553309440613
+   "max_re_eig": -0.5213553309440613,
+   "max_hermitian_eig": -0.3405396044254303,
+   "min_correlation_between_gain_curves": 0.9995864608770548,
+   "plus_minus_selectivity_db_10hz": 1.9085935564611818
   },
   {
    "subject": 7,
@@ -294,7 +312,10 @@
    "f0_hz_max": 1.527038812637329,
    "bw_hz_min": 0.1760176122188568,
    "bw_hz_max": 0.3967673182487488,
-   "max_re_eig": -0.5368770956993103
+   "max_re_eig": -0.5368770956993103,
+   "max_hermitian_eig": -0.3318824768066406,
+   "min_correlation_between_gain_curves": 0.9995943804441572,
+   "plus_minus_selectivity_db_10hz": 1.9102424511674738
   },
   {
    "subject": 8,
@@ -302,7 +323,10 @@
    "f0_hz_max": 1.5222258567810059,
    "bw_hz_min": 0.17183509469032288,
    "bw_hz_max": 0.39313238859176636,
-   "max_re_eig": -0.5053237676620483
+   "max_re_eig": -0.5053237676620483,
+   "max_hermitian_eig": -0.3733534514904022,
+   "min_correlation_between_gain_curves": 0.9995941472346866,
+   "plus_minus_selectivity_db_10hz": 1.9064422000236745
   },
   {
    "subject": 9,
@@ -310,7 +334,10 @@
    "f0_hz_max": 1.5349445343017578,
    "bw_hz_min": 0.15564098954200745,
    "bw_hz_max": 0.38388219475746155,
-   "max_re_eig": -0.4351401627063751
+   "max_re_eig": -0.4351401627063751,
+   "max_hermitian_eig": -0.25848153233528137,
+   "min_correlation_between_gain_curves": 0.9995859998063666,
+   "plus_minus_selectivity_db_10hz": 1.9098868754164668
   },
   {
    "subject": 10,
@@ -318,7 +345,10 @@
    "f0_hz_max": 1.5207387208938599,
    "bw_hz_min": 0.17847788333892822,
    "bw_hz_max": 0.3974106013774872,
-   "max_re_eig": -0.5057883858680725
+   "max_re_eig": -0.5057883858680725,
+   "max_hermitian_eig": -0.33482521772384644,
+   "min_correlation_between_gain_curves": 0.9995946305990757,
+   "plus_minus_selectivity_db_10hz": 1.9051950763714773
   },
   {
    "subject": 11,
@@ -326,7 +356,10 @@
    "f0_hz_max": 1.5238544940948486,
    "bw_hz_min": 0.17323723435401917,
    "bw_hz_max": 0.38285714387893677,
-   "max_re_eig": -0.4682841897010803
+   "max_re_eig": -0.4682841897010803,
+   "max_hermitian_eig": -0.28032127022743225,
+   "min_correlation_between_gain_curves": 0.9995980247610161,
+   "plus_minus_selectivity_db_10hz": 1.9057074498866764
   },
   {
    "subject": 12,
@@ -334,7 +367,10 @@
    "f0_hz_max": 1.5482842922210693,
    "bw_hz_min": 0.16695812344551086,
    "bw_hz_max": 0.40394267439842224,
-   "max_re_eig": -0.5012254118919373
+   "max_re_eig": -0.5012254118919373,
+   "max_hermitian_eig": -0.35945719480514526,
+   "min_correlation_between_gain_curves": 0.9995673944741783,
+   "plus_minus_selectivity_db_10hz": 1.9060870542213728
   },
   {
    "subject": 13,
@@ -342,7 +378,10 @@
    "f0_hz_max": 1.526892066001892,
    "bw_hz_min": 0.16540047526359558,
    "bw_hz_max": 0.39521849155426025,
-   "max_re_eig": -0.5159776210784912
+   "max_re_eig": -0.5159776210784912,
+   "max_hermitian_eig": -0.3554495573043823,
+   "min_correlation_between_gain_curves": 0.999592043249451,
+   "plus_minus_selectivity_db_10hz": 1.9132990668594427
   },
   {
    "subject": 14,
@@ -350,9 +389,24 @@
    "f0_hz_max": 1.533894658088684,
    "bw_hz_min": 0.1723928451538086,
    "bw_hz_max": 0.3976004123687744,
-   "max_re_eig": -0.5633255839347839
+   "max_re_eig": -0.5633255839347839,
+   "max_hermitian_eig": -0.3585180342197418,
+   "min_correlation_between_gain_curves": 0.9995783791085434,
+   "plus_minus_selectivity_db_10hz": 1.89988083410753
   }
  ],
+ "all_subjects": {
+  "min_correlation_between_gain_curves": 0.9995673944741783,
+  "plus_minus_selectivity_db_10hz": [
+   1.89988083410753,
+   1.9132990668594427
+  ],
+  "max_hermitian_eig": [
+   -0.3765811324119568,
+   -0.25848153233528137
+  ],
+  "note": "max_hermitian_eig < 0: the LINEAR part diag(mu + i omega) + W is contractive"
+ },
  "response_subject_1": {
   "gain_db": {
    "4": 22.791640780705563,

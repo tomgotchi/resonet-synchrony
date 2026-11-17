@@ -29,9 +29,14 @@ def checkpoints(ckpt_dir):
         sd = torch.load(f, map_location="cpu", weights_only=True)
         om, mu, W = sd["omega"].numpy(), sd["mu"].numpy(), sd["W"].numpy()
         f0, bw = om * H * FS / (2 * np.pi), np.abs(mu) * H * FS / (2 * np.pi)
-        ev = np.linalg.eigvals(np.diag(mu + 1j * om) + W)
+        A = np.diag(mu + 1j * om) + W
+        ev = np.linalg.eigvals(A)
+        R = response(om, mu)                                # every subject, not only subject 1 (board 2026-11-17)
         rows.append(dict(subject=int(f.split("_S")[-1][:-3]), f0_hz_min=float(f0.min()), f0_hz_max=float(f0.max()),
                          bw_hz_min=float(bw.min()), bw_hz_max=float(bw.max()), max_re_eig=float(ev.real.max()),
+                         max_hermitian_eig=float(np.linalg.eigvalsh((A + A.conj().T) / 2).max()),
+                         min_correlation_between_gain_curves=R["min_correlation_between_gain_curves"],
+                         plus_minus_selectivity_db_10hz=R["plus_minus_selectivity_db"]["10"],
                          omega=om.tolist(), mu=mu.tolist()))
     return rows
 
@@ -104,6 +109,12 @@ def main(argv=None):
                init_f0_hz=[0.5 * H * FS / (2 * np.pi), 4.0 * H * FS / (2 * np.pi)],
                trained_f0_hz_all=sorted(float(o * H * FS / (2 * np.pi)) for r in ck for o in r["omega"]),
                per_subject=[{k: v for k, v in r.items() if k not in ("omega", "mu")} for r in ck],
+               all_subjects=dict(
+                   min_correlation_between_gain_curves=min(r["min_correlation_between_gain_curves"] for r in ck),
+                   plus_minus_selectivity_db_10hz=[min(r["plus_minus_selectivity_db_10hz"] for r in ck),
+                                                   max(r["plus_minus_selectivity_db_10hz"] for r in ck)],
+                   max_hermitian_eig=[min(r["max_hermitian_eig"] for r in ck), max(r["max_hermitian_eig"] for r in ck)],
+                   note="max_hermitian_eig < 0: the LINEAR part diag(mu + i omega) + W is contractive") if ck else None,
                response_subject_1=response(ck[0]["omega"], ck[0]["mu"]) if ck else None, behaviour=behaviour())
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(out, indent=1))
