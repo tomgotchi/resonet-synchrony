@@ -47,6 +47,8 @@ notebook > GitHub* or download `notebooks/resonet_synchrony_full_colab.ipynb` fr
 - [ ] Board pass on construction 3 of `docs/NONIDENTIFIABILITY.md`, which it has not seen.
 
 ## Decided: not doing
+- Adding a positive v2 claim to this paper (board 2026-11-17, second session: option A). The paper stays a critical evaluation.
+  A later follow-up test would need the five conditions listed in that record.
 - A confirmatory v2 lag test. The HGD test recordings and subjects 7-14 stay untouched for any v2 work.
 - Phase 1 (stopped at 6 of 14 subjects, DEVIATION 28). Its switches in the notebook are off.
 - A test of whether coupling changes with the class: it cannot be done for Gaussian stationary data without further

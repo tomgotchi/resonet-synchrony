@@ -670,3 +670,68 @@ and push. `PAPER_DRAFT.md` and `vendor/` are not touched.
   with feasibility in 2000/2000 cases); `TODO.md` updated. `PAPER_DRAFT.md` and `vendor/` untouched.
 - **Still pending:** the nonlinear null test (running, unread); Tom's Colab run and whether it is the current notebook;
   `repro_lp48_decim4` and DEVIATION 31 on Colab; the "[nonlinear network]" and "[DEVIATION 31]" placeholders in the redline.
+
+
+# Board session, 2026-11-17 (second): A or B for the paper
+
+**Header.**
+- **Question (Tom delegated the decision):** (A) keep the paper as a critical evaluation, no new experiment; or (B) add the weaker
+  positive claim "time-lagged cross-structure differs between movement classes beyond zero-lag power", by freezing the v2
+  unnormalised lag-block test and running it once on the untouched HGD subjects 7-14.
+- **Members:** all six. **Rounds:** 1 (as requested).
+- **Mode: single-conversation; one model wrote all six positions**, sealed, without computation; the judge then ran the checks.
+  Treat the vote count with suspicion; the weight is in the checks.
+- **Not re-litigated:** the decision of 2026-11-13 against a confirmatory test of the *coupling* claim. The weaker claim was not
+  considered then. **No peeking:** the nonlinear null test and the Colab control were not read.
+
+## Findings and verdicts
+| sev | member | finding | verdict | evidence |
+|---|---|---|---|---|
+| major | Halvorsen | The outcome of B is close to certain, so the test carries little information | VERIFIED | development: lag block minus its null 0.41 (SD 0.12, smallest subject 0.27-0.29) in all three variants; at n = 8 the power is 0.94 even for an effect of 0.10 |
+| major | Halvorsen, Zhao | "Beyond zero-lag power" is the wrong wording for what B tests. The lag block adds no decoding value to power | VERIFIED | power + re + im minus power: -0.002, -0.018, -0.012 (2/6, 0/6, 0/6 subjects positive). What B can show is "not explainable by instantaneous mixing of independent sources", not "information beyond power" |
+| major | Zhao | The shift-null of the unnormalised block is not at chance, so "above chance" and "above its null" are different tests | VERIFIED | null minus 0.25: +0.035 (p = 0.04), +0.027 (p = 0.007), +0.054 (p = 0.001). The comparator must be the null, and the leak (spread grows with amplitude) must be stated |
+| major | Zhao | The evoked (time-locked) control exists only for the coherency version, not for the unnormalised block | VERIFIED | `v2_probe.py`: `im_evoked` is normalised; no `im_raw_evoked` |
+| major | Novak | Six analysis variants have been run on subjects 1-6 (order 1 and 4, all and 44 sensors, normalised and not, trained paths). B needs one configuration chosen before the data are opened, a frozen runner and a run-once guard. None exists | VERIFIED | `results/v2_probe/hgd_*` (4 folders), `results/v2_hgd_dev/*` (2) |
+| major | Echeverria | B on executed movement needs the artefact-cleaned path first. The authors' ICA pipeline exists (`build_nonemg_cache.py`) but was never applied to the v2 analysis | ACCEPTED | central-sensor control only (0.70) |
+| major | Asante | A timing offset between channels is excluded for the mu band only; a primary test over 4-100 Hz would include bands where it is not | ACCEPTED | board 2026-11-13, his part C; a primary band of 10-14 Hz would avoid it |
+| major | Volkov | The weaker claim is not about the published model. The Resonance Network cannot test it. Putting v2 into this paper turns a critique into a method paper, and its real content ("mu/beta rhythms have a lagged spatial pattern") is known physiology (travelling waves) | ACCEPTED | |
+| minor | Asante | B is cheap in compute: training recordings of 8 subjects, CPU, about an hour; 14 GB of disk is free | VERIFIED | `df`; subjects 1-6 took 4.3 GB |
+| minor | Echeverria | B does not need the test sessions: cross-validation inside the training recordings of 7-14 is enough, and keeps every test session untouched | ACCEPTED | |
+
+## Decision: **A now. B is not run for this paper.** (5 of 6; Asante dissents in part.)
+- **Why A.**
+  - The paper's question is about the published model and its control. A answers it completely with what exists, plus the two runs
+    already under way (nonlinear null test; band x sampling-rate control).
+  - B's result is predictable, its honest wording is much weaker than it sounds ("not explainable by instantaneous mixing", with no
+    added decoding value), and its content is not new physiology. It would cost the only untouched v2 data for a sentence the paper
+    does not need.
+  - B is not ready: no single frozen configuration, no evoked control for the unnormalised block, no artefact-cleaned path, a
+    null that is not at chance, and a band range in which timing offsets are not excluded.
+- **Asante's dissent (recorded):** B is cheap and a critique with one positive, replicated observation reads better. He accepts
+  that it is not ready and that it belongs to the authors' decision about the paper's scope.
+- **What B would need, if Tom and the co-authors want it later as a follow-up** (nothing of this is started):
+  1. one configuration fixed in a DEVIATION before any download: order 4; 44 central sensors or all 128 (choose one); primary band
+     10-14 Hz, the full range as secondary;
+  2. claim worded as "class-dependent imaginary cross-spectrum, not explainable by instantaneous mixing of independent sources";
+     comparator = the shift-null, not 0.25;
+  3. an unnormalised evoked control, and the trap worlds rerun for exactly that configuration;
+  4. the ICA-cleaned preprocessing applied to the training recordings of subjects 7-14; cross-validation inside them; test sessions
+     never opened;
+  5. a run-once guard and a manifest in the runner.
+
+## Judge's claims narrowed
+- In my message to Tom I worded B as "beyond what zero-lag power explains". The board's wording is the supportable one (above).
+- I had not noticed that the unnormalised block has no evoked control.
+
+## Positions
+- **Halvorsen:** A. A near-certain test is a replication, not a confirmation; do it only with one frozen configuration.
+- **Echeverria:** A for this paper; B later on cleaned data, as a short separate report if at all.
+- **Zhao:** A. Fix the estimand and the comparator before anyone opens data.
+- **Volkov:** A. The interesting follow-up is non-Gaussian (amplitude-dependent phase pull), not another second-order number.
+- **Asante:** B is cheap and worth having, but not before items 1-5; accepts A for now.
+- **Novak:** A. No runner fit for a one-shot test exists.
+
+## Judge's plan
+1. Paper: option A. The redline stands as revised today. 2. Fill its two placeholders when the nonlinear null test and DEVIATION 31
+are complete. 3. Read the Colab control with `bandwidth_analysis.py` when Tom reports it finished. 4. Subjects 7-14 stay
+untouched. 5. B is parked with the five conditions above.
