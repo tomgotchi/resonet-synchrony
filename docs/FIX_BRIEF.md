@@ -58,8 +58,8 @@ written here or in `DEVIATIONS.md`, stop and ask Tom. Read first: `docs/REVIEW_B
 - For each of the 14 checkpoints (`RNsync_S*.pt`) and its subject's test trials from a cache directory given on the command
   line, run the published `ResonanceNetwork` with `return_traj=True`, build unit phasors, and compute rms |C_ij| over the 120
   pairs with and without the surrogate shift (`surr_frac * T` roll, as in `vendor/resonance_network.py`), plus the per-bin ratio
-  by relative shift (under 0.5 s, 0.5-1 s, over 1 s), as in `board5/judge_surr.py` in the session scratch folder (a working
-  prototype on synthetic input).
+  by relative shift (under 0.5 s, 0.5-1 s, over 1 s), as in `docs/prototypes/surrogate_retention_prototype.py` (a working
+  prototype on synthetic input; run it from the repository root with the project's `.venv`).
 - Acceptance: runs on the synthetic prototype input and reproduces: rms |C| 0.170 unshifted and 0.154 shifted for checkpoint 1
   (seed 0 input as in the prototype); a test checks the shapes and that a zero shift gives ratio 1. A notebook cell 4c runs it on
   `LOCAL_CACHE` (test split of each subject) for Tom's Colab; default off (`RUN_SURROGATE_RETENTION = False`). It uses the
