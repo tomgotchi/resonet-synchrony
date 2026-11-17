@@ -43,7 +43,8 @@ an uncoupled linear bank).
   decision as authors.
 
 ## To check it yourselves
-`scripts/published_forensics.py` runs in seconds on the published checkpoints. `scripts/published_null_test.py` is
+`scripts/published_forensics.py` runs in about 10 seconds on the published checkpoints (section 4a of the Colab
+notebook runs it on your own copy). `scripts/published_null_test.py` is
 the simulation. Both are in `tomgotchi/resonet-synchrony`; the full account is `docs/CRITIQUE_AND_V2.md` (Parts 1-2).
 I can give you access or send the outputs. Can we speak this week?
 

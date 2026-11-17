@@ -12,8 +12,10 @@ notebook > GitHub* or download `notebooks/resonet_synchrony_full_colab.ipynb` fr
    - [ ] The Colab secret `GH_TOKEN` is set (key icon, *Notebook access* on): a fine-grained token with Contents
          read/write on `tomgotchi/resonet-synchrony` only. Never paste it into a cell or into chat.
    - [ ] About 5 GB free on Drive: the 48 Hz copy of the cache is written to `Documents/RESEARCH/subj_cache_lp48`.
-   - [ ] *Runtime > Run all*. Order: tests, **pipeline check** (a published cell rerun on subjects 1-2), low-passed copy,
-         the two new cells, hc-5 QC, figures, push.
+   - [ ] *Runtime > Run all*. Order: tests, **section 4a** (10 seconds: the trained oscillator frequencies in Hz from your
+         own checkpoints), **pipeline check** (a published cell rerun on subjects 1-2), low-passed copy, the two new
+         cells, hc-5 QC, figures, push.
+   - [ ] Section 4a is the evidence for the co-authors: it should print 0.36-1.55 Hz for every subject. Save its output.
    - [ ] If Colab disconnects, run all again. Finished subjects and arms are skipped.
    - [ ] Tell me when the push has finished.
    - Not timed on a GPU: 168 trainings (6 arms x 14 subjects x 2 cells) plus 12 for the check. The two oscillator arms

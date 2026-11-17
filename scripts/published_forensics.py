@@ -1,7 +1,7 @@
 """What do the PUBLISHED trained ResoNet models compute? Read-only checks on the published checkpoints
 (reso-net/results_hg/RNsync_S*.pt, fs = 250 Hz, h = 0.01) and on the published code (vendor/).
 
-  python scripts/published_forensics.py [--ckpt-dir ../results_hg]   -> results/published_forensics.json
+  python scripts/published_forensics.py [--ckpt-dir ../results_hg] [--out FILE]   -> results/published_forensics.json
 
 1. Learned oscillator frequencies and bandwidths in Hz, per subject.
 2. Frequency response of the trained oscillators over the data band (4-124 Hz): gain, similarity between
@@ -94,6 +94,7 @@ def behaviour():
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt-dir", default=str(ROOT.parent / "results_hg"))
+    ap.add_argument("--out", default=str(ROOT / "results" / "published_forensics.json"))
     a = ap.parse_args(argv)
     ck = checkpoints(a.ckpt_dir)
     out = dict(note="published checkpoints; fs 250 Hz (decim 2), h = 0.01; the data are band-passed 4-125 Hz",
@@ -104,8 +105,8 @@ def main(argv=None):
                trained_f0_hz_all=sorted(float(o * H * FS / (2 * np.pi)) for r in ck for o in r["omega"]),
                per_subject=[{k: v for k, v in r.items() if k not in ("omega", "mu")} for r in ck],
                response_subject_1=response(ck[0]["omega"], ck[0]["mu"]) if ck else None, behaviour=behaviour())
-    (ROOT / "results").mkdir(exist_ok=True)
-    (ROOT / "results" / "published_forensics.json").write_text(json.dumps(out, indent=1))
+    Path(a.out).parent.mkdir(parents=True, exist_ok=True)
+    Path(a.out).write_text(json.dumps(out, indent=1))
     print(json.dumps({k: v for k, v in out.items() if k not in ("per_subject", "trained_f0_hz_all")}, indent=1))
 
 
