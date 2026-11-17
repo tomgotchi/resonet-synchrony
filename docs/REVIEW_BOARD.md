@@ -568,3 +568,89 @@ VERIFIED = the judge ran the member's script or its own check.
 - **Still pending:** the band x sampling-rate control for the manuscript (needs the full cache and a GPU;
   `scripts/bandwidth_control.py`, notebook section 4b).
 - **Untouched data:** still untouched. Only the training recordings of subjects 1-6 were read.
+
+
+# Board session, 2026-11-17: consultation on the proposed fixes (manuscript redline, note, DEVIATIONS 29-30, construction 3)
+
+**Header.**
+- **Target:** `docs/MANUSCRIPT_REDLINE.md`, `docs/NOTE_TO_COAUTHORS.md`, DEVIATION 29 and 30, `docs/NONIDENTIFIABILITY.md`
+  construction 3, notebook section 4a (repo at e7112f1).
+- **Members:** all six. **Rounds:** 2. **Purpose:** the fixes will be implemented by a different model; this session produces the
+  list (`docs/FIX_BRIEF.md`). No fix was made to the manuscript text, the notebook or the scripts in this session.
+- **Mode: single-conversation; one model wrote all six positions.** Agent mode was not used: two earlier sessions were cut off by
+  usage limits when six agents ran together, and the CPUs were busy with the nonlinear null test. Round-1 reviews were written
+  sealed, without computation, each with "check:" lines (`board5/reviews_round1.md` in the session scratch folder). The judge
+  then ran the checks. Treat unanimity with suspicion; the weight is in the reproduced checks.
+- **No peeking.** The nonlinear null test (DEVIATION 30) and Tom's Colab run were not read. The null test was killed once by a
+  machine restart and relaunched with the same command; it is still running.
+
+## Findings and verdicts
+VERIFIED = the judge ran a check. The checks are in the session scratch folder (`board5/judge*.py`).
+
+| sev | member | finding | verdict | evidence |
+|---|---|---|---|---|
+| **crit** | Asante | Cell B (`full_decim4`) cannot contain high gamma; the DEVIATION 29 rule could never read "mostly band" | VERIFIED | vendor `_chunked_decimate` is an anti-aliased FIR: at decim 4, 70 Hz keeps 0.054 of its rms, 90 Hz 0.018, 110 Hz 0.013. Fixed in advance as DEVIATION 29 addendum 1 (decomposition F - A, A - R) |
+| **major** | Echeverria | The authors already ran an ICA-cleaned (EMG/EOG-removed) full-band cache. It is not in the draft, which never mentions EMG | VERIFIED | `build_nonemg_cache.py`, `results_nonemg/`: nl_sync 0.502 (restricted 0.393, full 0.530). Surrogate contrast: restricted +0.106 (14/14), full +0.163 (14/14), cleaned **+0.098 (13/14)**. So the gain mostly survives cleaning, but "the phase effect strengthens in high gamma" (draft 4.4) does not |
+| **major** | Volkov | "The surrogate destroys all cross-oscillator structure" is not established | VERIFIED (geometry, magnitude); alignment itself PENDING | `surr_frac` is U(0,1), identical in all 14 checkpoints; oscillator e-folding time 0.41-0.87 s; 44% of the 120 pairs have relative shift under 1 s, 5% under 0.1 s. On synthetic input through checkpoint 1 the shifted features keep 91% of mean abs C (rms 0.154 against 0.170); phasors sit off the circle (mean abs <u> 0.31). DEVIATION 31 |
+| **major** | Halvorsen | "Band-power-equivalent" is claimed from a non-significant gap | VERIFIED | nl_sync - nl_power -0.004, 95% CI [-0.052, +0.045]; TOST p = 0.031 at +/-0.05, 0.13 at +/-0.03. Same for "nonlinear coupling adds nothing": nl - lin sync +0.002, CI [-0.041, +0.044] |
+| **major** | Halvorsen | "+0.31" has an arbitrary size and must not be set beside +0.163 | VERIFIED in part | the generator depth (ERD 0.15) was set from an oracle on pilot seed 999 (target 0.75), **not tuned on the linear bank**; the size still depends on that choice |
+| **major** | Zhao | Limitation (vi) names the wrong object and scope | VERIFIED | construction 3 holds the source powers fixed and changes the gains of fixed latent generators; for Gaussian stationary data no statistic at all separates the worlds, not only second-order ones |
+| **major** | Zhao | Construction 3 lacks side conditions | VERIFIED | lag case needs g1 + g2 <= 1 (g = 0.95 at the midpoint lag needs 1.151: infeasible); with class-dependent powers one shared generator works iff g_c max(r_c, 1/r_c) <= 1, r_c = sqrt(p_b/p_a)/rho (true on 2000 random cases) |
+| **major** | Volkov, Novak | "The 16 gain curves correlate above 0.9995" is a subject-1 number | **REJECTED as a claim about the data**; ACCEPTED as a labelling defect | min correlation 0.9996 in all 14 checkpoints; +f/-f selectivity 1.9 dB at 10 Hz in all 14. `published_forensics.json` and notebook 4a only store subject 1 |
+| **major** | Volkov | "Contractive in all 14 subjects" claims more than was checked | ACCEPTED | the linear part has largest Hermitian eigenvalue -0.258 (all 14: -0.258 to -0.377); nonlinear contractivity was not separately shown |
+| minor | Volkov | "82% of output power at 4-8 Hz" | VERIFIED as stated | share below 8 Hz on a 4-124 Hz grid, uncoupled linear response; the intermodulation caveat (14% below 3 Hz, subject 1) is separate |
+| major | Halvorsen | Cells from different runs; check covers F only; absolute threshold uncalibrated | ACCEPTED | DEVIATION 29 addendum 1: add `repro_lp48_decim4`, read twice, drop the 0.05 threshold |
+| minor | Halvorsen | Rule undefined when T is not positive; G0 "if time allows" | ACCEPTED | addenda 29/30 |
+| major | Novak | Which notebook is Tom running? An older copy has the old `LINKED` list | PENDING | ask Tom whether section 4a exists in his copy |
+| minor | Novak | `--model nl` has no test; redline cites line numbers | ACCEPTED | fix brief |
+| minor | Zhao | Construction 3 is the class-dependent common-input confound already in construction 1 | ACCEPTED | |
+
+## Judge's own claims overturned or narrowed
+1. **My redline: "destroys all cross-oscillator structure"** (3.2): not supported (above). It stays out until DEVIATION 31 is read.
+2. **My redline: "the trained nonlinear network is contractive in all 14 subjects":** only the linear part was checked.
+3. **My redline: "nonlinear coupling adds nothing"** and **"band-power-equivalent":** both need the interval and the margin.
+4. **My redline: limitation (vi):** removed from the paper (see Echeverria's objection below).
+5. **My TODO: "it cannot be done":** too strong. It cannot be done for Gaussian stationary data without further assumptions.
+6. **My note: "Three of the interpretations do not hold":** the high-gamma one is untested, not refuted.
+7. **DEVIATION 29 as frozen** (cell B). The board of 2026-11-13, Asante included, had asked for both new cells. New evidence, not a
+   reversal of reasoning: B stays as a descriptive cell.
+8. **Halvorsen's mechanism for the size of +0.31** (tuned on the linear bank): wrong (oracle on a pilot seed); her conclusion stands.
+
+## Cross-examination (round 2), in one line each
+- **Halvorsen on Asante:** agrees B is uninformative; a within-pipeline R' is still needed because A - R mixes the rate effect
+  with a different filter and machine. **Asante:** agrees, but R' for 14 subjects x 6 arms is 84 extra trainings of unknown
+  speed; run subjects 1-4 first and extend if the pipeline check is not clean.
+- **Echeverria on Zhao:** construction 3 is correct and irrelevant to the paper's argument; real trials are non-stationary and
+  mu/beta ERD is an amplitude effect. Keep it out of the manuscript; keep it in the repo note. **Zhao** accepts, with the exact
+  scope fixed. **Judge:** decided, limitation (vi) out of the paper.
+- **Zhao on Volkov's retention measure:** retained magnitude is not retained alignment. Two independent phasor series over 4.5 s
+  have |C| of order 0.3 by chance, so a high ratio proves little; the class-informative part is what matters. **Volkov** agrees
+  and asks for the per-bin breakdown. **Judge:** the redline may say neither "all" nor "not removed"; DEVIATION 31 is descriptive.
+- **Volkov on the judge's contractivity check:** the Hermitian bound is enough for the linear part only; the supercritical cubic
+  term is dissipative, so the full claim is probably true, but it was not proved. Worded accordingly.
+- **Novak on Asante's "critical":** B is a legitimate cell of the design the board asked for; the defect is the reading rule, and it
+  was found before any result. **Asante** agrees on the substance; the severity stands because the rule would have been
+  uninterpretable.
+- **Echeverria on the judge's ICA reading:** ICA removes only part of the muscle signal. "The gain survives cleaning" is
+  "survives ICA cleaning". The surrogate contrast does not (+0.098, the restricted value).
+- **Asante on notebook 4a:** fine; label the subject-1 selectivity and compute all 14.
+
+## Fixed / pending
+- **Fixed in this session (documents only, pre-registration):** DEVIATION 29 addendum 1, DEVIATION 30 addendum 1, DEVIATION 31.
+- **Not fixed (on purpose): the redline, the note, the notebook, the scripts.** They are the fix list in `docs/FIX_BRIEF.md`.
+- **Pending:** nonlinear null test (running); Tom's Colab run; DEVIATION 31 measurement (needs the cache); the notebook version
+  question; `repro_lp48_decim4`.
+
+## Positions
+- **Halvorsen:** the 2 x 2 must live in one pipeline; report intervals and margins for every "equivalent" and "adds nothing".
+- **Echeverria:** report the authors' own ICA-cleaned run in the paper; it removes the draft's "strengthens with high gamma".
+- **Zhao:** limitation (vi) out of the paper, exact scope in the repo note, side conditions stated.
+- **Volkov:** measure what the surrogate removes before saying "destroys"; say "the linear part is contractive".
+- **Asante:** read the control as F - A and A - R only; B is descriptive.
+- **Novak:** settle which notebook version runs; fix the labels; add the missing tests.
+
+## Judge's plan
+Implementation order and acceptance checks: `docs/FIX_BRIEF.md`. Short form: (1) wait for the two running jobs and read them only
+when complete; (2) fix the notebook and scripts (labels, all-14 forensics, `repro_lp48_decim4`, analysis script for the amended
+rule, DEVIATION 31 script); (3) revise the redline and the note; (4) correct `NONIDENTIFIABILITY.md`; (5) full test run; (6) commit
+and push. `PAPER_DRAFT.md` and `vendor/` are not touched.
