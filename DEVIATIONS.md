@@ -869,3 +869,56 @@ itself places the benefit in the encoder.
 - **What no outcome would show.** A "fires" result does not show that the paper's +0.163 on real EEG is a power
   effect. It shows that the contrast cannot tell. A "valid" result on G1 would not show that the contrast isolates
   phase either, because G1 is one world.
+
+#### DEVIATION 29, addendum 1 (2026-11-17, review board; written before any control result was read)
+The Colab run had already started when this was written. No result of it had been read by anyone on the analysis side. The
+run itself is unchanged (all four cells still run); what changes is how the cells are read.
+- **Finding.** `_chunked_decimate` (vendor loader) is an anti-aliased FIR decimator. At decim 4 (Nyquist 62.5 Hz) a
+  sinusoid of 70 Hz is attenuated to 0.054 of its rms, 90 Hz to 0.018, 110 Hz to 0.013 (judge's check). So cell B
+  (`full_decim4`) holds at most 4-60 Hz. It cannot contain the 70-125 Hz band, and the band effect B - R compares 4-48 Hz with
+  about 4-60 Hz. The earlier rule required both band effects to be large, so it could not read "mostly band" even if high gamma
+  explained everything at 250 Hz.
+- **Amended reading (replaces "Quantities" and "Reading" above; the design table and the pipeline check stay).**
+  - Primary quantities, per arm, paired by subject (n = 14; mean, 95% t interval, exact sign-flip p; descriptive):
+    total T = F - R; **band effect at 250 Hz Bn = F - A**; **rate effect at the low-passed band Rt = A - R**. T = Bn + Rt
+    exactly.
+  - B is reported as a descriptive extra, with its band label "4-60 Hz at 125 Hz". B - R and F - B are not used in the reading.
+  - A reading is made only for an arm whose T has an interval above 0. Otherwise: "no gain to attribute".
+  - *Mostly band:* Bn has an interval excluding 0 and Bn >= 0.5 T. *Mostly sampling rate:* Rt has an interval excluding 0,
+    Rt >= 0.5 T, and the Bn interval includes 0. *Mixed or unresolved:* anything else. The arms read are the four RN arms;
+    `eegnet` and `shallow` are references.
+  - **Batch effect.** R and F come from the authors' runs, A from the new script on another machine and library stack. The
+    pipeline check (`repro_full_decim2`, subjects 1-2) is therefore joined by `repro_lp48_decim4` (subjects 1-4, all six arms),
+    which reruns the restricted cell in the new pipeline. The reading is made twice, with the published R and with the rerun R'
+    where it exists, and a disagreement between the two is reported. The old absolute-difference threshold (0.05) is
+    dropped (it is not calibrated: a 160-trial test set gives a standard error of about 0.04 per accuracy). The mean signed
+    difference outside +/-0.03 still marks the new cells as not comparable with the published ones.
+  - The authors' own ICA-cleaned run (`results_nonemg`, decim 2) is reported beside F: nl_sync 0.502, against R 0.393 and F 0.530.
+- **What no outcome would show** now also includes: a band effect would not show that the 70-125 Hz content is neural. The
+  authors' own audit found the discriminative 70-125 Hz activity at frontopolar and inion electrodes
+  (`build_nonemg_cache.py`).
+
+#### DEVIATION 30, addendum 1 (2026-11-17, review board; written before any nonlinear result was read)
+- The command that was launched runs G1 and then G0 (`--gens G1,G0`), both with seeds 3200-3209. "If time allows" in the entry
+  above is replaced by this. G1 is primary; G0 is the false-positive baseline.
+- A machine restart killed the first launch before any job had finished. It was relaunched with the same command. The
+  results file is read only after the run is complete (`results/published_null_nl/results.json` exists and covers 20 jobs).
+- The reading rule is unchanged. One more descriptive line is added to the report: the mean accuracy of each arm, so that a
+  floor or ceiling in the nonlinear network can be seen next to the contrast.
+
+### DEVIATION 31: retained cross-structure of the published surrogate (frozen 2026-11-17, before any run on real data)
+- **Why.** The surrogate shifts each oscillator's phasor series circularly by a fixed fraction of the window, `surr_frac ~
+  U(0,1)` per oscillator, identical in all 14 checkpoints (seed 42). The oscillators' amplitude responses decay with an
+  e-folding time of 0.41-0.87 s. Of the 120 pairs, 25 (21%) have a relative shift below 0.5 s and 53 (44%) below 1 s. On
+  synthetic 1/f input through checkpoint 1 the shifted features keep 91% of the mean |C_ij| (rms 0.154 against 0.170), partly
+  because the phasors sit away from the uniform circle (mean |<u>| = 0.31) and partly because a 4.5 s window holds only a
+  few independent samples. So "destroys inter-oscillator phase alignment" is not established, and the size of what the
+  surrogate removes is not known on real data.
+- **Measurement** (descriptive; the published checkpoints and the authors' own test trials; no v2 model; no new training):
+  for each of the 14 checkpoints and its subject's test trials, the rms over the 120 pairs of |C_ij| with and without the
+  surrogate shift, binned by the pair's relative shift (under 0.5 s, 0.5-1 s, over 1 s).
+- **Reading, fixed now.** Ratio shifted/unshifted of the rms |C| over all pairs, per subject. A median over subjects of 0.8 or
+  more: "the surrogate keeps most of the cross-term magnitude". 0.5 or less: "it removes most". Between: "partial". Reported
+  with the per-bin ratios.
+- **What no outcome would show.** The magnitude is not the class information. A high ratio does not show that the +0.163 is
+  not an alignment effect, and a low ratio does not show that it is phase.
