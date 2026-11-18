@@ -1,0 +1,19 @@
+{
+ "utc": "2026-11-18T23:00:12+00:00",
+ "git": "5307287",
+ "config_hash": "f201d54b4912",
+ "universe": "etf-verdict",
+ "verdict": "REJECTED",
+ "holdout_opened": "2026-11-18",
+ "dev_sharpe": -0.19196532226534085,
+ "dev_ci95": [
+  -0.7790502597550639,
+  0.334278255251539
+ ],
+ "holdout_sharpe": -0.36477596042400084,
+ "holdout_ci95": [
+  -1.1619510054652338,
+  0.4351282821184726
+ ],
+ "note": "pre-registered pass rule failed in dev and holdout; no live mode for this config (board round 4)"
+}

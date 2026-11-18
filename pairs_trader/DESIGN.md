@@ -62,3 +62,15 @@ SE(SR) ~ 0.58, so the holdout can falsify, not confirm.
 Paper trial (no money): replay every holdout trading day through `paper.run_paper` (the exact daily code path),
 then compare its P&L with the backtest of the same days (board round 3, Asante D2). Forward paper trading can
 then run daily via the interface or cron.
+
+## VERDICT (2026-11-18, board round 4): config f201d54b4912 is REJECTED for real money
+ETF universe, pre-registered: development Sharpe -0.19 (95% CI -0.78 .. 0.33),
+all four gates fail; holdout Sharpe -0.36 (CI -1.16 .. 0.44) on 5 trades:
+the pass rule (holdout Sharpe > 0) fails. Read as "no evidence of an edge after costs", not "proven zero".
+Recorded before the S&P 500 result was seen, so that result cannot reinterpret this one (Halvorsen).
+- **No live mode for this config.** Forward paper trading may run as a *plumbing test, not evidence*.
+- The 2023-11 .. 2026-11 holdout is spent. A follow-up must be a new, separately numbered study with ONE
+  pre-registered change, judged by the deflated Sharpe with N = every config hash ever logged, and confirmed
+  only by forward paper trading from its freeze date.
+- Paper replay of the holdout through `run_paper` matched the backtest to the cent in every window
+  (-128.26 and -18.61 in the two windows that traded).

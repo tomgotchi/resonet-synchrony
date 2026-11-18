@@ -21,6 +21,12 @@ RESULTS, RUNS, DATA = ROOT / "results", ROOT / "runs", ROOT / "data"
 st.set_page_config(page_title="Pairs trader (paper)", layout="wide")
 st.title("Pairs trader: paper trading only")
 st.caption("No real money is ever used. Live trading is not implemented. Not financial advice.")
+_verdict = (ROOT / "results" / "VERDICT.json")
+if _verdict.exists():
+    _v = json.loads(_verdict.read_text())
+    st.error(f"Board verdict: this configuration ({_v['config_hash']}) is {_v['verdict']} for real money. "
+             f"Development Sharpe {_v['dev_sharpe']:.2f}, holdout Sharpe {_v['holdout_sharpe']:.2f}. "
+             "Paper trading below is a plumbing test, not evidence of profit.")
 
 
 def load_json(p: Path):
