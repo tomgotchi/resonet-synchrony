@@ -1,79 +1,89 @@
-"""Command line.
+"""Command line (run from the pairs_trader folder).
 
-  python -m pairs_trader.cli demo                         # synthetic data: shows what the tool does and its gates
-  python -m pairs_trader.cli backtest --prices px.csv [--sectors sectors.csv] [--ledger runs/ledger.jsonl]
-  python -m pairs_trader.cli paper --prices px.csv --state runs/paper [--sectors sectors.csv]
-  python -m pairs_trader.cli live ...                     # refuses: not implemented (see README)
-
-prices.csv: first column = date, one column per ticker, ADJUSTED closes, survivorship-free if you can get it.
-sectors.csv: columns ticker,sector (pairs are only formed inside a sector).
+  python -m pairs_trader.cli download etf|sp500           # Yahoo Finance -> data/<universe>/
+  python -m pairs_trader.cli backtest --data data/etf --period dev|holdout|full
+  python -m pairs_trader.cli replay   --data data/etf --state runs/replay_etf --from 2023-11-01
+  python -m pairs_trader.cli paper    --data data/etf --state runs/paper_etf [--refresh] [--accept-jump T]
+  python -m pairs_trader.cli demo [--null]                # synthetic data with known answers
+  python -m pairs_trader.cli live                         # refuses: not implemented
+Settings are frozen in config.py. There is deliberately no command-line switch for any strategy parameter.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import sys
+from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
-from .backtest import deflated_sharpe, placebo_distribution, stress_table, walk_forward
+from .backtest import (deflated_sharpe, dose_response, placebo_distribution, sharpe, stress_table,
+                       walk_forward)
 from .config import StrategyConfig
 
 
-def load_prices(path) -> pd.DataFrame:
-    df = pd.read_csv(path, index_col=0, parse_dates=True).sort_index()
-    df = df.apply(pd.to_numeric, errors="coerce")
-    if df.index.has_duplicates:
-        raise SystemExit("duplicate dates in price file")
-    return df
-
-
-def load_sectors(path):
-    if not path:
-        return None
-    s = pd.read_csv(path)
-    return dict(zip(s["ticker"].astype(str), s["sector"].astype(str)))
-
-
-def report(prices, cfg, sectors, ledger=None, data_hash="synthetic", placebo_draws=20, note=""):
+def report(prices, cfg, sectors, dividends=None, ledger=None, universe="synthetic", placebo_draws=39,
+           note="", returns_from=None):
+    """Full development report. `returns_from` restricts the evaluated returns (holdout) without changing
+    what the strategy sees (it still forms pairs on earlier data)."""
     from . import ledger as L
-    res = walk_forward(prices, cfg, sectors)
+    res = walk_forward(prices, cfg, sectors, dividends=dividends)
+    if returns_from is not None:
+        res.daily_pnl = res.daily_pnl[res.daily_pnl.index >= pd.Timestamp(returns_from)]
+        res.trades = [t for t in res.trades if t.exit_fill >= pd.Timestamp(returns_from)]
     s = res.summary()
     if ledger:
-        L.append(ledger, cfg, data_hash, s, note)
-        trials = L.trial_sharpes(ledger, data_hash)
+        L.append(ledger, cfg, universe, s, note, universe=universe)
+        trials = L.trial_sharpes(ledger, universe)
     else:
         trials = [s["sharpe"]]
     dsr = deflated_sharpe(res.daily_ret, trials)
-    placebo = placebo_distribution(prices, cfg, sectors, draws=placebo_draws)
-    stress = stress_table(prices, cfg, sectors)
-    beat = sum(p >= s["sharpe"] for p in placebo)
-    gates = {
-        "bootstrap_ci_excludes_0": bool(s["sharpe_ci95"][0] > 0),
-        "deflated_sharpe_gt_0.95": bool(dsr["dsr"] > 0.95),
-        "beats_random_pairs_95pct": bool(beat <= 0.05 * len(placebo)),
-        "positive_at_2x_cost_plus_delay": bool(
-            stress.query("cost_mult == 2 and delay_bars == @cfg.exec_delay_bars + 1")["sharpe"].iloc[0] > 0),
-    }
-    return {"summary": s, "deflated": dsr, "placebo_sharpes": sorted(round(x, 2) for x in placebo),
-            "stress": stress.round(3).to_dict("records"), "gates": gates, "all_gates_pass": all(gates.values()),
-            "windows": res.windows}
+    out = {"summary": s, "deflated": dsr, "dose_response": dose_response(res).astype(str).to_dict("records"),
+           "windows": [{**w, "start": str(w["start"].date()), "end": str(w["end"].date())} for w in res.windows],
+           "equity": res.daily_ret.cumsum().round(6).to_dict()}
+    if placebo_draws:
+        placebo = placebo_distribution(prices, cfg, sectors, draws=placebo_draws, dividends=dividends)
+        stress = stress_table(prices, cfg, sectors, dividends=dividends)
+        beat = sum(p >= s["sharpe"] for p in placebo)
+        out.update({
+            "placebo_sharpes": sorted(round(x, 2) for x in placebo),
+            "stress": stress.round(3).to_dict("records"),
+            "gates": {
+                "bootstrap_ci_excludes_0": bool(s["sharpe_ci95"][0] > 0),
+                "deflated_sharpe_gt_0.95": bool(dsr["n_trials"] >= 2 and dsr["dsr"] > 0.95),
+                "beats_all_39_matched_placebos": bool(beat == 0 and s["n_trades"] > 0),
+                "positive_at_2x_cost_plus_delay": bool(stress.query(
+                    "cost_mult == 2 and delay_bars == @cfg.exec_delay_bars + 1")["sharpe"].iloc[0] > 0),
+            }})
+        out["all_gates_pass"] = all(out["gates"].values())
+    out["equity"] = {str(k.date()): v for k, v in out["equity"].items()}
+    return out
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="pairs_trader")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    d = sub.add_parser("demo")
-    d.add_argument("--null", action="store_true", help="no real pairs at all (everything should fail)")
+    d = sub.add_parser("download")
+    d.add_argument("universe", choices=["etf", "sp500"])
+    d.add_argument("--out", default=None)
     b = sub.add_parser("backtest")
-    b.add_argument("--prices", required=True)
-    b.add_argument("--sectors")
+    b.add_argument("--data", required=True)
+    b.add_argument("--period", choices=["dev", "holdout", "full"], default="dev")
     b.add_argument("--ledger", default="runs/ledger.jsonl")
+    b.add_argument("--out", default=None, help="write the JSON report here")
     b.add_argument("--note", default="")
+    r = sub.add_parser("replay")
+    r.add_argument("--data", required=True)
+    r.add_argument("--state", required=True)
+    r.add_argument("--from", dest="start", default="2023-11-01")
     p = sub.add_parser("paper")
-    p.add_argument("--prices", required=True)
-    p.add_argument("--sectors")
+    p.add_argument("--data", required=True)
     p.add_argument("--state", required=True)
+    p.add_argument("--refresh", action="store_true", help="re-download from Yahoo before running")
+    p.add_argument("--accept-jump", action="append", default=[])
+    dm = sub.add_parser("demo")
+    dm.add_argument("--null", action="store_true")
     sub.add_parser("live")
     a = ap.parse_args(argv)
     cfg = StrategyConfig()
@@ -87,19 +97,58 @@ def main(argv=None):
         kinds = (("null", 45),) if a.null else (("coint", 10), ("near_null", 5), ("null", 25), ("break", 5))
         panel = simulate_panel(PanelConfig(n_days=252 * 10, kinds=kinds, jumps_per_year=0.5, bounce_sd=0.002))
         out = report(panel.prices, cfg, panel.sectors, placebo_draws=10)
-        out.pop("windows")
+        for k in ("windows", "equity"):
+            out.pop(k)
         print(json.dumps(out, indent=1, default=str))
         return 0
+
+    from . import data as D
+    if a.cmd == "download":
+        groups = D.etf_universe() if a.universe == "etf" else D.sp500_universe(Path(f"data/{a.universe}/constituents.csv"))
+        px, dv = D.download(list(groups))
+        out = Path(a.out or f"data/{a.universe}")
+        D.save(px, dv, {t: g for t, g in groups.items() if t in px.columns}, out)
+        print(f"saved {px.shape[1]} tickers, {px.index[0].date()}..{px.index[-1].date()} to {out}")
+        return 0
+
+    px, dv, groups = D.load(Path(a.data))
+    universe = Path(a.data).name
     if a.cmd == "backtest":
-        from .ledger import file_sha256
-        out = report(load_prices(a.prices), cfg, load_sectors(a.sectors), a.ledger, file_sha256(a.prices),
-                     note=a.note)
-        print(json.dumps(out, indent=1, default=str))
+        if a.period == "dev":
+            sl = px.index <= pd.Timestamp(D.DEV_END)
+            out = report(px[sl], cfg, groups, dv[sl], a.ledger, f"{universe}-dev", note=a.note)
+        elif a.period == "holdout":
+            out = report(px, cfg, groups, dv, a.ledger, f"{universe}-holdout", placebo_draws=0, note=a.note,
+                         returns_from=D.HOLDOUT_START)
+        else:
+            out = report(px, cfg, groups, dv, a.ledger, f"{universe}-full", note=a.note)
+        text = json.dumps(out, indent=1, default=str)
+        if a.out:
+            Path(a.out).parent.mkdir(parents=True, exist_ok=True)
+            Path(a.out).write_text(text)
+        brief = {k: out[k] for k in ("summary", "deflated", "gates", "all_gates_pass") if k in out}
+        print(json.dumps(brief, indent=1, default=str))
+        return 0
+
+    from .paper import run_paper
+    if a.cmd == "replay":
+        days = px.index[px.index >= pd.Timestamp(a.start)]
+        last = None
+        for dday in days:
+            sl = px.index <= dday
+            last = run_paper(px[sl], cfg, a.state, groups, dividends=dv[sl])
+        eq = json.loads((Path(a.state) / "state.json").read_text())["equity"]
+        print(json.dumps({"days": len(days), "final_paper_pnl": last["paper_pnl"], "first": eq[0], "last": eq[-1]},
+                         indent=1, default=str))
         return 0
     if a.cmd == "paper":
-        from .paper import run_paper
-        print(json.dumps(run_paper(load_prices(a.prices), cfg, a.state, load_sectors(a.sectors)), indent=1,
-                         default=str))
+        if a.refresh:
+            px, dv = D.download(list(groups))
+            D.save(px, dv, groups, Path(a.data))
+        out = run_paper(px, cfg, a.state, groups, dividends=dv, accept_jumps=tuple(a.accept_jump),
+                        expected_date=pd.Timestamp.now(tz="America/New_York").normalize().tz_localize(None)
+                        - pd.offsets.BDay(0 if pd.Timestamp.now(tz="America/New_York").hour >= 17 else 1))
+        print(json.dumps(out, indent=1, default=str))
         return 0
 
 

@@ -20,34 +20,40 @@ review board (`docs/REVIEW_BOARD.md`, 2026-11-18).
 ```bash
 cd pairs_trader
 pip install -r requirements.txt
-python -m pytest -q tests                      # 21 tests: null calibration, causality, accounting, paper mode
+python -m pytest -q tests                      # null calibration, causality, accounting, paper == backtest
 python -m pairs_trader.cli demo                # synthetic market WITH real pairs: shows the report and gates
 python -m pairs_trader.cli demo --null         # synthetic market with NO real pairs: everything must fail
 ```
 
-## Your own data
-`prices.csv`: first column a date, then one column per ticker of **split- and dividend-adjusted closes**
-(survivorship-free if possible, i.e. including stocks that were later delisted). `sectors.csv`: `ticker,sector`.
-At least ~3 years of history (2 years formation + trading windows); 10+ years for the statistics to mean much.
-
+## Real data (Yahoo Finance, free)
 ```bash
-python -m pairs_trader.cli backtest --prices prices.csv --sectors sectors.csv --note "first look"
+python -m pairs_trader.cli download etf        # 72 ETFs in 8 frozen asset-class groups -> data/etf/
+python -m pairs_trader.cli download sp500      # current S&P 500 by GICS sub-industry -> data/sp500/
+python -m pairs_trader.cli backtest --data data/etf --period dev --out results/etf_dev.json
 ```
-Every backtest appends a line to `runs/ledger.jsonl`. **Never delete lines**: the deflated Sharpe uses the
-number of configurations you tried on that data file. If you change any setting in `config.py`, that is another
-trial, and the bar for "significant" rises.
+- Prices are split-adjusted closes with dividends booked as cash (history never shifts).
+- `--period dev` is 2010 to 2023-10. `--period holdout` (2023-11 onward) was opened **once**, as pre-registered in
+  DESIGN.md. Running more configurations on the same data makes every result less trustworthy; each run is
+  counted in `runs/ledger.jsonl`.
+- **S&P 500 results are an upper bound.** The list is today's members, so every stock in it survived. Free data
+  cannot fix that; ETF results are the primary ones.
 
-The report gives the summary, the bootstrap CI, the deflated Sharpe, random-pair placebo Sharpes, the cost/delay
-stress table and four **gates**. If `all_gates_pass` is false, stop.
-
-## Paper trading (daily, e.g. by cron after the close)
+## Paper trial (no money)
 ```bash
-python -m pairs_trader.cli paper --prices prices.csv --sectors sectors.csv --state runs/paper
+python -m pairs_trader.cli replay --data data/etf --state runs/replay_etf --from 2023-11-01   # dry run over the holdout
+python -m pairs_trader.cli paper  --data data/etf --state runs/paper_etf --refresh            # one real day, after the close
 ```
-- Fills yesterday's paper orders at today's close, then writes today's orders to `runs/paper/orders.csv`.
-- Re-running on the same day does nothing (no duplicate orders).
-- Refuses to run on suspicious data (missing latest prices, >40% one-day moves) or if settings changed.
-- Kill switch: `touch runs/paper/KILL` (or `PAIRS_KILL=1`) → only flattening orders from then on.
+`paper` downloads fresh prices, fills yesterday's paper orders at today's close, and writes today's orders to
+`runs/paper_etf/orders.csv`. Re-running the same day does nothing. It refuses on stale or revised data or on a
+>25% move (unless `--accept-jump TICKER`). Kill switch: `touch runs/paper_etf/KILL`.
+For a daily schedule: `cron` at about 18:00 New York time on weekdays.
+
+## Dashboard
+```bash
+streamlit run app.py
+```
+Tabs: backtest research (gates, equity, placebo, stress, pairs), paper trial (P&L, book, orders, "run today",
+kill switch) and settings (read-only). By design the dashboard cannot change settings or trade live.
 
 ## Before real money (if ever)
 1. All four backtest gates pass on survivorship-free data, with every trial logged.

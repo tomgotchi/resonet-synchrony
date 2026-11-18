@@ -4,3 +4,5 @@ scipy>=1.13
 statsmodels>=0.14
 scikit-learn>=1.5
 pytest>=8
+yfinance>=0.2.50
+streamlit>=1.40
