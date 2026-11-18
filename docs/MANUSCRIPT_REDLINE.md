@@ -6,8 +6,8 @@ heading, because line numbers drift.
 Issue 1: the oscillators do not resonate with the data. Issue 2: the surrogate contrast cannot separate phase from
 power. **Neither depends on the Colab result.** Issue 3 (high gamma, band against sampling rate) is **held**, and its
 passages are marked HELD. Evidence for each change: `docs/CRITIQUE_AND_V2.md` Part 1; `results/published_forensics.json`;
-`results/published_null/results.json`. One number is still open: the null test used the published *linear* bank. The
-nonlinear network is being run (DEVIATION 30); add its result at the places marked "[nonlinear network: ...]" when it is complete, and say which model each number is for.
+`results/published_null/results.json`. The null test was run with both published models: the *linear* bank (`results/published_null/`) and the
+*nonlinear* network that produced the headline numbers (DEVIATION 30, `results/published_null_nl/`). Say which model each number is for.
 
 ## Terminology
 | now | use instead | why |
@@ -35,7 +35,7 @@ stimulus-induced, not emergent."
 Proposed: "**Removing the cross-oscillator terms of the readout costs 0.163 accuracy in all 14 subjects** (Cohen's
 d_z = 2.04, Holm-corrected p = 2.3e-5), an effect the raw sync-versus-power ablation hides because readout capacity
 independently hurts. **The control cannot attribute this to phase**: on simulated data in which the classes differ
-only in source power, the same contrast is clearly positive (+0.31 in 10 of 10 datasets with the published linear bank; [nonlinear network: add when DEVIATION 30 is complete]). The size of that number depends on the simulation and is not comparable with 0.163. The linear, uncoupled bank
+only in source power, the same contrast is clearly positive (+0.31 in 10 of 10 datasets with the published nonlinear network, 90% interval +0.27 to +0.35; the same with the linear bank). The size of that number depends on the simulation and is not comparable with 0.163. The linear, uncoupled bank
 reproduces the effect (+0.150), so nonlinear coupling is not needed."
 
 Note on the +0.31: it shows that the contrast is not specific. Its size depends on the generator (ERD depth 0.15, set so that

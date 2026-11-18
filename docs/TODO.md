@@ -35,7 +35,7 @@ notebook > GitHub* or download `notebooks/resonet_synchrony_full_colab.ipynb` fr
       section 9 from the current notebook, or download that folder and put it in `results/bandwidth_control/`.
 - [ ] **Tom, next Colab session (current notebook):** the second pipeline check `repro_lp48_decim4` runs by itself in 4b. For
       DEVIATION 31 set `RUN_SURROGATE_RETENTION = True` (section 4c; GPU, no training).
-- [ ] Nonlinear null test (DEVIATION 30): running on CPU here; read only when complete.
+- [x] Nonlinear null test (DEVIATION 30): complete; fires (+0.312, 90% interval +0.273 to +0.351, 10/10). Addendum 2.
 - [ ] Read the control with `scripts/bandwidth_analysis.py` (DEVIATION 29, addendum 1) once the Colab run has finished.
 
 ## Claude (no input needed)

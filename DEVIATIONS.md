@@ -922,3 +922,20 @@ run itself is unchanged (all four cells still run); what changes is how the cell
   with the per-bin ratios.
 - **What no outcome would show.** The magnitude is not the class information. A high ratio does not show that the +0.163 is
   not an alignment effect, and a low ratio does not show that it is phase.
+
+#### DEVIATION 30, addendum 2: outcome (2026-11-18; read once, after all 20 jobs had finished)
+- Run complete: `results/published_null_nl/results.json`, G1 and G0, seeds 3200-3209, 20 jobs. A worker restart
+  interrupted the run once more on 2026-11-18. It was relaunched with the same command and resumed from `partial.json`;
+  no job was rerun or dropped.
+- **G1 (classes differ only in source power): sync - surrogate = +0.312, 90% t interval [+0.273, +0.351], 10 of 10
+  positive, sign-flip p = 0.002.** Lower end above +0.05: **the rule fires.** The contrast cannot separate phase from
+  power in the published nonlinear network either. The linear bank gave +0.309 [+0.27, +0.35], 10 of 10.
+- Mean accuracies (4 classes, chance 0.25): G1 power 0.551, sync 0.612, surrogate 0.300; G0 power 0.239, sync 0.269,
+  surrogate 0.243. The surrogate arm in G1 sits near chance (best epoch 0 in 3 of 10 seeds). That is where the
+  contrast comes from: removing the cross-terms removes the power information that reaches the readout through them.
+- G0 (classes carry nothing; false-positive baseline): sync - surrogate = +0.026, 90% interval [+0.005, +0.047], 8 of 10
+  positive, p = 0.055. Inside (-0.05, +0.05). All arms are at chance, so G0 shows no floor-driven false positive of
+  the size seen in G1.
+- What this does not show is unchanged: it does not show that the paper's +0.163 on real EEG is a power effect.
+- Correction found while recording this: `docs/NOTE_TO_COAUTHORS.md` called the linear interval [+0.27, +0.35] a 95%
+  interval. It is the 90% interval of DEVIATION 24's statistic; the 95% interval is [+0.26, +0.36]. Corrected in the note.

@@ -19,8 +19,8 @@ script you can rerun.
    - "Resonance", "Hopf oscillator" and "PLV" therefore describe the equations, not what the trained model does.
 2. **The surrogate control does not isolate phase.**
    - I simulated data in which the classes differ only in source power, with no phase information. The published
-     code (its linear bank) still gives sync - surrogate = **+0.31** (95% CI +0.27 to +0.35; 10 of 10 datasets). The
-     same test on the nonlinear network, which produced the headline numbers, is running now; I will send it.
+     code still gives sync - surrogate = **+0.31** (90% interval +0.27 to +0.35; 10 of 10 datasets), with the
+     nonlinear network that produced the headline numbers and with the linear bank alike.
    - Source power reaches the readout through the cross-terms between learned spatial projections, and the surrogate
      disturbs those terms. So the +0.163 cannot be attributed to phase. The size of +0.31 depends on my simulation and
      should not be compared with +0.163.

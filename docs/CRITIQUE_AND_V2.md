@@ -120,6 +120,16 @@ at 4 Hz like the real cache). Ten datasets per generator, seeds 3200-3209. Test 
 |---|---|---|---|---|---|
 | G0: classes carry nothing | 0.249 | 0.242 | 0.246 | 0.244 | -0.003 [-0.025, +0.019] |
 | **G1: classes differ only in source power** | 0.584 | 0.627 | 0.319 | 0.606 | **+0.309 [+0.266, +0.352], 10/10** |
+
+The same test with the published **nonlinear** network (vendor `ResonanceNetwork`, DEVIATION 30, arms power / sync /
+surrogate; `results/published_null_nl/`):
+
+| generator | power | sync | surrogate | **sync - surrogate** |
+|---|---|---|---|---|
+| G0: classes carry nothing | 0.239 | 0.269 | 0.243 | +0.026 [+0.005, +0.047], 8/10 |
+| **G1: classes differ only in source power** | 0.551 | 0.612 | 0.300 | **+0.312 [+0.273, +0.351], 10/10** |
+
+The pre-registered rule fires: the contrast cannot separate phase from power in the nonlinear network either.
 | HGD, as published (linear / nonlinear bank) | 0.526 / 0.533 | 0.528 / 0.530 | 0.378 / 0.367 | - | +0.150 / +0.163 |
 
 (90% CI. G1: four independent narrowband sources with random phases; the class is which source is 15% weaker. There

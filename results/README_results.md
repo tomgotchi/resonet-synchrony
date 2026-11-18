@@ -733,6 +733,8 @@ Full account with tables: `docs/CRITIQUE_AND_V2.md`; fig 10; protocol and outcom
   a 1/f input; the oscillator state rotates backwards in 42% of samples.
 - **Published code on ground truth** (`results/published_null/`): on power-only data sync 0.627, power 0.584,
   surrogate 0.319; sync - surrogate = +0.309 [+0.266, +0.352], 10/10.
+  The published nonlinear network (`results/published_null_nl/`, DEVIATION 30): sync 0.612, power 0.551, surrogate
+  0.300; sync - surrogate = +0.312 [+0.273, +0.351], 10/10 (rule fires). G0: +0.026 [+0.005, +0.047], all arms at chance.
 - **v2 on ground truth** (`results/v2_study/results_final.json`, `results/v2_probe/synthetic.json`): the lag
   contrast L passes its five criteria on both the trained and the closed-form path.
 - **v2 on HGD development subjects 1-6** (`results/v2_probe/hgd_b12s8_4-100Hz/`; CV inside the training split;

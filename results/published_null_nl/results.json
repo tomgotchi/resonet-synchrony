@@ -1,0 +1,454 @@
+{
+ "model": "vendor ResonanceNetwork (published NONLINEAR network), N = 16, published training loop",
+ "generators": "DEVIATION 24 (calib_p1), frozen difficulty",
+ "seeds": [
+  3200,
+  3201,
+  3202,
+  3203,
+  3204,
+  3205,
+  3206,
+  3207,
+  3208,
+  3209
+ ],
+ "summary": {
+  "G0": {
+   "n": 10,
+   "means": {
+    "power": 0.23937500000000003,
+    "sync": 0.26875,
+    "surrogate": 0.2425
+   },
+   "contrasts": {
+    "sync - surrogate (the paper's phase contrast)": {
+     "mean": 0.02624999999999999,
+     "ci90": [
+      0.005276850498796032,
+      0.047223149501203945
+     ],
+     "p_signflip": 0.0546875,
+     "n_pos": 8
+    },
+    "sync - power": {
+     "mean": 0.02937499999999999,
+     "ci90": [
+      0.00817705147775916,
+      0.050572948522240826
+     ],
+     "p_signflip": 0.05078125,
+     "n_pos": 9
+    },
+    "surrogate - power": {
+     "mean": 0.003124999999999997,
+     "ci90": [
+      -0.01681068841914481,
+      0.0230606884191448
+     ],
+     "p_signflip": 0.7578125,
+     "n_pos": 4
+    }
+   }
+  },
+  "G1": {
+   "n": 10,
+   "means": {
+    "power": 0.550625,
+    "sync": 0.6118750000000001,
+    "surrogate": 0.3
+   },
+   "contrasts": {
+    "sync - surrogate (the paper's phase contrast)": {
+     "mean": 0.311875,
+     "ci90": [
+      0.2730620080023304,
+      0.35068799199766965
+     ],
+     "p_signflip": 0.001953125,
+     "n_pos": 10
+    },
+    "sync - power": {
+     "mean": 0.061249999999999985,
+     "ci90": [
+      0.04000051250423341,
+      0.08249948749576656
+     ],
+     "p_signflip": 0.00390625,
+     "n_pos": 9
+    },
+    "surrogate - power": {
+     "mean": -0.250625,
+     "ci90": [
+      -0.28432957350074306,
+      -0.2169204264992569
+     ],
+     "p_signflip": 0.001953125,
+     "n_pos": 0
+    }
+   }
+  }
+ },
+ "rows": [
+  {
+   "gen": "G1",
+   "seed": 3200,
+   "arms": {
+    "power": {
+     "bal_acc": 0.5437500000000001,
+     "best_epoch": 69
+    },
+    "sync": {
+     "bal_acc": 0.54375,
+     "best_epoch": 23
+    },
+    "surrogate": {
+     "bal_acc": 0.28125000000000006,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3202,
+   "arms": {
+    "power": {
+     "bal_acc": 0.5437500000000001,
+     "best_epoch": 79
+    },
+    "sync": {
+     "bal_acc": 0.65,
+     "best_epoch": 28
+    },
+    "surrogate": {
+     "bal_acc": 0.25625,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3203,
+   "arms": {
+    "power": {
+     "bal_acc": 0.55,
+     "best_epoch": 72
+    },
+    "sync": {
+     "bal_acc": 0.6125,
+     "best_epoch": 14
+    },
+    "surrogate": {
+     "bal_acc": 0.375,
+     "best_epoch": 59
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3201,
+   "arms": {
+    "power": {
+     "bal_acc": 0.54375,
+     "best_epoch": 67
+    },
+    "sync": {
+     "bal_acc": 0.61875,
+     "best_epoch": 34
+    },
+    "surrogate": {
+     "bal_acc": 0.33125000000000004,
+     "best_epoch": 67
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3205,
+   "arms": {
+    "power": {
+     "bal_acc": 0.5375000000000001,
+     "best_epoch": 73
+    },
+    "sync": {
+     "bal_acc": 0.6000000000000001,
+     "best_epoch": 35
+    },
+    "surrogate": {
+     "bal_acc": 0.32500000000000007,
+     "best_epoch": 22
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3204,
+   "arms": {
+    "power": {
+     "bal_acc": 0.5875,
+     "best_epoch": 61
+    },
+    "sync": {
+     "bal_acc": 0.625,
+     "best_epoch": 22
+    },
+    "surrogate": {
+     "bal_acc": 0.33125,
+     "best_epoch": 61
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3206,
+   "arms": {
+    "power": {
+     "bal_acc": 0.53125,
+     "best_epoch": 79
+    },
+    "sync": {
+     "bal_acc": 0.58125,
+     "best_epoch": 39
+    },
+    "surrogate": {
+     "bal_acc": 0.27499999999999997,
+     "best_epoch": 12
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3207,
+   "arms": {
+    "power": {
+     "bal_acc": 0.59375,
+     "best_epoch": 70
+    },
+    "sync": {
+     "bal_acc": 0.6625,
+     "best_epoch": 46
+    },
+    "surrogate": {
+     "bal_acc": 0.20625,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3200,
+   "arms": {
+    "power": {
+     "bal_acc": 0.21875000000000003,
+     "best_epoch": 10
+    },
+    "sync": {
+     "bal_acc": 0.2875,
+     "best_epoch": 2
+    },
+    "surrogate": {
+     "bal_acc": 0.21250000000000002,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3201,
+   "arms": {
+    "power": {
+     "bal_acc": 0.225,
+     "best_epoch": 50
+    },
+    "sync": {
+     "bal_acc": 0.25,
+     "best_epoch": 1
+    },
+    "surrogate": {
+     "bal_acc": 0.24375,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3202,
+   "arms": {
+    "power": {
+     "bal_acc": 0.23124999999999998,
+     "best_epoch": 11
+    },
+    "sync": {
+     "bal_acc": 0.25625,
+     "best_epoch": 2
+    },
+    "surrogate": {
+     "bal_acc": 0.225,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3209,
+   "arms": {
+    "power": {
+     "bal_acc": 0.525,
+     "best_epoch": 70
+    },
+    "sync": {
+     "bal_acc": 0.5499999999999999,
+     "best_epoch": 24
+    },
+    "surrogate": {
+     "bal_acc": 0.28125,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G1",
+   "seed": 3208,
+   "arms": {
+    "power": {
+     "bal_acc": 0.55,
+     "best_epoch": 79
+    },
+    "sync": {
+     "bal_acc": 0.675,
+     "best_epoch": 31
+    },
+    "surrogate": {
+     "bal_acc": 0.3375,
+     "best_epoch": 16
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3203,
+   "arms": {
+    "power": {
+     "bal_acc": 0.2375,
+     "best_epoch": 10
+    },
+    "sync": {
+     "bal_acc": 0.275,
+     "best_epoch": 0
+    },
+    "surrogate": {
+     "bal_acc": 0.23125,
+     "best_epoch": 15
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3204,
+   "arms": {
+    "power": {
+     "bal_acc": 0.25000000000000006,
+     "best_epoch": 11
+    },
+    "sync": {
+     "bal_acc": 0.32499999999999996,
+     "best_epoch": 4
+    },
+    "surrogate": {
+     "bal_acc": 0.2625,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3206,
+   "arms": {
+    "power": {
+     "bal_acc": 0.22499999999999998,
+     "best_epoch": 18
+    },
+    "sync": {
+     "bal_acc": 0.225,
+     "best_epoch": 3
+    },
+    "surrogate": {
+     "bal_acc": 0.21875,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3205,
+   "arms": {
+    "power": {
+     "bal_acc": 0.23125,
+     "best_epoch": 35
+    },
+    "sync": {
+     "bal_acc": 0.25625,
+     "best_epoch": 19
+    },
+    "surrogate": {
+     "bal_acc": 0.3,
+     "best_epoch": 19
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3208,
+   "arms": {
+    "power": {
+     "bal_acc": 0.225,
+     "best_epoch": 31
+    },
+    "sync": {
+     "bal_acc": 0.2875,
+     "best_epoch": 11
+    },
+    "surrogate": {
+     "bal_acc": 0.22499999999999998,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3209,
+   "arms": {
+    "power": {
+     "bal_acc": 0.3,
+     "best_epoch": 25
+    },
+    "sync": {
+     "bal_acc": 0.25,
+     "best_epoch": 0
+    },
+    "surrogate": {
+     "bal_acc": 0.23124999999999998,
+     "best_epoch": 0
+    }
+   }
+  },
+  {
+   "gen": "G0",
+   "seed": 3207,
+   "arms": {
+    "power": {
+     "bal_acc": 0.25,
+     "best_epoch": 77
+    },
+    "sync": {
+     "bal_acc": 0.275,
+     "best_epoch": 19
+    },
+    "surrogate": {
+     "bal_acc": 0.275,
+     "best_epoch": 3
+    }
+   }
+  }
+ ]
+}
