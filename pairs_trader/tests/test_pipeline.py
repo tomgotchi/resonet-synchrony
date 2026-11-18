@@ -65,8 +65,8 @@ def test_planted_pairs_are_found_with_right_beta(planted):
     true_found = [p for p in pairs if p.b == p.a[:-1] + "B" and truth.kind[p.a] == "coint"]
     assert len(true_found) >= 4
     assert len(true_found) >= 0.75 * len(pairs)          # selected pairs are mostly real
-    for p in true_found:
-        assert abs(p.beta / truth.beta[p.a] - 1) < 0.10
+    errs = [abs(p.beta / truth.beta[p.a] - 1) for p in true_found]
+    assert np.median(errs) < 0.10 and max(errs) < 0.20     # q = 0.10 admits weaker pairs with noisier betas
 
 
 def test_planted_edge_is_positive_net_of_costs(planted):
@@ -171,3 +171,63 @@ def test_break_detector_stops_trading():
 def test_config_hash_changes_with_any_value():
     assert CFG.hash() != CFG.with_(entry_z=2.1).hash()
     assert json.loads(CFG.to_json())["entry_z"] == 2.0
+
+
+# ------------------------------------------------------------------ round-2 fixes
+def test_halted_exit_fills_at_first_real_price_after_the_gap():
+    """Board round 2 (Asante): exiting at the pre-halt price is a fill that never happened."""
+    a = np.full(30, 100.0)
+    a[10:13] = 103.0                     # short-spread entry signal at 10, filled at 11
+    a[13:18] = np.nan                    # halt
+    a[18:] = 130.0                       # reopens 30% higher: the short A leg loses
+    pnl, trades = trade_window(_toy(a), [TOY], 0, 30, CFG.with_(max_pairs=1, capital=10_000.0))
+    t = trades[0]
+    assert t.exit_reason == "missing_data" and t.exit_fill == _toy(a).index[18]
+    qa = -5_000.0 / 103.0
+    assert t.pnl < qa * (130.0 - 103.0) * 0.99          # the loss at the reopen price is booked
+
+
+def test_no_price_until_window_end_books_a_haircut():
+    a = np.full(30, 100.0)
+    a[10:15] = 103.0
+    a[15:] = np.nan                       # never trades again
+    _, trades = trade_window(_toy(a), [TOY], 0, 30, CFG.with_(max_pairs=1, capital=10_000.0))
+    t = trades[0]
+    assert t.exit_reason == "no_price_at_end"
+    qa = -5_000.0 / 103.0
+    assert t.pnl <= qa * (103.0 * 1.30 - 103.0) + 1e-6   # short leg marked 30% against us (plus costs)
+
+
+def test_no_entry_that_would_fill_on_the_last_bar():
+    a = np.full(12, 100.0)
+    a[10] = 103.0                          # signal at 10 would fill at 11 = last bar
+    _, trades = trade_window(_toy(a), [TOY], 0, 12, CFG.with_(max_pairs=1))
+    assert trades == []
+
+
+def test_dividends_are_cash_flows_long_receives_short_pays():
+    a = np.full(30, 100.0)
+    a[10:15] = 103.0                       # short A from bar 11 to 16
+    px = _toy(a)
+    div = pd.DataFrame(0.0, index=px.index, columns=px.columns)
+    div.iloc[13, 0] = 1.0                  # $1 dividend on A while short -> we pay it
+    div.iloc[13, 1] = 2.0                  # $2 on B while long -> we receive it
+    cfg = CFG.with_(max_pairs=1, capital=10_000.0)
+    base = trade_window(px, [TOY], 0, 30, cfg)[1][0].pnl
+    withd = trade_window(px, [TOY], 0, 30, cfg, dividends=div)[1][0].pnl
+    qa, qb = -5_000.0 / 103.0, 5_000.0 / 100.0
+    assert withd - base == pytest.approx(qa * 1.0 + qb * 2.0, rel=1e-9)
+
+
+def test_calibration_brings_entry_rate_toward_nominal():
+    """Board round 3 (Zhao): on genuinely cointegrated selected pairs, raw |z|>2 fires ~3x the nominal 4.6%."""
+    F, M = CFG.formation_days, CFG.trading_days
+    raw, cal = [], []
+    for seed in range(4):
+        p = simulate_panel(PanelConfig(n_days=F + M, kinds=(("coint", 20),), seed=200 + seed))
+        for q in select_pairs(p.prices.iloc[:F], CFG, p.sectors):
+            s = np.log(p.prices[q.a].values) - q.alpha - q.beta * np.log(p.prices[q.b].values)
+            raw.append(np.mean(np.abs((s[F:] - q.mu) / q.sd) > 2))
+            cal.append(np.mean(np.abs((s[F:] - q.mu) / (q.sd * q.z_scale)) > 2))
+    assert len(cal) >= 15
+    assert np.mean(raw) > 0.08 and 0.02 <= np.mean(cal) <= 0.075

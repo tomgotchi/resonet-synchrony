@@ -52,8 +52,8 @@ def _innov(rng, size, dof):
 
 
 def simulate_panel(cfg: PanelConfig = PanelConfig()) -> Panel:
-    rng = np.random.default_rng(cfg.seed)
     n = cfg.n_days
+    rng = np.random.default_rng([cfg.seed, 0])                # market factor stream
     dates = pd.bdate_range("2015-01-02", periods=n)
     market = np.cumsum(cfg.market_vol * _innov(rng, n, cfg.t_dof))
     brk = cfg.break_day if cfg.break_day is not None else n // 2
@@ -62,7 +62,8 @@ def simulate_panel(cfg: PanelConfig = PanelConfig()) -> Panel:
     for kind, count in cfg.kinds:
         for _ in range(count):
             a, b = f"S{k:03d}A", f"S{k:03d}B"
-            k += 1
+            rng = np.random.default_rng([cfg.seed, 1, k])     # own stream per pair: adding a pair or changing
+            k += 1                                            # one pair's kind never re-randomises the others
             def walk():
                 w = cfg.idio_vol * _innov(rng, n, cfg.t_dof)
                 jumps = rng.random(n) < cfg.jumps_per_year / 252.0
@@ -85,14 +86,15 @@ def simulate_panel(cfg: PanelConfig = PanelConfig()) -> Panel:
                         s[t] = s[t - 1] + e[t]                 # unit root: the tie is gone
                     else:
                         s[t] = phi * s[t - 1] + e[t]
-                beta_t = np.full(n, beta)
                 if kind == "break" and cfg.break_kind == "mu_step":
                     s[brk:] += 4.0 * cfg.spread_sd
+                slope_change = np.zeros(n)
                 if kind == "break" and cfg.break_kind == "beta_step":
-                    beta_t[brk:] = beta * 1.3
+                    # the slope changes from the break on, with no level jump at the break itself
+                    slope_change[brk:] = 0.3 * beta * (log_b[brk:] - log_b[brk])
                 # jumps on A that do not revert (idiosyncratic news); B's jumps already live in log_b
                 ja = (rng.random(n) < cfg.jumps_per_year / 252.0) * rng.normal(0.0, cfg.jump_sd, n)
-                log_a = np.log(50) + beta_t * (log_b - np.log(50)) + s + np.cumsum(ja)
+                log_a = np.log(50) + beta * (log_b - np.log(50)) + slope_change + s + np.cumsum(ja)
             # bounce noise is always drawn so changing bounce_sd never shifts the RNG stream for later pairs
             na, nb = rng.standard_normal(n), rng.standard_normal(n)
             cols[a] = np.exp(log_a + cfg.bounce_sd * na)
@@ -101,7 +103,7 @@ def simulate_panel(cfg: PanelConfig = PanelConfig()) -> Panel:
                           "break_day": dates[brk] if kind == "break" else pd.NaT,
                           "break_kind": cfg.break_kind if kind == "break" else ""})
     truth = pd.DataFrame(truth)
-    perm = np.random.default_rng([cfg.seed, 1]).permutation(len(truth))
+    perm = np.random.default_rng([cfg.seed, 2]).permutation(len(truth))
     truth["sector"] = [f"SEC{i // cfg.pairs_per_sector:02d}" for i in np.argsort(perm)]
     sectors = {}
     for _, r in truth.iterrows():

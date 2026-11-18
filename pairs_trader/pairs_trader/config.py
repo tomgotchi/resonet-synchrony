@@ -11,10 +11,15 @@ class StrategyConfig:
     # --- pair selection (formation window) ---
     formation_days: int = 504          # 2 years: 252 days cannot tell a 20-day half-life from noise (board 2026-11-18)
     trading_days: int = 126
-    fdr_q: float = 0.05                # Benjamini-Hochberg over all candidate pairs, using max(p_AB, p_BA)
+    fdr_q: float = 0.10                # Benjamini-Hochberg q, using max(p_AB, p_BA) (board round 3, D5)
+    fdr_per_group: bool = True         # one BH family per sector / sub-industry / ETF group
     adf_lags: int = 1
     half_life_min: float = 2.0         # bias-corrected (Kendall) half-life, trading days
-    half_life_max: float = 30.0
+    half_life_max: float = 45.0        # widened from 30: 20-32% of true 20-day pairs landed above 30 (round 2)
+    calibrate: bool = True             # selection-aware bootstrap per pair (calibrate.py)
+    calibration_sims: int = 150
+    cusum_quantile: float = 0.995      # set on synthetic pairs so healthy pairs alarm in <= ~2% of windows
+    z_tail_factor: float = 0.6         # set on synthetic pairs so |z| > 2 on ~4.6% of days on true pairs
     beta_min: float = 0.2              # hedge ratio bounds (log-price regression A on B)
     beta_max: float = 5.0
     max_pairs: int = 10
@@ -25,7 +30,9 @@ class StrategyConfig:
     stop_z: float = 4.0
     time_stop_half_lives: float = 3.0
     cusum_k: float = 0.5               # break detector on standardised AR(1) innovations
-    cusum_h: float = 8.0
+    cusum_h: float = 8.0               # recalibrated below (board round 2: 14-31% false alarms per window)
+    cusum_clip: float = 3.0            # Huber clip of innovations before the CUSUM update
+    delist_haircut: float = 0.30       # adverse move assumed if a held leg never trades again in the window
     # --- execution & costs ---
     exec_delay_bars: int = 1           # decide at close t, fill at close t+delay (no opens in the data)
     cost_bps: float = 5.0              # per leg, per fill (so a round trip on a pair = 4 fills)

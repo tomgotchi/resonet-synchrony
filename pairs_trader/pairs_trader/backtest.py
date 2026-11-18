@@ -43,13 +43,16 @@ class BacktestResult:
             "win_rate_net": float((tr.pnl > 0).mean()) if len(tr) else float("nan"),
             "exit_reasons": tr.reason.value_counts().to_dict() if len(tr) else {},
         }
-        lo, hi = block_bootstrap_sharpe_ci(r)
+        lo, hi = block_bootstrap_sharpe_ci(r, block=126)          # whole trading windows (board round 2)
         out["sharpe_ci95"] = (lo, hi)
+        out["sharpe_ci95_block63"] = block_bootstrap_sharpe_ci(r, block=63)
+        out["sharpe_ci95_block252"] = block_bootstrap_sharpe_ci(r, block=252)
         return out
 
 
 def walk_forward(prices: pd.DataFrame, cfg: StrategyConfig, sectors: dict | None = None,
-                 pair_picker=None, entry_filter_factory=None) -> BacktestResult:
+                 pair_picker=None, entry_filter_factory=None, dividends: pd.DataFrame | None = None
+                 ) -> BacktestResult:
     """`pair_picker(formation_df, cfg, sectors, window_no) -> list[Pair]` replaces the selection rule (placebo).
     `entry_filter_factory(past_trades) -> filter | None` builds the ML filter from trades closed before the window.
     """
@@ -63,7 +66,7 @@ def walk_forward(prices: pd.DataFrame, cfg: StrategyConfig, sectors: dict | None
         pairs = (pair_picker(formation, cfg, sectors, w) if pair_picker
                  else select_pairs(formation, cfg, sectors))
         flt = entry_filter_factory(list(trades)) if entry_filter_factory else None
-        pnl, tr = trade_window(prices, pairs, s, e, cfg, entry_filter=flt)
+        pnl, tr = trade_window(prices, pairs, s, e, cfg, entry_filter=flt, dividends=dividends)
         pnl_parts.append(pnl)
         trades.extend(tr)
         windows.append({"start": prices.index[s], "end": prices.index[e - 1], "n_pairs": len(pairs),
@@ -122,12 +125,16 @@ def probabilistic_sharpe(r, sr0_annual: float = 0.0) -> float:
 
 def deflated_sharpe(r, trial_sharpes_annual: list[float]) -> dict:
     """Deflated Sharpe ratio: PSR against the expected max Sharpe of N trials under the null.
-    N and the spread of Sharpes come from the trials ledger (every configuration ever run)."""
+    N = distinct configurations in the ledger for this universe/date range. The variance of trial Sharpes is
+    floored at the null sampling variance (1/years, annual units) so re-running near-identical configs cannot
+    shrink the hurdle to zero (board round 2)."""
     N = len(trial_sharpes_annual)
     if N < 2:
         return {"n_trials": N, "sr0_annual": 0.0, "dsr": probabilistic_sharpe(r, 0.0),
-                "note": "fewer than 2 logged trials: this is the plain PSR vs 0"}
-    v = float(np.var(np.asarray(trial_sharpes_annual) / np.sqrt(TRADING_DAYS), ddof=1))
+                "note": "fewer than 2 distinct configurations logged: plain PSR vs 0, not a deflated Sharpe"}
+    years = max(len(pd.Series(r).dropna()) / TRADING_DAYS, 1e-9)
+    v_annual = max(float(np.var(np.asarray(trial_sharpes_annual), ddof=1)), 1.0 / years)
+    v = v_annual / TRADING_DAYS
     g = 0.5772156649
     sr0 = np.sqrt(v) * ((1 - g) * norm.ppf(1 - 1 / N) + g * norm.ppf(1 - 1 / (N * np.e)))
     sr0_annual = float(sr0 * np.sqrt(TRADING_DAYS))
@@ -136,49 +143,61 @@ def deflated_sharpe(r, trial_sharpes_annual: list[float]) -> dict:
 
 # ------------------------------------------------------------------------------------------------ baselines
 def random_pair_picker(seed: int):
-    """Placebo: same number of pairs as the real rule would pick, drawn at random from the same sectors,
-    with parameters fitted on the formation window exactly like real pairs (no significance filter)."""
-    from .coint import ar1_fit, half_life_corrected, ols_alpha_beta
-    from .strategy import candidate_pairs
+    """Matched placebo (board round 3, Zhao D2): as many pairs as the real rule picks, drawn at random from
+    same-group candidates that pass the same beta and (unclipped) half-life screens but were NOT significant
+    (0.05 < p < 0.5). They get the same calibration and the same trading rules. If the real strategy cannot beat
+    these, the cointegration screen is not what earns the money."""
+    from .strategy import make_pair
 
     def pick(formation, cfg, sectors, w):
-        real = select_pairs(formation, cfg, sectors)
+        real, table = select_pairs(formation, cfg, sectors, return_table=True)
+        if not real or table.empty:
+            return []
         px = formation.dropna(axis=1, how="any")
-        cands = list(candidate_pairs(px.columns, sectors))
-        rng = np.random.default_rng([seed, w])
-        rng.shuffle(cands)
+        logp = np.log(px)
+        cands = table[(table.p > 0.05) & (table.p < 0.5) & table.beta.between(cfg.beta_min, cfg.beta_max)]
+        order = np.random.default_rng([seed, w]).permutation(len(cands))
         out, used = [], set()
-        for a, b in cands:
+        for i in order:
+            row = cands.iloc[i]
             if len(out) >= len(real):
                 break
-            if a in used or b in used:
+            if row.a in used or row.b in used:
                 continue
-            la, lb = np.log(px[a].to_numpy()), np.log(px[b].to_numpy())
-            al, be = ols_alpha_beta(la, lb)
-            if not cfg.beta_min <= be <= cfg.beta_max:
+            p = make_pair(logp[row.a].to_numpy(), logp[row.b].to_numpy(), row.a, row.b, cfg, p_threshold=1.0,
+                          p=float(row.p), tstat=float(row.tstat), group=str(row.group))
+            if not cfg.half_life_min <= p.half_life <= cfg.half_life_max:
                 continue
-            sp = la - al - be * lb
-            c, phi, sig = ar1_fit(sp)
-            hl = min(max(half_life_corrected(phi, len(sp)), cfg.half_life_min), cfg.half_life_max)
-            out.append(Pair(a, b, al, be, float(sp.mean()), float(sp.std(ddof=1)), c, phi, sig, hl, 1.0, 0.0))
-            used.update([a, b])
+            out.append(p)
+            used.update([row.a, row.b])
         return out
     return pick
 
 
-def placebo_distribution(prices, cfg, sectors, draws: int = 20) -> list[float]:
-    return [sharpe(walk_forward(prices, cfg, sectors, pair_picker=random_pair_picker(k)).daily_ret)
-            for k in range(draws)]
+def placebo_distribution(prices, cfg, sectors, draws: int = 39, dividends=None) -> list[float]:
+    """39 draws and 'no draw may tie or beat the real Sharpe' gives an exact one-sided p = 1/40 = 0.025."""
+    return [sharpe(walk_forward(prices, cfg, sectors, pair_picker=random_pair_picker(k),
+                                dividends=dividends).daily_ret) for k in range(draws)]
 
 
-def stress_table(prices, cfg, sectors=None) -> pd.DataFrame:
+def dose_response(result: "BacktestResult") -> pd.DataFrame:
+    """Net P&L per trade by the pair's selection p-value bucket: it should fall as p rises."""
+    rows = [{"p": t.features.get("p", np.nan) if t.features else np.nan, "pnl": t.pnl} for t in result.trades]
+    df = pd.DataFrame(rows).dropna()
+    if df.empty:
+        return df
+    df["bucket"] = pd.cut(df.p, [0, 1e-4, 1e-3, 1e-2, 0.05, 1.0])
+    return df.groupby("bucket", observed=True).pnl.agg(["count", "mean"]).reset_index()
+
+
+def stress_table(prices, cfg, sectors=None, dividends=None) -> pd.DataFrame:
     """Mandatory sensitivity: costs x1/x2/x3 and one extra bar of execution delay."""
     rows = []
     for mult in (1, 2, 3):
         for delay in (cfg.exec_delay_bars, cfg.exec_delay_bars + 1):
             c = cfg.with_(cost_bps=cfg.cost_bps * mult, borrow_bps_per_year=cfg.borrow_bps_per_year * mult,
                           exec_delay_bars=delay)
-            res = walk_forward(prices, c, sectors)
+            res = walk_forward(prices, c, sectors, dividends=dividends)
             s = res.summary()
             rows.append({"cost_mult": mult, "delay_bars": delay, "sharpe": s["sharpe"],
                          "ann_return": s["ann_return"], "n_trades": s["n_trades"]})

@@ -28,23 +28,32 @@ def git_sha() -> str:
         return "unknown"
 
 
-def append(ledger_path, cfg, data_hash: str, summary: dict, note: str = "") -> None:
+def universe_key(prices) -> str:
+    """Trials are counted per universe + date range, not per file hash: re-downloading the same data must not
+    reset the trial count (board round 2)."""
+    cols = ",".join(sorted(map(str, prices.columns)))
+    return hashlib.sha256(f"{cols}|{prices.index[0].date()}|{prices.index[-1].date()}".encode()).hexdigest()[:16]
+
+
+def append(ledger_path, cfg, data_hash: str, summary: dict, note: str = "", universe: str = "") -> None:
     rec = {"utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "git": git_sha(),
            "config_hash": cfg.hash(), "config": json.loads(cfg.to_json()), "data_sha256": data_hash,
-           "sharpe": summary.get("sharpe"), "n_trades": summary.get("n_trades"), "note": note}
+           "universe": universe, "sharpe": summary.get("sharpe"), "n_trades": summary.get("n_trades"),
+           "note": note}
     Path(ledger_path).parent.mkdir(parents=True, exist_ok=True)
     with open(ledger_path, "a") as f:
         f.write(json.dumps(rec, default=str) + "\n")
 
 
-def trial_sharpes(ledger_path, data_hash: str | None = None) -> list[float]:
+def trial_sharpes(ledger_path, universe: str | None = None) -> list[float]:
+    """One Sharpe per DISTINCT configuration tried on this universe (the latest run of each config)."""
     p = Path(ledger_path)
     if not p.exists():
         return []
-    out = []
+    by_cfg = {}
     for line in p.read_text().splitlines():
         rec = json.loads(line)
-        if data_hash is None or rec["data_sha256"] == data_hash:
+        if universe is None or rec.get("universe") == universe:
             if rec.get("sharpe") is not None:
-                out.append(float(rec["sharpe"]))
-    return out
+                by_cfg[rec["config_hash"]] = float(rec["sharpe"])
+    return list(by_cfg.values())
