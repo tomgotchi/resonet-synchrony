@@ -34,6 +34,7 @@ class Pair:
     z_scale: float = 1.0       # selection-aware calibration: z = (s - mu) / (sd * z_scale)
     cusum_h: float = float("nan")
     group: str = ""
+    p_threshold: float = 1.0   # the BH cut-off the pair passed (needed to re-run its calibration)
 
 
 def spread(la, lb, pair: Pair):
@@ -99,7 +100,7 @@ def make_pair(la, lb, a, b, cfg, p_threshold=1.0, p=1.0, tstat=0.0, group="") ->
         cal = calibrate_pair(la, lb, p_threshold, cfg, seed=seed % (2 ** 32), n_sims=cfg.calibration_sims)
         hl, z_scale, h = cal["half_life"], cal["z_scale"], cal["cusum_h"]
     return Pair(a, b, alpha, beta, float(s.mean()), float(s.std(ddof=1)), c, phi, sig, float(hl), p, tstat,
-                float(z_scale), float(h), group)
+                float(z_scale), float(h), group, float(p_threshold))
 
 
 @dataclass
