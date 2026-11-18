@@ -107,3 +107,25 @@ P = pending.
 3. Paper trial: replay the holdout day by day through `run_paper`; then the user may run it forward daily from the
    dashboard.
 4. No real money unless all gates and the holdout pass, and a broker integration has been reviewed separately.
+
+### 7. Round 4 (after the pre-registered real-data run), 2026-11-18
+**Results**
+- **ETF, development period 2012-01 to 2023-10:**
+  - Net Sharpe −0.19, 95% CI −0.78 to 0.33. 73 trades; 38% made money net.
+  - All four gates fail.
+  - Matched placebos: median about 0, maximum 0.25.
+  - Sharpe at 2× costs: −0.48.
+- **ETF, holdout 2023-11 to 2026-11 (opened once):** Sharpe −0.36, CI −1.16 to 0.44, on 5 trades. The pass rule fails.
+- **Paper trial (no money):** a replay of all 765 holdout days through `run_paper`. It matched the backtest to the
+  cent in every window: −128.26 and −18.61 in the two windows that traded. The paper code path is the backtest.
+
+**Members' positions**
+
+| member | position | verdict |
+|---|---|---|
+| Halvorsen | E1: formally reject this config for real money; record it before the S&P 500 result is seen. E2: forward paper trading only as a plumbing test. E3: any follow-up is a new study with one pre-registered change; N counts every config hash; the holdout is spent. E4: S&P 500 results are exploratory and trigger nothing | adopted (`results/VERDICT.json`, DESIGN.md, dashboard banner) |
+| Zhao | F1: the Engle-Granger screen selects the wrong thing. It is scale-free, so it favours near-clone ETFs (RWR/VNQ, IYR/VNQ, HYG/JNK) whose tracking-error spreads (about 13 bp) are about the size of the costs (about 10 bp a round trip). F2: stop. A cost-scaled screen would be a new trial, judged only on forward data | A (the cost arithmetic matches `strategy.py`: 5 bp × $10k gross per fill) |
+
+**Decision: the config is REJECTED for real money.** Reported as "no evidence of an edge after costs".
+A forward paper book (`runs/paper_etf`) started on 2026-11-18 as a plumbing test. It holds nothing yet: no ETF
+pair passed selection in the current window, and the next selection is around 2027-01-14.

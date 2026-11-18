@@ -39,7 +39,8 @@ def load_json(p: Path):
 tab_bt, tab_paper, tab_cfg = st.tabs(["Backtest research", "Paper trial", "Settings (read-only)"])
 
 with tab_bt:
-    reports = sorted(RESULTS.glob("*.json"))
+    reports = sorted((p for p in RESULTS.glob("*.json") if p.name != "VERDICT.json"),
+                     key=lambda p: (not p.stem.startswith("etf_dev"), p.stem))
     if not reports:
         st.info("No reports yet. Run: python -m pairs_trader.cli backtest --data data/etf --period dev "
                 "--out results/etf_dev.json")
