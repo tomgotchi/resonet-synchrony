@@ -1,40 +1,36 @@
-# pairs_trader — design draft v1 (for the review board, 2026-11-18)
+# pairs_trader — design v2 (after the review board of 2026-11-18)
 
-The user wants an ML trading app that "connects two different things and uses them proportionally, like two
-stocks", run passively. That is **pairs trading / statistical arbitrage**: find two assets whose prices are tied
-(cointegrated), hold a hedge-ratio-weighted long/short position when their spread is unusually wide, and close it
-when the spread reverts. (v0 of this file was about binary event contracts; that was a misreading and is dropped.)
+Pairs trading / statistical arbitrage: find two stocks whose log prices are tied (cointegrated), hold a
+hedge-ratio-weighted long/short position when the spread is unusually wide, close it when it reverts.
+v0 (binary event contracts) was a misreading of the request and is dropped. v1 is in git history; the board
+record is `docs/REVIEW_BOARD.md`. Every change below cites the board finding that caused it.
 
-## Proposed architecture
-1. **Data.** Daily split- and dividend-adjusted closes (and opens) for a universe of liquid US stocks/ETFs, from a
-   CSV the user provides, or an optional downloader. Sector labels. Survivorship-bias-free data if available.
-2. **Pair selection (formation window, e.g. 252 trading days).** Candidate pairs within the same sector.
-   Engle-Granger test: regress log P_A on log P_B, run an ADF test on the residual. Keep pairs with p < 0.05,
-   then estimate an Ornstein-Uhlenbeck half-life of the spread and keep 2 <= half-life <= 60 days. Rank by
-   p-value; trade the top K (e.g. 10).
-3. **Hedge ratio.** Static OLS beta from the formation window; option: a Kalman filter that updates beta daily.
-4. **Signal (trading window, e.g. next 126 days).** spread_t = log P_A - beta log P_B; z_t from a rolling mean
-   and std (window ~ 2x half-life). Enter when |z| > 2 (short the rich leg, long the cheap leg, dollar-neutral),
-   exit when |z| < 0.5, stop-loss when |z| > 4, time stop after 3x half-life.
-5. **ML layer.** A classifier (logistic regression / gradient boosting) predicts, at each entry signal, whether the
-   trade will revert profitably before its stops. Features: z, half-life, spread volatility, ADF statistic,
-   rolling correlation, recent beta drift, market volatility. Trades are taken only if P(success) > threshold.
-   Baseline: the same rules without the ML filter.
-6. **Execution & costs.** Signal at close t, trade at the next open (t+1). Costs: commission, half-spread
-   (e.g. 5 bp per leg per side), short-borrow fee (e.g. 1%/yr), slippage.
-7. **Evaluation.** Rolling formation/trading windows walk-forward over many years. Report annualised return,
-   Sharpe, max drawdown, turnover, hit rate, vs. the no-ML baseline and vs. buy-and-hold SPY.
-8. **Risk.** Max gross exposure, per-pair cap, max concurrent pairs, drawdown kill switch, no trade if a leg is
-   hard to borrow.
-9. **Broker.** Paper mode (default). Live mode through a broker API (e.g. Alpaca), only with an explicit flag and
-   keys from the environment, passing the same risk checks. Scheduled daily run for "passive".
-10. **Testing.** Synthetic simulator: cointegrated pairs (common random-walk trend + OU spread with known
-    half-life), non-cointegrated random-walk pairs (null), and pairs whose cointegration breaks after formation.
-    The pipeline must find edge on the first, none on the second, and lose gracefully on the third.
+## Frozen v1 rules (`pairs_trader/config.py`; any change is a new trial and goes in the ledger)
+| step | rule | why (board) |
+|---|---|---|
+| universe | user CSV of adjusted closes; pairs only **within a sector** | multiplicity: all-pairs screening has no power after FDR control (judge) |
+| test | Engle-Granger, ADF on OLS residual with **MacKinnon N=2** p-values, **both directions**, p = max | naive ADF p rejects 14% of null pairs; direction disagreement ~7% (Halvorsen, Zhao, Novak, Volkov) |
+| multiplicity | Benjamini-Hochberg q = 0.05 over all candidate pairs | ~5% of hundreds of null pairs pass otherwise; top-K fills with noise (Halvorsen) |
+| formation | **504** days (not 252) | 252 days cannot tell a half-life of 20+ from noise (Volkov) |
+| half-life | Kendall bias-corrected AR(1), keep 2–30 days | raw estimate ~30% too fast; the filter alone screens nothing (Volkov, Halvorsen) |
+| hedge | static OLS beta in [0.2, 5]; positions **1 : beta in dollars** | dollar-neutral 1:1 leaves (beta − 1) of unhedged trend (Novak, Volkov) |
+| signal | z against the **formation** mean/sd (frozen), entry 2, exit 0.5, stop 4, time stop 3 half-lives | rolling-mean z "reverts" 96% of the time on a random walk (Zhao) |
+| breaks | two-sided CUSUM on standardised AR(1) innovations (k 0.5, h 8); a break closes and blacklists the pair | a z-stop adapts to a break and fires late (Volkov) |
+| execution | decide at close t, fill at close t+1 | filling at the signal bar's close fakes ~8 bp/trade from bounce (Asante) |
+| costs | 5 bp per leg per fill (4 fills per round trip) + 1%/yr borrow on the short leg | (Novak, Asante) |
+| missing data | NaN price → forced exit at the last valid price, logged | NaN comparisons are False → frozen positions (Novak) |
+| ML filter | **off by default**; label = net P&L sign; trained only on trades closed before the window | the features repeat the price information; the planned label was meaningless (Zhao, Novak) |
+| Kalman beta, live broker, data downloader | **cut from v1** | a fast Kalman absorbs the spread (Volkov, Asante); keep v1 small (Novak) |
 
-## Open questions for the board
-- Multiple testing in pair selection (hundreds of pairs, p < 0.05). Out-of-sample decay.
-- Does the ML filter have any information the rules don't? How to evaluate it without leakage?
-- Causality: rolling z, Kalman, next-open fills, adjusted prices that are revised later.
-- Is the OU / cointegration model the right dynamical description, and how to detect breaks?
-- What will make the code silently wrong? What is the go/no-go for real money?
+## Go / no-go gates (printed by `backtest`; all must pass before paper trading means anything)
+1. Block-bootstrap (63-day blocks) 95% CI of the Sharpe excludes 0.
+2. Deflated Sharpe > 0.95, with N = every trial in the ledger for that data file.
+3. Beats ≥ 95% of random same-sector pairs run through identical rules (placebo).
+4. Sharpe still > 0 at 2× costs plus one extra bar of delay.
+Then ≥ 3 months of paper trading, which checks *plumbing* (fills, costs, tracking), not edge: six months of
+returns have a Sharpe standard error of ~1.4 (Halvorsen).
+
+## Known gaps (not fixed in v1)
+Point-in-time universe/sector tables and delisting returns (user's data must provide them); earnings blackout;
+factor-neutral attribution (is the edge just short-term reversal?); GARCH volatility in the simulator;
+opens/auction fills; short-borrow availability. See the board record.

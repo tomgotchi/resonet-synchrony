@@ -1,69 +1,109 @@
-"""Synthetic binary-event markets with a KNOWN true probability.
+"""Synthetic price panels with KNOWN pair structure, for testing the pipeline.
 
-The true probability is an exact martingale: a latent Gaussian walk Z_t with Z_T > 0  <=>  YES, so
-p_t = P(Z_T > 0 | Z_t) = Phi(Z_t / (sigma * sqrt(T - t))). The outcome is drawn consistently with that path.
-
-The quoted market is a distorted copy of p_t:
-    logit(q_t) = slope * logit(p_t) + noise          (slope < 1: favourite-longshot bias, longshots overpriced)
-then bid/ask = q_t -/+ spread/2, rounded to whole cents and clipped to [0.01, 0.99].
-slope = 1 and noise = 0 is an *efficient* market: no strategy should make money after fees and spread.
+Every stock loads on one market factor (so unrelated stocks are still correlated, as in real data).
+Pair kinds:
+  "coint":  log B = market + own random walk;  log A = c + beta * log B + s,  s ~ AR(1)/OU with a known half-life.
+  "null":   A and B are independent random walks that share only the market factor (no pair-specific tie).
+  "near_null": "coint" with a slow half-life (40-80 days): should usually NOT be selected or should not pay.
+  "break":  like "coint" until `break_day`, then the tie breaks (`break_kind`): "unit_root" (spread becomes a
+            random walk), "mu_step" (permanent level shift, e.g. M&A news), or "beta_step" (hedge ratio changes).
+Realism knobs: Student-t innovations, earnings-style jumps on each leg (permanent, do not revert), and iid
+bid-ask "bounce" noise on observed closes (creates spurious lag-1 reversion). Prices start near 50.
+Not modelled: volatility clustering (GARCH), delistings, borrow constraints.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
-from scipy.special import expit, logit, ndtr
 
 
 @dataclass(frozen=True)
-class SimConfig:
-    n_events: int = 2000
-    markets_per_event: int = 1
-    hours: int = 168               # market life
-    sigma: float = 1.0             # latent volatility per sqrt(hour) (scale only matters relative to drift)
-    drift_sd: float = 8.0          # spread of starting latent values -> spread of starting probabilities
-    slope: float = 1.0             # market bias (1 = efficient)
-    noise: float = 0.0             # extra logit noise on the quote
-    spread: float = 0.02           # dollars
+class PanelConfig:
+    n_days: int = 252 * 6
+    kinds: tuple = (("coint", 10), ("null", 30), ("break", 5))
+    half_life_range: tuple = (5.0, 30.0)     # days
+    spread_sd: float = 0.03                  # stationary sd of the log spread
+    beta_range: tuple = (0.6, 1.5)
+    market_vol: float = 0.010                # daily log-vol of the market factor
+    idio_vol: float = 0.015                  # daily log-vol of each stock's own random walk
+    t_dof: float | None = 5.0                # Student-t innovations; None = Gaussian
+    break_day: int | None = None             # default: middle of the sample
+    break_kind: str = "unit_root"            # "unit_root" | "mu_step" | "beta_step"
+    jumps_per_year: float = 0.0              # per leg; e.g. 4 = quarterly earnings
+    jump_sd: float = 0.05
+    bounce_sd: float = 0.0                   # iid log noise on observed closes
+    pairs_per_sector: int = 5                # sectors mix pair kinds at random; screening runs within sectors
     seed: int = 0
 
 
-def simulate(cfg: SimConfig) -> pd.DataFrame:
-    """Return hourly snapshots: one row per (market, hour). Columns are what a real data feed would give us,
-    plus `p_true` (never available in reality; kept only for tests) and `outcome`."""
+@dataclass
+class Panel:
+    prices: pd.DataFrame                     # index: business days, columns: tickers
+    truth: pd.DataFrame = field(default_factory=pd.DataFrame)  # one row per planted pair
+    sectors: dict = field(default_factory=dict)                 # ticker -> sector label
+
+
+def _innov(rng, size, dof):
+    if dof is None:
+        return rng.standard_normal(size)
+    return rng.standard_t(dof, size) / np.sqrt(dof / (dof - 2.0))   # unit variance
+
+
+def simulate_panel(cfg: PanelConfig = PanelConfig()) -> Panel:
     rng = np.random.default_rng(cfg.seed)
-    rows = []
-    t0 = pd.Timestamp("2025-01-01", tz="UTC")
-    T = cfg.hours
-    for e in range(cfg.n_events):
-        open_at = t0 + pd.Timedelta(hours=int(rng.integers(0, 24 * 365)))
-        z0 = rng.normal(0.0, cfg.drift_sd)
-        steps = rng.normal(0.0, cfg.sigma, size=T)
-        z = z0 + np.concatenate([[0.0], np.cumsum(steps)])          # z[0..T]
-        outcome = int(z[T] > 0)
-        remaining = cfg.sigma * np.sqrt(np.arange(T, 0, -1))         # for hours 0..T-1
-        p_true = ndtr(z[:T] / remaining)
-        p_c = np.clip(p_true, 1e-6, 1 - 1e-6)
-        for m in range(cfg.markets_per_event):
-            q = expit(cfg.slope * logit(p_c) + rng.normal(0.0, cfg.noise, size=T) if cfg.noise else
-                      cfg.slope * logit(p_c))
-            bid = np.clip(np.round((q - cfg.spread / 2) * 100) / 100, 0.01, 0.98)
-            ask = np.clip(np.round((q + cfg.spread / 2) * 100) / 100, 0.02, 0.99)
-            ask = np.maximum(ask, bid + 0.01)
-            vol = rng.poisson(50, size=T)
-            ts = open_at + pd.to_timedelta(np.arange(T), unit="h")
-            rows.append(pd.DataFrame({
-                "ts": ts,
-                "market_id": f"E{e:05d}-M{m}",
-                "event_id": f"E{e:05d}",
-                "open_ts": open_at,
-                "close_ts": open_at + pd.Timedelta(hours=T),
-                "yes_bid": bid,
-                "yes_ask": ask,
-                "volume": vol,
-                "p_true": p_true,
-                "outcome": outcome,
-            }))
-    return pd.concat(rows, ignore_index=True)
+    n = cfg.n_days
+    dates = pd.bdate_range("2015-01-02", periods=n)
+    market = np.cumsum(cfg.market_vol * _innov(rng, n, cfg.t_dof))
+    brk = cfg.break_day if cfg.break_day is not None else n // 2
+    cols, truth = {}, []
+    k = 0
+    for kind, count in cfg.kinds:
+        for _ in range(count):
+            a, b = f"S{k:03d}A", f"S{k:03d}B"
+            k += 1
+            def walk():
+                w = cfg.idio_vol * _innov(rng, n, cfg.t_dof)
+                jumps = rng.random(n) < cfg.jumps_per_year / 252.0
+                return np.cumsum(w + jumps * rng.normal(0.0, cfg.jump_sd, n))
+            log_b = np.log(50) + market + walk()
+            if kind == "null":
+                log_a = np.log(50) + market + walk()
+                hl, beta = np.nan, np.nan
+            else:
+                hl = rng.uniform(40.0, 80.0) if kind == "near_null" else rng.uniform(*cfg.half_life_range)
+                beta = rng.uniform(*cfg.beta_range)
+                phi = 0.5 ** (1.0 / hl)
+                eps_sd = cfg.spread_sd * np.sqrt(1 - phi ** 2)
+                e = eps_sd * _innov(rng, n, cfg.t_dof)
+                s = np.zeros(n)
+                s[0] = cfg.spread_sd * rng.standard_normal()
+                unit_root = kind == "break" and cfg.break_kind == "unit_root"
+                for t in range(1, n):
+                    if unit_root and t >= brk:
+                        s[t] = s[t - 1] + e[t]                 # unit root: the tie is gone
+                    else:
+                        s[t] = phi * s[t - 1] + e[t]
+                beta_t = np.full(n, beta)
+                if kind == "break" and cfg.break_kind == "mu_step":
+                    s[brk:] += 4.0 * cfg.spread_sd
+                if kind == "break" and cfg.break_kind == "beta_step":
+                    beta_t[brk:] = beta * 1.3
+                # jumps on A that do not revert (idiosyncratic news); B's jumps already live in log_b
+                ja = (rng.random(n) < cfg.jumps_per_year / 252.0) * rng.normal(0.0, cfg.jump_sd, n)
+                log_a = np.log(50) + beta_t * (log_b - np.log(50)) + s + np.cumsum(ja)
+            # bounce noise is always drawn so changing bounce_sd never shifts the RNG stream for later pairs
+            na, nb = rng.standard_normal(n), rng.standard_normal(n)
+            cols[a] = np.exp(log_a + cfg.bounce_sd * na)
+            cols[b] = np.exp(log_b + cfg.bounce_sd * nb)
+            truth.append({"a": a, "b": b, "kind": kind, "half_life": hl, "beta": beta,
+                          "break_day": dates[brk] if kind == "break" else pd.NaT,
+                          "break_kind": cfg.break_kind if kind == "break" else ""})
+    truth = pd.DataFrame(truth)
+    perm = np.random.default_rng([cfg.seed, 1]).permutation(len(truth))
+    truth["sector"] = [f"SEC{i // cfg.pairs_per_sector:02d}" for i in np.argsort(perm)]
+    sectors = {}
+    for _, r in truth.iterrows():
+        sectors[r.a] = sectors[r.b] = r.sector
+    return Panel(prices=pd.DataFrame(cols, index=dates), truth=truth, sectors=sectors)
