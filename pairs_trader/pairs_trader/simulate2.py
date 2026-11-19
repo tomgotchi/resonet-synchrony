@@ -26,14 +26,15 @@ def _logu(rng, lo, hi):
 
 def simulate_study2_panel(seed: int, n_sectors: int = 5, formation: int = 504, trading: int = 126,
                           market_vol: float = 0.010, idio_vol: float = 0.015, dof: float = 5.0,
-                          bounce_bp: float = 2.0) -> Panel:
+                          bounce_bp: float = 2.0, straddle_per_sector: int = 0) -> Panel:
     n = formation + trading
     dates = pd.bdate_range("2015-01-02", periods=n)
     market = np.cumsum(market_vol * _innov(np.random.default_rng([seed, 3, 0]), n, dof))
     cols, truth, sectors = {}, [], {}
     k = 0
     for sec in range(n_sectors):
-        for kind, count in SECTOR_MIX:
+        mix = SECTOR_MIX + ((("straddle_null", straddle_per_sector),) if straddle_per_sector else ())
+        for kind, count in mix:
             for _ in range(count):
                 k += 1
                 rng = np.random.default_rng([seed, 3, k])
@@ -41,10 +42,15 @@ def simulate_study2_panel(seed: int, n_sectors: int = 5, formation: int = 504, t
                 log_b = np.log(50) + market + np.cumsum(idio_vol * _innov(rng, n, dof))
                 hl = beta = sig = np.nan
                 step_day = -1
+                bb = bounce_bp
                 if kind == "null":
                     log_a = np.log(50) + market + np.cumsum(idio_vol * _innov(rng, n, dof))
                 else:
-                    if kind in ("clone", "clone_null"):
+                    bb = bounce_bp
+                    if kind == "straddle_null":           # Study 3 (board r3): straddles the filter threshold
+                        beta, sig = rng.uniform(0.97, 1.03), _logu(rng, 5e-4, 60e-4)
+                        bb = float(rng.choice([0.0, 1.0, 2.0]))
+                    elif kind in ("clone", "clone_null"):
                         beta, hl, sig = rng.uniform(0.97, 1.03), rng.uniform(1, 5), _logu(rng, 1e-4, 4e-4)
                     elif kind == "level_step":
                         beta = rng.uniform(0.6, 1.5)
@@ -52,7 +58,7 @@ def simulate_study2_panel(seed: int, n_sectors: int = 5, formation: int = 504, t
                         sig = _logu(rng, 25e-4, 200e-4)
                     else:                                         # coint, beta_drift
                         beta, hl, sig = rng.uniform(0.6, 1.5), rng.uniform(3, 30), _logu(rng, 25e-4, 200e-4)
-                    phi = 1.0 if kind == "clone_null" else 0.5 ** (1.0 / hl)
+                    phi = 1.0 if kind in ("clone_null", "straddle_null") else 0.5 ** (1.0 / hl)
                     e = sig * _innov(rng, n, dof)
                     s = np.zeros(n)
                     s[0] = 0.0 if phi >= 1 else sig / np.sqrt(1 - phi ** 2) * rng.standard_normal()
@@ -68,15 +74,15 @@ def simulate_study2_panel(seed: int, n_sectors: int = 5, formation: int = 504, t
                     else:
                         log_a = np.log(50) + beta * (log_b - np.log(50)) + s
                 na, nb = rng.standard_normal(n), rng.standard_normal(n)
-                cols[a] = np.exp(log_a + bounce_bp / 1e4 * na)
-                cols[b] = np.exp(log_b + bounce_bp / 1e4 * nb)
+                cols[a] = np.exp(log_a + bb / 1e4 * na)
+                cols[b] = np.exp(log_b + bb / 1e4 * nb)
                 g = f"SEC{sec:02d}"
                 sectors[a] = sectors[b] = g
                 truth.append({"a": a, "b": b, "kind": kind, "half_life": hl, "beta": beta, "sigma_e": sig,
-                              "sector": g, "step_day": step_day})
+                              "sector": g, "step_day": step_day, "bounce_bp": bb})
     return Panel(prices=pd.DataFrame(cols, index=dates), truth=pd.DataFrame(truth), sectors=sectors)
 
 
-NULL_KINDS = {"null", "clone_null", "cross"}
+NULL_KINDS = {"null", "clone_null", "cross", "straddle_null"}
 TRUE_KINDS = {"coint", "clone", "level_step"}      # cointegrated over the formation window
 # beta_drift is neither: excluded from FDR, reported as a diagnostic (pre-registered)
