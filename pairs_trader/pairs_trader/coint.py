@@ -78,13 +78,21 @@ def benjamini_hochberg(p: np.ndarray, q: float) -> np.ndarray:
     return mask
 
 
-def cost_filter_ok(spread: np.ndarray, beta: float, cfg) -> bool:
-    """Study 2 pre-BH independent filter (board 2026-11-19, Zhao C1 / Volkov C2): a pair can only pay for its
-    own trading if one typical day's spread move is at least the round-trip cost per dollar of leg A,
-    sd(diff spread) >= m * 2 * c * (1 + |beta|). A scale statistic, roughly independent of the scale-free EG t
-    under the null, so filtering before BH keeps FDR control. m = 0 disables it (Study 1)."""
+def cost_filter_stat(la: np.ndarray, lb: np.ndarray) -> float:
+    """sd of the daily spread move per dollar of gross, using a RETURNS-space hedge ratio b_r:
+    sd(dla - b_r*dlb) / (1 + |b_r|). The levels-space beta is not ancillary to the EG statistic under the null
+    (board round 2, Novak/Zhao), the returns-space one is (judge check: Spearman with p ~ 0.01)."""
+    da, db = np.diff(la), np.diff(lb)
+    vb = float(np.var(db, ddof=1))
+    b_r = float(np.cov(da, db, ddof=1)[0, 1] / vb) if vb > 0 else 0.0
+    return float(np.std(da - b_r * db, ddof=1) / (1.0 + abs(b_r)))
+
+
+def cost_filter_ok(la: np.ndarray, lb: np.ndarray, cfg) -> bool:
+    """Study 2 pre-BH independent filter (board 2026-11-19): keep a candidate iff one typical day's spread
+    move per dollar of gross is at least m x the round-trip cost per dollar of gross (2 fills x c per leg).
+    Filtering BEFORE BH keeps FDR control (Zhao C1 / Volkov C2). m = 0 disables it (Study 1)."""
     m = getattr(cfg, "cost_filter_m", 0.0)
     if m <= 0:
         return True
-    sd_diff = float(np.std(np.diff(spread), ddof=1))
-    return sd_diff >= m * 2.0 * cfg.screen_cost_bps / 1e4 * (1.0 + abs(beta))
+    return cost_filter_stat(la, lb) >= m * 2.0 * cfg.screen_cost_bps / 1e4

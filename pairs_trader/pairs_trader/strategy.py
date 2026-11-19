@@ -60,7 +60,7 @@ def select_pairs(formation: pd.DataFrame, cfg: StrategyConfig, sectors: dict | N
     for a, b in candidate_pairs(px.columns, sectors):
         la, lb = logp[a].to_numpy(), logp[b].to_numpy()
         r = symmetric_eg(la, lb, cfg.adf_lags)
-        ok = cost_filter_ok(la - r["alpha"] - r["beta"] * lb, r["beta"], cfg)
+        ok = cost_filter_ok(la, lb, cfg)
         rows.append({"a": a, "b": b, "group": sectors.get(a, "") if sectors else "", "cost_ok": ok, **r})
     table = pd.DataFrame(rows)
     if table.empty:
@@ -92,6 +92,21 @@ def select_pairs(formation: pd.DataFrame, cfg: StrategyConfig, sectors: dict | N
         if len(chosen) >= cfg.max_pairs:
             break
     return (chosen, table) if return_table else chosen
+
+
+def whole_share_legs(gross: float, beta: float, pa: float, pb: float, search: int = 3) -> tuple[int, int]:
+    """Study 2 (Asante C1, rounds 1-2; Halvorsen r2): broker orders are in whole shares, sized at the DECISION
+    close. Search q_A within +-search of the target and round q_B, minimising the hedge-ratio error; never skip
+    (the residual exposure is simply part of P&L). Returns absolute share counts (>= 1 each)."""
+    n_a = gross / (1.0 + beta)
+    q0 = max(1, int(round(n_a / pa)))
+    best = None
+    for qa in range(max(1, q0 - search), q0 + search + 1):
+        qb = max(1, int(round(beta * qa * pa / pb)))
+        err = abs(qb * pb / (qa * pa) - beta) / beta + 1e-9 * abs(qa - q0)
+        if best is None or err < best[0]:
+            best = (err, qa, qb)
+    return best[1], best[2]
 
 
 def make_pair(la, lb, a, b, cfg, p_threshold=1.0, p=1.0, tstat=0.0, group="") -> Pair:
@@ -171,6 +186,7 @@ def trade_window(prices: pd.DataFrame, pairs: list[Pair], start: int, end: int, 
         qa = qb = 0.0          # shares held
         side = 0
         pending = None         # (fill_bar, action, side, reason)
+        size_px = (np.nan, np.nan)
         trade = None
         held_since = None
         cus_p = cus_m = 0.0
@@ -207,9 +223,13 @@ def trade_window(prices: pd.DataFrame, pairs: list[Pair], start: int, end: int, 
                     qa = qb = 0.0
                     side, trade, held_since = 0, None, None
                 if new_side != 0:
-                    n_a = per_pair_gross / (1.0 + pair.beta)            # dollars in A; beta * n_a in B
-                    qa = new_side * n_a / pa
-                    qb = -new_side * pair.beta * n_a / pb
+                    if cfg.integer_shares:
+                        ka, kb = whole_share_legs(per_pair_gross, pair.beta, *size_px)
+                        qa, qb = new_side * ka, -new_side * kb
+                    else:
+                        n_a = per_pair_gross / (1.0 + pair.beta)        # dollars in A; beta * n_a in B
+                        qa = new_side * n_a / pa
+                        qb = -new_side * pair.beta * n_a / pb
                     c = cost_rate * (abs(qa) * pa + abs(qb) * pb)
                     pnl[t - start] -= c
                     side, held_since = new_side, t
@@ -264,6 +284,7 @@ def trade_window(prices: pd.DataFrame, pairs: list[Pair], start: int, end: int, 
                 if entry_filter is not None and not entry_filter(pair, t, feats):
                     continue
                 pending = (t + d, "enter", new_side, "", idx[t], zt, feats)
+                size_px = (a_t, b_t)                       # integer sizing uses the decision close
             else:
                 reason = ""
                 if broken:

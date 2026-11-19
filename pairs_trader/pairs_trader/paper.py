@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 
 from .config import StrategyConfig
-from .strategy import Pair, make_pair, select_pairs, trade_window
+from .strategy import Pair, make_pair, select_pairs, trade_window, whole_share_legs
 
 LOG_COLUMNS = ["order_id", "date", "pair", "ticker", "kind", "side", "notional", "qty", "status", "fill_date",
                "fill_price", "cost"]
@@ -176,12 +176,20 @@ def run_paper(prices: pd.DataFrame, cfg: StrategyConfig, state_dir, sectors: dic
     fills, still_open = [], []
     for o in state["open_orders"]:
         px = float(px_today[o["ticker"]])
+        if cfg.study >= 2 and o["kind"] == "open":
+            age = int(((prices.index > pd.Timestamp(o["date"])) & (prices.index <= today)).sum())
+            if age > cfg.exec_delay_bars or not np.isfinite(px):   # entries expire at t+delay (Asante C2)
+                fills.append({**o, "qty": 0.0, "fill_date": date, "fill_price": px, "cost": 0.0,
+                              "status": "expired"})
+                events.append(f"EXPIRED entry {o['pair']} {o['ticker']} (decided {o['date']}, age {age} bars)")
+                continue
         if not np.isfinite(px):
             still_open.append(o)                                 # halted: try again next run
             continue
         pos = state["book"].setdefault(o["pair"], {})
         if o["kind"] == "open":
-            qty = o["notional"] / px                             # signed dollars -> shares at the fill price
+            qty = (o["qty_target"] if o.get("qty_target") is not None   # Study 2: whole shares, sized at decision
+                   else o["notional"] / px)                      # Study 1: signed dollars -> shares at fill
         else:
             qty = -pos.get(o["ticker"], 0.0)
         cost = cfg.cost_bps / 1e4 * abs(qty) * px
@@ -199,12 +207,12 @@ def run_paper(prices: pd.DataFrame, cfg: StrategyConfig, state_dir, sectors: dic
     pending_pairs = {o["pair"] for o in state["open_orders"]}
     new_orders = []
 
-    def emit(name, ticker, kind, side=0, notional=0.0):
+    def emit(name, ticker, kind, side=0, notional=0.0, qty_target=None):
         oid = order_id(date, name, ticker, kind, salt=f"{cfg.hash()}|{Path(state_dir).name}" if cfg.study >= 2 else "")
         if oid in state["order_ids"]:
             return
         new_orders.append({"order_id": oid, "date": date, "pair": name, "ticker": ticker, "kind": kind,
-                           "side": side, "notional": notional, "status": "submitted"})
+                           "side": side, "notional": notional, "qty_target": qty_target, "status": "submitted"})
 
     names = {f"{p.a}/{p.b}": p for p in pairs}
     for name in sorted(set(names) | set(state["book"])):
@@ -241,8 +249,14 @@ def run_paper(prices: pd.DataFrame, cfg: StrategyConfig, state_dir, sectors: dic
             emit(name, t, "close")
         if want != 0:
             n_a = cfg.capital / cfg.max_pairs / (1.0 + p.beta)
-            emit(name, p.a, "open", want, want * n_a)
-            emit(name, p.b, "open", want, -want * p.beta * n_a)
+            if cfg.integer_shares:
+                ka, kb = whole_share_legs(cfg.capital / cfg.max_pairs, p.beta, float(px_today[p.a]),
+                                          float(px_today[p.b]))
+                emit(name, p.a, "open", want, want * ka * float(px_today[p.a]), qty_target=float(want * ka))
+                emit(name, p.b, "open", want, -want * kb * float(px_today[p.b]), qty_target=float(-want * kb))
+            else:
+                emit(name, p.a, "open", want, want * n_a)
+                emit(name, p.b, "open", want, -want * p.beta * n_a)
     state["open_orders"] += new_orders
     state["order_ids"] += [o["order_id"] for o in new_orders]
 

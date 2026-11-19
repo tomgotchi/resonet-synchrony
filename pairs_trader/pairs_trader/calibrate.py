@@ -56,7 +56,7 @@ def calibrate_pair(la: np.ndarray, lb: np.ndarray, p_threshold: float, cfg, seed
             if r["p"] > p_threshold:
                 continue
             res = fa - r["alpha"] - r["beta"] * fb
-            if not cost_filter_ok(res, r["beta"], cfg):      # Study 2: copies face the same filter (Zhao M3)
+            if not cost_filter_ok(fa, fb, cfg):      # Study 2: copies face the same filter (Zhao M3)
                 continue
             cc, ph, sg = ar1_fit(res)
             phis.append(ph)
