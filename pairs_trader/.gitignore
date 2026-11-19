@@ -1,6 +1,0 @@
-__pycache__/
-*.pyc
-runs/
-data/
-.env
-*.key
