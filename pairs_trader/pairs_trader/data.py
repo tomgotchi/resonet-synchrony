@@ -52,6 +52,26 @@ def sp500_universe(cache: Path | None = None) -> dict[str, str]:
     return dict(zip(df["yahoo"], df["GICS Sub-Industry"]))
 
 
+SP400_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_400_companies"
+
+
+def sp400_universe(cache: Path | None = None) -> dict[str, str]:
+    """Current S&P MidCap 400 -> GICS sub-industry (Study 2/3 never-touched universe). SURVIVORSHIP-BIASED."""
+    import urllib.request
+    if cache is not None and cache.exists():
+        df = pd.read_csv(cache)
+    else:
+        req = urllib.request.Request(SP400_URL, headers={"User-Agent": "pairs-trader-research/1.0"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            tables = pd.read_html(io.StringIO(r.read().decode()))
+        df = next(t for t in tables if "Symbol" in t.columns and "GICS Sub-Industry" in t.columns)
+        if cache is not None:
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            df.to_csv(cache, index=False)
+    df["yahoo"] = df["Symbol"].astype(str).str.replace(".", "-", regex=False)
+    return dict(zip(df["yahoo"], df["GICS Sub-Industry"]))
+
+
 def download(tickers: list[str], start: str = DEV_START, end: str | None = None, batch: int = 100):
     """Return (closes, dividends): split-adjusted closes and cash dividends per share on ex-dates."""
     import yfinance as yf

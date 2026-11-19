@@ -65,7 +65,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="pairs_trader")
     sub = ap.add_subparsers(dest="cmd", required=True)
     d = sub.add_parser("download")
-    d.add_argument("universe", choices=["etf", "sp500"])
+    d.add_argument("universe", choices=["etf", "sp500", "sp400"])
     d.add_argument("--out", default=None)
     b = sub.add_parser("backtest")
     b.add_argument("--data", required=True)
@@ -104,7 +104,9 @@ def main(argv=None):
 
     from . import data as D
     if a.cmd == "download":
-        groups = D.etf_universe() if a.universe == "etf" else D.sp500_universe(Path(f"data/{a.universe}/constituents.csv"))
+        cache = Path(f"data/{a.universe}/constituents.csv")
+        groups = (D.etf_universe() if a.universe == "etf" else
+                  D.sp500_universe(cache) if a.universe == "sp500" else D.sp400_universe(cache))
         px, dv = D.download(list(groups))
         out = Path(a.out or f"data/{a.universe}")
         D.save(px, dv, {t: g for t, g in groups.items() if t in px.columns}, out)
