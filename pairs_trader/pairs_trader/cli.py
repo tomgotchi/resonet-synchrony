@@ -4,6 +4,7 @@
   python -m pairs_trader.cli backtest --data data/etf --period dev|holdout|full
   python -m pairs_trader.cli replay   --data data/etf --state runs/replay_etf --from 2023-11-01
   python -m pairs_trader.cli paper    --data data/etf --state runs/paper_etf [--refresh] [--accept-jump T]
+  python -m pairs_trader.cli trade    --data data/sp500 --state runs/trade_sp500 --broker sim|alpaca-paper --refresh
   python -m pairs_trader.cli demo [--null]                # synthetic data with known answers
   python -m pairs_trader.cli live                         # refuses: not implemented
 Settings are frozen in config.py. There is deliberately no command-line switch for any strategy parameter.
@@ -82,6 +83,12 @@ def main(argv=None):
     p.add_argument("--state", required=True)
     p.add_argument("--refresh", action="store_true", help="re-download from Yahoo before running")
     p.add_argument("--accept-jump", action="append", default=[])
+    tr = sub.add_parser("trade", help="daily broker loop (Study 3 config; paper accounts only)")
+    tr.add_argument("--data", required=True)
+    tr.add_argument("--state", required=True)
+    tr.add_argument("--broker", choices=["sim", "alpaca-paper"], default="sim")
+    tr.add_argument("--refresh", action="store_true")
+    tr.add_argument("--accept-jump", action="append", default=[])
     dm = sub.add_parser("demo")
     dm.add_argument("--null", action="store_true")
     sub.add_parser("live")
@@ -142,6 +149,35 @@ def main(argv=None):
         eq = json.loads((Path(a.state) / "state.json").read_text())["equity"]
         print(json.dumps({"days": len(days), "final_paper_pnl": last["paper_pnl"], "first": eq[0], "last": eq[-1]},
                          indent=1, default=str))
+        return 0
+    if a.cmd == "trade":
+        from .broker import AlpacaPaperBroker, SimBroker
+        from .study2 import S3
+        from .trader import Halt, run_trader
+        now = pd.Timestamp.now(tz="America/New_York")
+        if a.refresh:
+            px, dv = D.download(list(groups))
+            D.save(px, dv, groups, Path(a.data))
+        today = str(px.index[-1].date())
+        if a.broker == "alpaca-paper":
+            br = AlpacaPaperBroker()
+            if now.hour < 19:
+                print("run after 19:00 ET: market-on-close orders sent 15:50-19:00 ET are rejected", file=sys.stderr)
+                return 2
+            cal = br.calendar(str((now + pd.Timedelta(days=1)).date()), str((now + pd.Timedelta(days=10)).date()))
+            nxt = cal[0]["date"]
+        else:
+            br = SimBroker.load(Path(a.state) / "simbroker.json")
+            br.settle(today, px.iloc[-1].to_dict())          # today's closing auction fills yesterday's orders
+            nxt = str((px.index[-1] + pd.offsets.BDay(1)).date())
+        try:
+            out = run_trader(px, S3, a.state, br, groups, dividends=dv, next_session=nxt,
+                             accept_jumps=tuple(a.accept_jump), expected_date=now.normalize().tz_localize(None)
+                             - pd.offsets.BDay(0 if now.hour >= 17 else 1))
+        except Halt as e:
+            print(f"HALT: {e}", file=sys.stderr)
+            return 3
+        print(json.dumps(out["broker"], indent=1, default=str))
         return 0
     if a.cmd == "paper":
         if a.refresh:
