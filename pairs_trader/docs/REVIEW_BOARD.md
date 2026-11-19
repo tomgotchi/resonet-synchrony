@@ -129,3 +129,12 @@ P = pending.
 **Decision: the config is REJECTED for real money.** Reported as "no evidence of an edge after costs".
 A forward paper book (`runs/paper_etf`) started on 2026-11-18 as a plumbing test. It holds nothing yet: no ETF
 pair passed selection in the current window, and the next selection is around 2027-01-14.
+
+### 8. S&P 500 development run (secondary, exploratory), seen after the verdict
+- Current S&P 500 members by GICS sub-industry, 2012-01 to 2023-10. **Survivorship-biased upper bound.**
+- Net Sharpe 0.44, 95% CI −0.08 to 0.98; 231 trades; 49% won net; annual return 0.7% on capital, max drawdown 2.8%.
+- Gates: CI excludes 0 **fails**; deflated Sharpe **fails** (0.94, and it is only a PSR with N = 1); beats all 39
+  matched placebos **fails** (the best placebo reached 0.72); positive at 2× costs plus delay passes (0.26).
+  3 of 4 gates fail.
+- Per Halvorsen E4 this triggers nothing. Even taken at face value it does not separate from matched random pairs,
+  and the survivorship bias inflates it. The verdict on config f201d54b4912 stands.
