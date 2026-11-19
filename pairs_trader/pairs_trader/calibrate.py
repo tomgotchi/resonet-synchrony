@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .coint import ar1_fit, ols_alpha_beta, symmetric_eg
+from .coint import ar1_fit, cost_filter_ok, ols_alpha_beta, symmetric_eg
 
 NOMINAL_TAIL = 0.0455      # P(|N(0,1)| > 2)
 
@@ -56,6 +56,8 @@ def calibrate_pair(la: np.ndarray, lb: np.ndarray, p_threshold: float, cfg, seed
             if r["p"] > p_threshold:
                 continue
             res = fa - r["alpha"] - r["beta"] * fb
+            if not cost_filter_ok(res, r["beta"], cfg):      # Study 2: copies face the same filter (Zhao M3)
+                continue
             cc, ph, sg = ar1_fit(res)
             phis.append(ph)
             if it == iters:

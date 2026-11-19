@@ -42,12 +42,27 @@ class StrategyConfig:
     use_ml_filter: bool = False
     ml_min_train_trades: int = 200
     ml_threshold: float = 0.5
+    # --- Study 2 (board 2026-11-19). Left out of the hash while at their defaults, so Study 1 stays
+    #     f201d54b4912 (Novak C1). study >= 2 also switches on the full-width calibration seed (Novak C2). ---
+    study: int = 1
+    cost_filter_m: float = 0.0         # pre-BH independent filter: keep iff sd(diff spread) >= m*2*c*(1+beta); 0 = off
+    screen_cost_bps: float = 5.0       # the filter's own frozen cost, NOT scaled by the stress test (Novak M1)
+    integer_shares: bool = False       # whole-share sizing in backtest and paper (Asante C1)
+    max_hedge_rounding: float = 0.02   # skip an entry if whole-share rounding moves the hedge ratio by more
 
     def with_(self, **kw) -> "StrategyConfig":
         return replace(self, **kw)
 
     def to_json(self) -> str:
-        return json.dumps(asdict(self), sort_keys=True)
+        d = asdict(self)
+        for k, v in _STUDY2_DEFAULTS.items():
+            if d[k] == v:
+                d.pop(k)
+        return json.dumps(d, sort_keys=True)
 
     def hash(self) -> str:
         return hashlib.sha256(self.to_json().encode()).hexdigest()[:12]
+
+
+_STUDY2_DEFAULTS = {"study": 1, "cost_filter_m": 0.0, "screen_cost_bps": 5.0, "integer_shares": False,
+                    "max_hedge_rounding": 0.02}

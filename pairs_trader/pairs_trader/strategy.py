@@ -13,7 +13,9 @@ import numpy as np
 import pandas as pd
 
 from .calibrate import calibrate_pair
-from .coint import ar1_fit, benjamini_hochberg, half_life_corrected, ols_alpha_beta, symmetric_eg
+from .coint import (ar1_fit, benjamini_hochberg, cost_filter_ok, half_life_corrected, ols_alpha_beta,
+                    symmetric_eg)
+import hashlib
 from .config import StrategyConfig
 
 
@@ -58,7 +60,8 @@ def select_pairs(formation: pd.DataFrame, cfg: StrategyConfig, sectors: dict | N
     for a, b in candidate_pairs(px.columns, sectors):
         la, lb = logp[a].to_numpy(), logp[b].to_numpy()
         r = symmetric_eg(la, lb, cfg.adf_lags)
-        rows.append({"a": a, "b": b, "group": sectors.get(a, "") if sectors else "", **r})
+        ok = cost_filter_ok(la - r["alpha"] - r["beta"] * lb, r["beta"], cfg)
+        rows.append({"a": a, "b": b, "group": sectors.get(a, "") if sectors else "", "cost_ok": ok, **r})
     table = pd.DataFrame(rows)
     if table.empty:
         return ([], table) if return_table else []
@@ -66,6 +69,9 @@ def select_pairs(formation: pd.DataFrame, cfg: StrategyConfig, sectors: dict | N
     table["p_threshold"] = np.nan
     families = table.groupby("group").groups.items() if cfg.fdr_per_group else [("", table.index)]
     for _, ix in families:                                   # BH within each group (board round 3, D5)
+        ix = [i for i in ix if table.at[i, "cost_ok"]]       # Study 2: the filtered family (pre-BH)
+        if not ix:
+            continue
         mask = benjamini_hochberg(table.loc[ix, "p"].to_numpy(), cfg.fdr_q)
         table.loc[ix, "fdr_pass"] = mask
         if mask.any():
@@ -96,7 +102,11 @@ def make_pair(la, lb, a, b, cfg, p_threshold=1.0, p=1.0, tstat=0.0, group="") ->
     hl = half_life_corrected(phi, len(s))
     z_scale, h = 1.0, cfg.cusum_h
     if cfg.calibrate and np.isfinite(hl) and hl > 0:
-        seed = int.from_bytes(f"{a}|{b}|{len(s)}|{la[-1]:.10f}".encode()[:8].ljust(8, b"\0"), "little")
+        key = f"{a}|{b}|{len(s)}|{la[-1]:.10f}".encode()
+        if cfg.study >= 2:      # Novak C2: the Study 1 seed kept only the first 8 bytes ("RWR|VNQ|")
+            seed = int.from_bytes(hashlib.sha256(key).digest()[:8], "little")
+        else:
+            seed = int.from_bytes(key[:8].ljust(8, b"\0"), "little")
         cal = calibrate_pair(la, lb, p_threshold, cfg, seed=seed % (2 ** 32), n_sims=cfg.calibration_sims)
         hl, z_scale, h = cal["half_life"], cal["z_scale"], cal["cusum_h"]
     return Pair(a, b, alpha, beta, float(s.mean()), float(s.std(ddof=1)), c, phi, sig, float(hl), p, tstat,

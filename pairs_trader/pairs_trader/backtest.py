@@ -155,7 +155,8 @@ def random_pair_picker(seed: int):
             return []
         px = formation.dropna(axis=1, how="any")
         logp = np.log(px)
-        cands = table[(table.p > 0.05) & (table.p < 0.5) & table.beta.between(cfg.beta_min, cfg.beta_max)]
+        cands = table[(table.p > 0.05) & (table.p < 0.5) & table.beta.between(cfg.beta_min, cfg.beta_max)
+                      & table.cost_ok]
         order = np.random.default_rng([seed, w]).permutation(len(cands))
         out, used = [], set()
         for i in order:

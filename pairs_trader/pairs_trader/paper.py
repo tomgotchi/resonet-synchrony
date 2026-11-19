@@ -36,8 +36,11 @@ class DataError(RuntimeError):
     pass
 
 
-def order_id(date, pair, leg, action) -> str:
-    return hashlib.sha256(f"{date}|{pair}|{leg}|{action}".encode()).hexdigest()[:16]
+def order_id(date, pair, leg, action, salt: str = "") -> str:
+    """Deterministic, so a retry finds the same order. `salt` (Study 2: config hash + book) keeps two books on one
+    broker account from colliding (Novak M5); empty salt reproduces the Study 1 ids."""
+    key = f"{date}|{pair}|{leg}|{action}" + (f"|{salt}" if salt else "")
+    return hashlib.sha256(key.encode()).hexdigest()[:16]
 
 
 def window_for(prices: pd.DataFrame, anchor: pd.Timestamp, cfg: StrategyConfig) -> tuple[int, int, int]:
@@ -197,7 +200,7 @@ def run_paper(prices: pd.DataFrame, cfg: StrategyConfig, state_dir, sectors: dic
     new_orders = []
 
     def emit(name, ticker, kind, side=0, notional=0.0):
-        oid = order_id(date, name, ticker, kind)
+        oid = order_id(date, name, ticker, kind, salt=f"{cfg.hash()}|{Path(state_dir).name}" if cfg.study >= 2 else "")
         if oid in state["order_ids"]:
             return
         new_orders.append({"order_id": oid, "date": date, "pair": name, "ticker": ticker, "kind": kind,
@@ -224,7 +227,14 @@ def run_paper(prices: pd.DataFrame, cfg: StrategyConfig, state_dir, sectors: dic
             want = st["next_action"]["side"] if st["next_action"]["action"] == "enter" else 0
         if p is None or flatten_all or name in state["frozen"]:
             want = 0
-        have = int(np.sign(held.get(p.a, 0.0))) if (held and p is not None) else (1 if held else 0)
+        if not held:
+            have = 0
+        elif (p is not None and set(held) == {p.a, p.b}
+              and np.sign(held[p.a]) == -np.sign(held[p.b]) != 0):
+            have = int(np.sign(held[p.a]))
+        else:                     # one-legged or wrong-signed book (Novak M4): never "equal" to anything
+            have = None
+            events.append(f"BROKEN LEGS {name}: {held} -> closing")
         if want == have:
             continue
         for t in held:
