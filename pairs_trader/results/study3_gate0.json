@@ -1,0 +1,112 @@
+{
+ "P1_clones_removed": {
+  "rate": 1.0,
+  "n": 2000,
+  "wilson_lo": 0.9980828823994872
+ },
+ "P2_coint_kept": {
+  "rate": 1.0,
+  "n": 3000,
+  "wilson_lo": 0.9987211043351955
+ },
+ "P3_fdr": {
+  "fdr": 0.0794644538468068,
+  "mc_se": 0.0117726498544374,
+  "bound": 0.1235452997088748
+ },
+ "P4_selected_below_threshold": 0,
+ "P5a_kept_null_size": {
+  "null": {
+   "n_kept": 2000,
+   "rate": 0.019,
+   "bound": 0.059746794344808965,
+   "gated": true,
+   "ok": true
+  },
+  "cross": {
+   "n_kept": 364000,
+   "rate": 0.020543956043956042,
+   "bound": 0.050722480464772596,
+   "gated": true,
+   "ok": true
+  },
+  "straddle_null": {
+   "n_kept": 1817,
+   "rate": 0.04127682993946065,
+   "bound": 0.0602258480909882,
+   "gated": true,
+   "ok": true
+  }
+ },
+ "P5b_straddle_independence": {
+  "cmh_p": 0.06398090594360362,
+  "n_pass": 1817,
+  "n_fail": 2183,
+  "strata": {
+   "0.0": {
+    "pass_rate": 0.04326123128119801,
+    "fail_rate": 0.05326231691078562,
+    "n_pass": 601,
+    "n_fail": 751
+   },
+   "1.0": {
+    "pass_rate": 0.048701298701298704,
+    "fail_rate": 0.05627705627705628,
+    "n_pass": 616,
+    "n_fail": 693
+   },
+   "2.0": {
+    "pass_rate": 0.03166666666666667,
+    "fail_rate": 0.05412719891745602,
+    "n_pass": 600,
+    "n_fail": 739
+   }
+  },
+  "pooled_diff": -0.013235309318441323
+ },
+ "pass": {
+  "P1": true,
+  "P2": true,
+  "P3": true,
+  "P4": true,
+  "P5a": true,
+  "P5b": true
+ },
+ "all_pass": true,
+ "reported": {
+  "clone_null_rejection_all": 0.347,
+  "clone_null_selected_filter": 0,
+  "clone_null_selected_nofilter": 115,
+  "fdr_nofilter": 0.08804737330192978,
+  "null_share_selected_filter": 0.11809045226130653,
+  "null_share_selected_nofilter": 0.09514563106796116,
+  "selected_by_kind_filter": {
+   "coint": 664,
+   "level_step": 241,
+   "beta_drift": 148,
+   "cross": 139,
+   "straddle_null": 2
+  },
+  "selected_by_kind_nofilter": {
+   "clone": 2000,
+   "coint": 793,
+   "level_step": 277,
+   "cross": 222,
+   "beta_drift": 192,
+   "clone_null": 115,
+   "straddle_null": 6
+  },
+  "straddle_rejection_by_stat_decile": {
+   "0": 0.07,
+   "1": 0.06,
+   "2": 0.035,
+   "3": 0.055,
+   "4": 0.0575,
+   "5": 0.0525,
+   "6": 0.0475,
+   "7": 0.0325,
+   "8": 0.0475,
+   "9": 0.0275
+  }
+ }
+}
