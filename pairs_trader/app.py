@@ -36,10 +36,12 @@ def load_json(p: Path):
         return None
 
 
-tab_bt, tab_paper, tab_cfg = st.tabs(["Backtest research", "Paper trial", "Settings (read-only)"])
+tab_bt, tab_paper, tab_broker, tab_study, tab_cfg = st.tabs(
+    ["Backtest research", "Paper trial", "Broker (paper account)", "Study 3 status", "Settings (read-only)"])
 
 with tab_bt:
-    reports = sorted((p for p in RESULTS.glob("*.json") if p.name != "VERDICT.json"),
+    reports = sorted((p for p in RESULTS.glob("*.json") if p.name != "VERDICT.json"
+                      and "summary" in (load_json(p) or {})),
                      key=lambda p: (not p.stem.startswith("etf_dev"), p.stem))
     if not reports:
         st.info("No reports yet. Run: python -m pairs_trader.cli backtest --data data/etf --period dev "
@@ -129,6 +131,59 @@ with tab_paper:
             if log.exists():
                 st.subheader("Order log (paper)")
                 st.dataframe(pd.read_csv(log).tail(200), hide_index=True)
+
+with tab_broker:
+    st.caption("Daily loop: python -m pairs_trader.cli trade --broker sim|alpaca-paper (after 19:00 ET). "
+               "Alpaca *paper* only; live trading does not exist in this code.")
+    books = sorted(p for p in RUNS.glob("trade_*") if (p / "state.json").exists()) if RUNS.exists() else []
+    if not books:
+        st.info("No broker book yet. Run scripts/daily.sh (BROKER=sim or BROKER=alpaca-paper).")
+    else:
+        bk = st.selectbox("Broker book", books, format_func=lambda p: p.name)
+        if (bk / "HALT").exists():
+            st.error(f"HALTED: {(bk / 'HALT').read_text()} Fix the cause, then delete the HALT file by hand.")
+        hb = load_json(bk / "heartbeat.json") or {}
+        sstate = load_json(bk / "state.json") or {}
+        from pairs_trader.trader import shadow_positions
+        shadow = shadow_positions(sstate)
+        real = hb.get("positions", {})
+        c = st.columns(4)
+        c[0].metric("Last run (UTC)", hb.get("utc", "-"))
+        c[1].metric("Session / next", f"{hb.get('session', '-')} / {hb.get('next_session', '-')}")
+        c[2].metric("Orders submitted", hb.get("submitted", 0))
+        c[3].metric("Rejected", hb.get("rejected", 0))
+        rows = [{"ticker": t, "shadow": shadow.get(t, 0), "broker": real.get(t, 0),
+                 "match": shadow.get(t, 0) == real.get(t, 0)} for t in sorted(set(shadow) | set(real))]
+        st.subheader("Positions: shadow book vs broker (must match share for share)")
+        st.dataframe(pd.DataFrame(rows), hide_index=True) if rows else st.write("flat")
+        if hb.get("events"):
+            st.subheader("Events")
+            st.write(hb["events"])
+        if (bk / "slippage.csv").exists():
+            sl = pd.read_csv(bk / "slippage.csv", names=["date", "ticker", "order_id", "broker_px", "close_px", "bp"])
+            st.subheader("Fill vs close (bp). Paper fills are simulated: plumbing, not cost evidence")
+            st.dataframe(sl.tail(200), hide_index=True)
+            st.metric("Mean |slippage| bp", f"{sl.bp.abs().mean():.1f}")
+        if (bk / "alerts.log").exists():
+            st.subheader("Alerts")
+            st.code((bk / "alerts.log").read_text()[-3000:])
+
+with tab_study:
+    st.write("Pre-registration: docs/STUDY2.md + docs/STUDY3.md. Every step below was frozen before it ran.")
+    for name, label in [("study2_gate0", "Study 2 simulator gate (FAILED: P5 mis-specified)"),
+                        ("study3_gate0", "Study 3 simulator gate"), ("study3_freeze", "Data freeze"),
+                        ("study3_holdout", "Holdout (opened once)")]:
+        d = load_json(RESULTS / f"{name}.json")
+        with st.expander(label + ("" if d else " (not run yet)")):
+            if d:
+                st.json(d.get("pass", d.get("outcome", d)) if name != "study3_freeze" else
+                        {"config_hash": d["config_hash"], "git": d["git"], "files": len(d["data_sha256"])})
+    devs = sorted(RESULTS.glob("study3_dev_*.json"))
+    if devs:
+        st.subheader("Development runs (can only veto)")
+        st.dataframe(pd.DataFrame([{"run": p.stem.replace("study3_dev_", ""), **{k: (load_json(p) or {})
+                     .get("summary", {}).get(k) for k in ("sharpe", "ann_return", "n_trades", "max_drawdown")},
+                     "gates_pass": (load_json(p) or {}).get("all_gates_pass")} for p in devs]), hide_index=True)
 
 with tab_cfg:
     cfg = StrategyConfig()
